@@ -716,11 +716,18 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
           <input type="number" class="form-input" id="npArea" placeholder="0"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">预计工时（h）</label>
-          <input type="number" class="form-input" id="npBudget" placeholder="480"></div>
+        <div class="form-group"><label class="form-label">开始日期</label>
+          <input type="date" class="form-input" id="npStart" onchange="calcBudget()"></div>
         <div class="form-group"><label class="form-label">截止日期</label>
-          <input type="date" class="form-input" id="npDeadline"></div>
+          <input type="date" class="form-input" id="npDeadline" onchange="calcBudget()"></div>
       </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">参与人数</label>
+          <input type="number" class="form-input" id="npPeople" placeholder="1" min="1" value="1" onchange="calcBudget()"></div>
+        <div class="form-group"><label class="form-label">预计工时（自动计算）</label>
+          <input type="number" class="form-input" id="npBudget" placeholder="自动计算" style="background:var(--cream);color:var(--text-sub)" readonly></div>
+      </div>
+      <div id="npBudgetHint" style="font-size:11px;color:var(--text-sub);margin-bottom:12px"></div>
       <button class="btn-primary" id="createProjBtn" onclick="createProject()">创建项目</button>
       <button class="btn-primary" id="saveProjBtn" style="display:none;background:var(--green)" onclick="saveEditProject()">保存修改</button>
     </div></div></div>
@@ -1024,8 +1031,10 @@ async function createProject(){
     client:document.getElementById('npClient').value,
     contract_amount:parseFloat(document.getElementById('npContract').value)||0,
     area:parseFloat(document.getElementById('npArea').value)||0,
-    hours_budget:parseInt(document.getElementById('npBudget').value)||480,
+    hours_budget:parseInt(document.getElementById('npBudget').value)||0,
+    start_date:document.getElementById('npStart').value||null,
     deadline:document.getElementById('npDeadline').value||null,
+    people_count:parseInt(document.getElementById('npPeople').value)||1,
     created_by:userProfile.id
   });
   btn.disabled=false; btn.textContent='创建项目';
@@ -1046,7 +1055,14 @@ function editProject(id){
   document.getElementById('npContract').value = p.contract_amount||'';
   document.getElementById('npArea').value = p.area||'';
   document.getElementById('npBudget').value = p.hours_budget||'';
+  document.getElementById('npBudget').readOnly = false;
+  document.getElementById('npBudget').style.background = '';
+  document.getElementById('npBudget').style.color = '';
+  document.getElementById('npStart').value = p.start_date||'';
   document.getElementById('npDeadline').value = p.deadline||'';
+  document.getElementById('npPeople').value = p.people_count||1;
+  const hint = document.getElementById('npBudgetHint');
+  if(hint) hint.textContent = '可直接修改工时，或重新选择日期自动计算';
   document.getElementById('createProjBtn').style.display='none';
   document.getElementById('saveProjBtn').style.display='block';
   openModal('newProjModal');
@@ -1063,8 +1079,10 @@ async function saveEditProject(){
     client: document.getElementById('npClient').value,
     contract_amount: parseFloat(document.getElementById('npContract').value)||0,
     area: parseFloat(document.getElementById('npArea').value)||0,
-    hours_budget: parseInt(document.getElementById('npBudget').value)||480,
+    hours_budget: parseInt(document.getElementById('npBudget').value)||0,
+    start_date: document.getElementById('npStart').value||null,
     deadline: document.getElementById('npDeadline').value||null,
+    people_count: parseInt(document.getElementById('npPeople').value)||1,
   }).eq('id', id);
   btn.disabled=false; btn.textContent='保存修改';
   if(error){toast('保存失败：'+error.message);return}
@@ -1087,7 +1105,13 @@ function closeModal(id){
     document.getElementById('npContract').value='';
     document.getElementById('npArea').value='';
     document.getElementById('npBudget').value='';
+    document.getElementById('npBudget').readOnly=true;
+    document.getElementById('npBudget').style.background='var(--cream)';
+    document.getElementById('npBudget').style.color='var(--text-sub)';
+    document.getElementById('npStart').value='';
     document.getElementById('npDeadline').value='';
+    document.getElementById('npPeople').value='1';
+    const h=document.getElementById('npBudgetHint');if(h)h.textContent='';
   }
   _origCloseModal(id);
 }
@@ -1269,6 +1293,39 @@ async function doImport(){
     document.getElementById('importPreviewWrap').style.display='none';
     document.getElementById('importFileInput').value='';
   }
+}
+
+// 计算工作日（排除周六日）
+function countWorkdays(start, end){
+  let count = 0;
+  const cur = new Date(start);
+  const last = new Date(end);
+  while(cur <= last){
+    const day = cur.getDay();
+    if(day !== 0 && day !== 6) count++;
+    cur.setDate(cur.getDate() + 1);
+  }
+  return count;
+}
+
+function calcBudget(){
+  const start = document.getElementById('npStart').value;
+  const end = document.getElementById('npDeadline').value;
+  const people = parseInt(document.getElementById('npPeople').value) || 1;
+  const hint = document.getElementById('npBudgetHint');
+  if(!start || !end){ 
+    document.getElementById('npBudget').value = '';
+    if(hint) hint.textContent = '';
+    return; 
+  }
+  if(new Date(end) < new Date(start)){
+    if(hint) hint.textContent = '⚠ 截止日期不能早于开始日期';
+    return;
+  }
+  const days = countWorkdays(start, end);
+  const hours = Math.round(days * 6.5 * people);
+  document.getElementById('npBudget').value = hours;
+  if(hint) hint.textContent = `${days} 个工作日 × ${people} 人 × 6.5h = ${hours}h`;
 }
 
 function openEditEmp(id){
