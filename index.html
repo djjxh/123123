@@ -1383,6 +1383,20 @@ async function inviteEmployee(){
   renderAll();
 }
 
+async function deleteProject(id, name){
+  if(!isAdmin){toast('仅管理者可删除项目');return}
+  if(!confirm(`确认删除项目「${name}」？
+
+此操作不可恢复，该项目下的工时记录也将一并删除。`))return;
+  const secondConfirm = prompt(`请输入项目名称「${name}」确认删除：`);
+  if(secondConfirm !== name){toast('名称不匹配，已取消');return}
+  const {error} = await sb.from('projects').delete().eq('id',id);
+  if(error){toast('删除失败：'+error.message);return}
+  toast('✓ 项目已删除');
+  await loadProjects();
+  renderAll();
+}
+
 async function deleteLog(id){
   if(!isAdmin)return;
   if(!confirm('确认删除此条工时记录？'))return;
@@ -1528,6 +1542,7 @@ function renderProjectPage(){
         <td style="display:flex;gap:4px">
           <button class="btn-sm btn-blue" onclick="quickPayment('${p.id}')">回款</button>
           <button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="editProject('${p.id}')">编辑</button>
+          <button class="btn-sm btn-red" onclick="deleteProject('${p.id}','${p.name?.replace(/'/g,'')}')">删除</button>
         </td>
       </tr>`;
     }).join('')}</tbody>
