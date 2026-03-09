@@ -948,16 +948,15 @@ async function logout(){
 }
 
 // ── 监听认证状态变化 ──────────────────────────────────────────
-let _appLoaded = false;
 sb.auth.onAuthStateChange(async (event, session) => {
   if(event === 'SIGNED_OUT'){
-    _appLoaded = false;
+    currentUser=null; userProfile=null; isAdmin=false;
     document.getElementById('loginScreen').style.display='block';
     document.getElementById('mainApp').style.display='none';
     return;
   }
-  if(session?.user && !_appLoaded){
-    _appLoaded = true;
+  // SIGNED_IN（手动登录）或 INITIAL_SESSION（刷新页面恢复）都处理
+  if((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user){
     currentUser = session.user;
     await loadUserProfile();
     showApp();
@@ -1689,13 +1688,22 @@ function renderProjectPage(){
   // 风险预警
   const ra=document.getElementById('riskAlerts');
   if(ra){
-    const risky=allProjects.filter(p=>p.status!=='done'&&(
-      (p.hours_budget>0 && p.hours_used/p.hours_budget>0.85) ||
-      (p.contract_amount>0 && p.labor_cost/p.contract_amount>0.7)));
+    const risky=allProjects.filter(p=>{
+      if(p.status==='done') return false;
+      const hb = parseFloat(p.hours_budget)||0;
+      const hu = parseFloat(p.hours_used)||0;
+      const ca = parseFloat(p.contract_amount)||0;
+      const lc = parseFloat(p.labor_cost)||0;
+      return (hb>0 && hu/hb>0.85) || (ca>0 && lc/ca>0.7);
+    });
     ra.innerHTML=risky.map(p=>{
-      const hoursPct = p.hours_budget>0 ? Math.round(calcAdjustedHours(p.hours_used||0)/p.hours_budget*100) : 0;
-      const costPct = p.contract_amount>0 ? Math.round((p.labor_cost||0)/p.contract_amount*100) : 0;
-      return `<div class="notice red">⚠ <strong>${p.name?.slice(0,16)}</strong> — 工时消耗 ${hoursPct}%${p.contract_amount>0?`，人力成本占合同 ${costPct}%`:'，合同额未填写'}</div>`;
+      const hb = parseFloat(p.hours_budget)||0;
+      const hu = parseFloat(p.hours_used)||0;
+      const ca = parseFloat(p.contract_amount)||0;
+      const lc = parseFloat(p.labor_cost)||0;
+      const hoursPct = hb>0 ? Math.round(calcAdjustedHours(hu)/hb*100) : 0;
+      const costPct = ca>0 ? Math.round(lc/ca*100) : 0;
+      return `<div class="notice red">⚠ <strong>${p.name?.slice(0,16)}</strong> — 工时消耗 ${hoursPct}%${ca>0?`，人力成本占合同 ${costPct}%`:'，合同额未填写'}</div>`;
     }).join('');
   }
   const el=document.getElementById('projTable');
