@@ -955,13 +955,22 @@ sb.auth.onAuthStateChange(async (event, session) => {
     document.getElementById('mainApp').style.display='none';
     return;
   }
-  // SIGNED_IN（手动登录）或 INITIAL_SESSION（刷新页面恢复）都处理
   if((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user){
     currentUser = session.user;
     await loadUserProfile();
     showApp();
   }
 });
+
+// 保底机制：onAuthStateChange 有时在刷新后不触发，直接检查 session
+(async () => {
+  const { data } = await sb.auth.getSession();
+  if(data?.session?.user && !currentUser){
+    currentUser = data.session.user;
+    await loadUserProfile();
+    showApp();
+  }
+})();
 
 async function loadUserProfile(){
   const uid = currentUser.id;
