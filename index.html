@@ -157,6 +157,8 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
 .badge-active{background:var(--green-soft);color:var(--green)}
 .badge-risk{background:var(--accent-soft);color:var(--accent)}
 .badge-done{background:var(--cream);color:var(--text-sub)}
+.badge-paused{background:#e8e8e8;color:#888}
+.badge-construction{background:#e8f4fd;color:#2980b9}
 .badge-warn{background:var(--gold-soft);color:var(--gold)}
 
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -404,7 +406,9 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
     <div class="chip-row" id="projFilter">
       <div class="chip active" onclick="filterProj('all',this)">全部</div>
       <div class="chip" onclick="filterProj('active',this)">进行中</div>
+      <div class="chip" onclick="filterProj('construction',this)">🏗 施工跟踪</div>
       <div class="chip" onclick="filterProj('risk',this)">⚠ 风险</div>
+      <div class="chip" onclick="filterProj('paused',this)">⏸ 已暂停</div>
       <div class="chip" onclick="filterProj('done',this)">已完结</div>
     </div>
     <div class="action-bar">
@@ -724,8 +728,14 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
       <div class="form-row">
         <div class="form-group"><label class="form-label">开始日期</label>
           <input type="date" class="form-input" id="npStart" onchange="calcBudget()"></div>
-        <div class="form-group"><label class="form-label">截止日期</label>
+        <div class="form-group"><label class="form-label">施工图交付日（合同截止）</label>
           <input type="date" class="form-input" id="npDeadline" onchange="calcBudget()"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">预计竣工日</label>
+          <input type="date" class="form-input" id="npCompletion"></div>
+        <div class="form-group"><label class="form-label" style="color:var(--text-sub);font-size:11px">施工跟踪阶段截止日，可留空</label>
+          <div style="height:32px"></div></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">参与人数</label>
@@ -740,6 +750,8 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
         <div class="form-group"><label class="form-label">项目状态</label>
           <select class="form-select" id="npStatus">
             <option value="active">进行中</option>
+            <option value="construction">施工跟踪</option>
+            <option value="paused">已暂停</option>
             <option value="done">已完结</option>
           </select></div>
       </div>
@@ -1112,6 +1124,7 @@ async function createProject(){
     hours_budget:parseInt(document.getElementById('npBudget').value)||0,
     start_date:document.getElementById('npStart').value||null,
     deadline:document.getElementById('npDeadline').value||null,
+    completion_date:document.getElementById('npCompletion').value||null,
     people_count:parseInt(document.getElementById('npPeople').value)||1,
     director_id:document.getElementById('npDirector').value||null,
     status:document.getElementById('npStatus').value||'active',
@@ -1143,6 +1156,7 @@ function editProject(id){
   document.getElementById('npPeople').value = p.people_count||1;
   document.getElementById('npDirector').value = p.director_id||'';
   document.getElementById('npStatus').value = p.status||'active';
+  document.getElementById('npCompletion').value = p.completion_date||'';
   const hint = document.getElementById('npBudgetHint');
   if(hint) hint.textContent = '可直接修改工时，或重新选择日期自动计算';
   document.getElementById('createProjBtn').style.display='none';
@@ -1164,6 +1178,7 @@ async function saveEditProject(){
     hours_budget: parseInt(document.getElementById('npBudget').value)||0,
     start_date: document.getElementById('npStart').value||null,
     deadline: document.getElementById('npDeadline').value||null,
+    completion_date: document.getElementById('npCompletion').value||null,
     people_count: parseInt(document.getElementById('npPeople').value)||1,
     director_id: document.getElementById('npDirector').value||null,
     status: document.getElementById('npStatus').value||'active',
@@ -1198,6 +1213,7 @@ function closeModal(id){
     const h=document.getElementById('npBudgetHint');if(h)h.textContent='';
     const ds=document.getElementById('npDirector');if(ds)ds.value='';
     const st=document.getElementById('npStatus');if(st)st.value='active';
+    const cp=document.getElementById('npCompletion');if(cp)cp.value='';
   }
   _origCloseModal(id);
 }
@@ -1694,7 +1710,7 @@ function renderProjectPage(){
   const ra=document.getElementById('riskAlerts');
   if(ra){
     const risky=allProjects.filter(p=>{
-      if(p.status==='done') return false;
+      if(p.status==='done' || p.status==='paused') return false;
       const hb = parseFloat(p.hours_budget)||0;
       const hu = parseFloat(p.hours_used)||0;
       const ca = parseFloat(p.contract_amount)||0;
@@ -1734,7 +1750,11 @@ function renderProjectPage(){
             <div style="width:${Math.min(pct,100)}%;height:100%;border-radius:3px;background:${pct>90?'var(--accent)':pct>70?'var(--gold)':'var(--green)'}"></div>
           </div><span class="mono" style="font-size:11px">${pct}% <span style="font-size:9px;color:var(--text-sub)" title="实际录入${Math.round(p.hours_used||0)}h × 1.2管理折算 = ${Math.round(adjHours)}h">ⓘ</span></span>
         </div></td>
-        <td><span class="badge badge-${p.status}">${p.status==='active'?'进行中':p.status==='risk'?'⚠预警':'已完结'}</span></td>
+        <td>
+          <span class="badge badge-${p.status}">${p.status==='active'?'进行中':p.status==='construction'?'🏗施工跟踪':p.status==='paused'?'⏸暂停':p.status==='risk'?'⚠预警':'已完结'}</span>
+          ${p.deadline&&p.status==='active'&&new Date(p.deadline)<new Date()?'<div style="font-size:10px;color:var(--accent);margin-top:2px">⚠施工图已超期</div>':''}
+          ${p.status==='construction'&&p.completion_date?`<div style="font-size:10px;color:var(--text-sub);margin-top:2px">预计竣工：${p.completion_date}</div>`:''}
+        </td>
         <td style="display:flex;gap:4px">
           <button class="btn-sm btn-blue" onclick="quickPayment('${p.id}')">回款</button>
           <button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="editProject('${p.id}')">编辑</button>
@@ -1776,7 +1796,7 @@ function renderProjectPage(){
           <div style="width:${Math.min(pct,100)}%;height:100%;background:${pct>90?'var(--accent)':'var(--green)'};border-radius:3px"></div>
         </div><span style="font-size:11px">${pct}%</span></div></td>
       <td class="mono">¥${hourly}/h</td>
-      <td><span class="badge badge-${p.status}">${p.status==='active'?'进行中':p.status==='risk'?'⚠预警':'已完结'}</span></td>
+      <td><span class="badge badge-${p.status}">${p.status==='active'?'进行中':p.status==='construction'?'🏗施工跟踪':p.status==='paused'?'⏸暂停':p.status==='risk'?'⚠预警':'已完结'}</span></td>
     </tr>`;
   }).join('');
 }
@@ -1791,7 +1811,7 @@ function renderEmpProjTable(){
   <tbody>${myProjs.map(p=>`<tr>
     <td class="fw6">${p.name}</td>
     <td>${p.client||'—'}</td>
-    <td><span class="badge badge-${p.status}">${p.status==='active'?'进行中':p.status==='risk'?'⚠预警':'已完结'}</span></td>
+    <td><span class="badge badge-${p.status}">${p.status==='active'?'进行中':p.status==='construction'?'🏗施工跟踪':p.status==='paused'?'⏸暂停':p.status==='risk'?'⚠预警':'已完结'}</span></td>
   </tr>`).join('')}</tbody></table>`;
 }
 
