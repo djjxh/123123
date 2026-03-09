@@ -430,6 +430,12 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
     <div style="font-size:15px;font-weight:600">经营数据仅管理者可见</div>
   </div>
   <div class="admin-only">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+      <div style="font-size:13px;color:var(--text-sub)">统计月份：</div>
+      <select class="form-select" id="dashMonth" style="width:140px;font-size:13px" onchange="renderDashboard()">
+      </select>
+      <div style="font-size:11px;color:var(--text-sub)" id="dashMonthHint"></div>
+    </div>
     <div id="dashStats" class="stat-grid"></div>
     <div class="two-col">
       <div>
@@ -728,6 +734,15 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
           <input type="number" class="form-input" id="npBudget" placeholder="自动计算" style="background:var(--cream);color:var(--text-sub)" readonly></div>
       </div>
       <div id="npBudgetHint" style="font-size:11px;color:var(--text-sub);margin-bottom:12px"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">负责总监</label>
+          <select class="form-select" id="npDirector"><option value="">请选择总监</option></select></div>
+        <div class="form-group"><label class="form-label">项目状态</label>
+          <select class="form-select" id="npStatus">
+            <option value="active">进行中</option>
+            <option value="done">已完结</option>
+          </select></div>
+      </div>
       <button class="btn-primary" id="createProjBtn" onclick="createProject()">创建项目</button>
       <button class="btn-primary" id="saveProjBtn" style="display:none;background:var(--green)" onclick="saveEditProject()">保存修改</button>
     </div></div></div>
@@ -810,6 +825,58 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
           <input type="number" class="form-input" id="editEmpCost" placeholder="120"></div>
       </div>
       <button class="btn-primary" id="editEmpBtn" onclick="saveEditEmp()">保存修改</button>
+    </div></div></div>
+
+<!-- 编辑工时弹窗 -->
+<div class="modal-overlay" id="editLogModal" onclick="closeModalOutside(event,'editLogModal')">
+  <div class="modal-box"><div class="modal-handle"></div>
+    <div class="modal-title"><button class="modal-close" onclick="closeModal('editLogModal')">×</button>编辑工时记录</div>
+    <div class="modal-body">
+      <input type="hidden" id="editLogId">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">员工</label>
+          <select class="form-select" id="editLogEmp"></select></div>
+        <div class="form-group"><label class="form-label">项目</label>
+          <select class="form-select" id="editLogProj"></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">日期</label>
+          <input type="date" class="form-input" id="editLogDate"></div>
+        <div class="form-group"><label class="form-label">工时（h）</label>
+          <input type="number" class="form-input" id="editLogHours" step="0.5" min="0.5"></div>
+      </div>
+      <div class="form-group"><label class="form-label">阶段</label>
+        <input type="text" class="form-input" id="editLogStage" placeholder="飞书导入"></div>
+      <div class="form-group"><label class="form-label">备注</label>
+        <input type="text" class="form-input" id="editLogNote"></div>
+      <button class="btn-primary" id="editLogBtn" onclick="saveEditLog()">保存修改</button>
+    </div></div></div>
+
+<!-- 编辑回款弹窗 -->
+<div class="modal-overlay" id="editPayModal" onclick="closeModalOutside(event,'editPayModal')">
+  <div class="modal-box"><div class="modal-handle"></div>
+    <div class="modal-title"><button class="modal-close" onclick="closeModal('editPayModal')">×</button>编辑回款记录</div>
+    <div class="modal-body">
+      <input type="hidden" id="editPayId">
+      <div class="form-group"><label class="form-label">所属项目</label>
+        <select class="form-select" id="editPayProj"></select></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">类型</label>
+          <select class="form-select" id="editPayType">
+            <option>回款（合同款）</option><option>首付款</option><option>中期款</option>
+            <option>尾款</option><option>报销（差旅）</option>
+            <option>报销（打图/模型）</option><option>外包付款</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">金额（万元）</label>
+          <input type="number" class="form-input" id="editPayAmt" placeholder="0.00"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">日期</label>
+          <input type="date" class="form-input" id="editPayDate"></div>
+        <div class="form-group"><label class="form-label">备注</label>
+          <input type="text" class="form-input" id="editPayNote" placeholder="可选"></div>
+      </div>
+      <button class="btn-primary" id="editPayBtn" onclick="saveEditPayment()">保存修改</button>
     </div></div></div>
 
 <script>
@@ -990,6 +1057,13 @@ function populateProjSelects(){
 }
 
 function populateEmpSelects(){
+  // 填充负责总监下拉（只显示admin角色）
+  const dirSel = document.getElementById('npDirector');
+  if(dirSel){
+    const admins = allEmployees.filter(e=>e.role==='admin');
+    dirSel.innerHTML = '<option value="">请选择总监</option>' +
+      admins.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+  }
   const el=document.getElementById('aEmp');
   if(!el)return;
   el.innerHTML=allEmployees.map(e=>`<option value="${e.id}">${e.name}（${e.job_title||'员工'}）</option>`).join('');
@@ -1035,6 +1109,8 @@ async function createProject(){
     start_date:document.getElementById('npStart').value||null,
     deadline:document.getElementById('npDeadline').value||null,
     people_count:parseInt(document.getElementById('npPeople').value)||1,
+    director_id:document.getElementById('npDirector').value||null,
+    status:document.getElementById('npStatus').value||'active',
     created_by:userProfile.id
   });
   btn.disabled=false; btn.textContent='创建项目';
@@ -1061,6 +1137,8 @@ function editProject(id){
   document.getElementById('npStart').value = p.start_date||'';
   document.getElementById('npDeadline').value = p.deadline||'';
   document.getElementById('npPeople').value = p.people_count||1;
+  document.getElementById('npDirector').value = p.director_id||'';
+  document.getElementById('npStatus').value = p.status||'active';
   const hint = document.getElementById('npBudgetHint');
   if(hint) hint.textContent = '可直接修改工时，或重新选择日期自动计算';
   document.getElementById('createProjBtn').style.display='none';
@@ -1083,6 +1161,8 @@ async function saveEditProject(){
     start_date: document.getElementById('npStart').value||null,
     deadline: document.getElementById('npDeadline').value||null,
     people_count: parseInt(document.getElementById('npPeople').value)||1,
+    director_id: document.getElementById('npDirector').value||null,
+    status: document.getElementById('npStatus').value||'active',
   }).eq('id', id);
   btn.disabled=false; btn.textContent='保存修改';
   if(error){toast('保存失败：'+error.message);return}
@@ -1112,6 +1192,8 @@ function closeModal(id){
     document.getElementById('npDeadline').value='';
     document.getElementById('npPeople').value='1';
     const h=document.getElementById('npBudgetHint');if(h)h.textContent='';
+    const ds=document.getElementById('npDirector');if(ds)ds.value='';
+    const st=document.getElementById('npStatus');if(st)st.value='active';
   }
   _origCloseModal(id);
 }
@@ -1271,6 +1353,15 @@ async function doImport(){
     );
     if(!proj){ fail++; continue; }
 
+    // 去重：同员工+项目+日期+任务名已存在则跳过
+    const noteStr = `${row.task}（修改${row.revision}次）`.slice(0,200);
+    const exists = allLogs.find(l=>
+      l.employee_id===emp.id &&
+      l.project_id===proj.id &&
+      l.log_date===row.date &&
+      l.note===noteStr
+    );
+    if(exists){ fail++; continue; }
     // 写入 time_logs
     const {error} = await sb.from('time_logs').insert({
       employee_id: emp.id,
@@ -1278,7 +1369,7 @@ async function doImport(){
       stage:       '飞书导入',
       log_date:    row.date,
       hours:       row.hours,
-      note:        `${row.task}（修改${row.revision}次）`.slice(0,200),
+      note:        noteStr,
       created_by:  currentUser.id,
     });
     if(error) fail++; else success++;
@@ -1406,6 +1497,84 @@ async function deleteLog(id){
   renderAll();
 }
 
+// ── 编辑工时 ──────────────────────────────────────────────────
+function editLog(id){
+  const l = allLogs.find(x=>x.id===id);
+  if(!l) return;
+  document.getElementById('editLogId').value = id;
+  document.getElementById('editLogDate').value = l.log_date||'';
+  document.getElementById('editLogHours').value = l.hours||'';
+  document.getElementById('editLogStage').value = l.stage||'';
+  document.getElementById('editLogNote').value = l.note||'';
+  const empSel = document.getElementById('editLogEmp');
+  empSel.innerHTML = allEmployees.map(e=>`<option value="${e.id}" ${e.id===l.employee_id?'selected':''}>${e.name}</option>`).join('');
+  const projSel = document.getElementById('editLogProj');
+  projSel.innerHTML = allProjects.map(p=>`<option value="${p.id}" ${p.id===l.project_id?'selected':''}>${p.name}</option>`).join('');
+  openModal('editLogModal');
+}
+
+async function saveEditLog(){
+  const id = document.getElementById('editLogId').value;
+  const btn = document.getElementById('editLogBtn');
+  btn.disabled=true; btn.textContent='保存中…';
+  const {error} = await sb.from('time_logs').update({
+    employee_id: document.getElementById('editLogEmp').value,
+    project_id: document.getElementById('editLogProj').value,
+    log_date: document.getElementById('editLogDate').value,
+    hours: parseFloat(document.getElementById('editLogHours').value)||0,
+    stage: document.getElementById('editLogStage').value,
+    note: document.getElementById('editLogNote').value,
+  }).eq('id', id);
+  btn.disabled=false; btn.textContent='保存修改';
+  if(error){toast('保存失败：'+error.message);return}
+  closeModal('editLogModal');
+  toast('✓ 工时记录已更新');
+  await loadLogs();
+  renderAll();
+}
+
+// ── 编辑/删除回款 ─────────────────────────────────────────────
+function editPayment(id){
+  const p = allPayments.find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('editPayId').value = id;
+  document.getElementById('editPayAmt').value = p.amount||'';
+  document.getElementById('editPayDate').value = p.payment_date||'';
+  document.getElementById('editPayNote').value = p.note||'';
+  document.getElementById('editPayType').value = p.type||'';
+  const sel = document.getElementById('editPayProj');
+  sel.innerHTML = allProjects.map(pr=>`<option value="${pr.id}" ${pr.id===p.project_id?'selected':''}>${pr.name}</option>`).join('');
+  openModal('editPayModal');
+}
+
+async function saveEditPayment(){
+  const id = document.getElementById('editPayId').value;
+  const btn = document.getElementById('editPayBtn');
+  btn.disabled=true; btn.textContent='保存中…';
+  const {error} = await sb.from('payments').update({
+    project_id: document.getElementById('editPayProj').value,
+    type: document.getElementById('editPayType').value,
+    amount: parseFloat(document.getElementById('editPayAmt').value)||0,
+    payment_date: document.getElementById('editPayDate').value,
+    note: document.getElementById('editPayNote').value,
+  }).eq('id', id);
+  btn.disabled=false; btn.textContent='保存修改';
+  if(error){toast('保存失败：'+error.message);return}
+  closeModal('editPayModal');
+  toast('✓ 回款记录已更新');
+  await loadPayments();
+  renderAll();
+}
+
+async function deletePayment(id){
+  if(!confirm('确认删除此条回款记录？'))return;
+  const {error} = await sb.from('payments').delete().eq('id',id);
+  if(error){toast('删除失败：'+error.message);return}
+  toast('✓ 已删除');
+  await loadPayments();
+  renderAll();
+}
+
 // ══════════════════════════════════════════════════════════════
 // 渲染函数
 // ══════════════════════════════════════════════════════════════
@@ -1476,7 +1645,10 @@ function renderAdminTime(){
     <td>${l.stage}</td>
     <td class="mono">${l.hours}h</td>
     <td>${l.log_date}</td>
-    <td><button class="btn-sm btn-red" onclick="deleteLog('${l.id}')">删除</button></td>
+    <td style="display:flex;gap:4px">
+      <button class="btn-sm btn-blue" onclick="editLog('${l.id}')">编辑</button>
+      <button class="btn-sm btn-red" onclick="deleteLog('${l.id}')">删除</button>
+    </td>
   </tr>`).join('')}</tbody></table>`;
 }
 
@@ -1523,12 +1695,16 @@ function renderProjectPage(){
   if(!el)return;
   if(!list.length){el.innerHTML='<div class="empty">暂无项目</div>';return}
   el.innerHTML=`<div class="card" style="margin-bottom:16px"><div style="overflow-x:auto"><table class="data-table">
-    <thead><tr><th>项目名称</th><th>合同额</th><th>已回款</th><th>人力成本</th><th>利润率</th><th>工时进度</th><th>状态</th><th>操作</th></tr></thead>
+    <thead><tr><th>项目名称</th><th>合同额</th><th>已回款</th><th>人力成本</th><th>利润率</th><th>工时进度 <span title="实际工时含主管10%+总监10%管理折算" style="cursor:help;color:var(--gold)">ⓘ</span></th><th>状态</th><th>操作</th></tr></thead>
     <tbody>${list.map(p=>{
       const margin=p.contract_amount>0?Math.round((p.contract_amount-p.labor_cost)/p.contract_amount*100):0;
-      const pct=p.hours_budget>0?Math.round(p.hours_used/p.hours_budget*100):0;
+      const adjHours = calcAdjustedHours(p.hours_used||0);
+      const pct=p.hours_budget>0?Math.round(adjHours/p.hours_budget*100):0;
       return `<tr>
-        <td class="fw6" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</td>
+        <td class="fw6" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          ${p.name}
+          ${p.director_id?`<div style="font-size:10px;color:var(--text-sub)">${allEmployees.find(e=>e.id===p.director_id)?.name||''}总监</div>`:''}
+        </td>
         <td class="mono">¥${p.contract_amount}万</td>
         <td class="mono">¥${(p.paid_amount||0).toFixed(1)}万</td>
         <td class="mono">¥${(p.labor_cost||0).toFixed(1)}万</td>
@@ -1536,7 +1712,7 @@ function renderProjectPage(){
         <td><div style="display:flex;align-items:center;gap:6px">
           <div style="width:60px;height:5px;background:var(--cream);border-radius:3px;overflow:hidden">
             <div style="width:${Math.min(pct,100)}%;height:100%;border-radius:3px;background:${pct>90?'var(--accent)':pct>70?'var(--gold)':'var(--green)'}"></div>
-          </div><span class="mono" style="font-size:11px">${pct}%</span>
+          </div><span class="mono" style="font-size:11px">${pct}% <span style="font-size:9px;color:var(--text-sub)" title="实际录入${Math.round(p.hours_used||0)}h × 1.2管理折算 = ${Math.round(adjHours)}h">ⓘ</span></span>
         </div></td>
         <td><span class="badge badge-${p.status}">${p.status==='active'?'进行中':p.status==='risk'?'⚠预警':'已完结'}</span></td>
         <td style="display:flex;gap:4px">
@@ -1558,6 +1734,10 @@ function renderProjectPage(){
       <td><span class="badge ${p.type.includes('回款')||p.type.includes('款')?'badge-active':'badge-warn'}">${p.type}</span></td>
       <td class="mono fw6">¥${p.amount}万</td>
       <td style="color:var(--text-sub)">${p.note||'—'}</td>
+      <td style="display:flex;gap:4px">
+        <button class="btn-sm btn-blue" onclick="editPayment('${p.id}')">编辑</button>
+        <button class="btn-sm btn-red" onclick="deletePayment('${p.id}')">删除</button>
+      </td>
     </tr>`).join('')}</tbody></table>`;
   }
   // 横向对比
@@ -1602,18 +1782,56 @@ function quickPayment(projId){
 }
 
 // ── 经营看板 ──────────────────────────────────────────────────
+function initDashMonthPicker(){
+  const sel = document.getElementById('dashMonth');
+  if(!sel) return;
+  // 生成最近12个月选项
+  const months = [];
+  const now = new Date();
+  for(let i=0;i<12;i++){
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    const val = d.toISOString().slice(0,7);
+    const label = `${d.getFullYear()}年${d.getMonth()+1}月`;
+    months.push({val,label});
+  }
+  sel.innerHTML = months.map((m,i)=>`<option value="${m.val}"${i===0?' selected':''}>${m.label}</option>`).join('');
+}
+
+function getDashMonth(){
+  const sel = document.getElementById('dashMonth');
+  return sel ? sel.value : new Date().toISOString().slice(0,7);
+}
+
+// 工时折算：实际录入工时 × 1.2（含主管10%+总监10%管理折算）
+function calcAdjustedHours(rawHours){
+  return rawHours * 1.2;
+}
+
 function renderDashboard(){
   if(!isAdmin)return;
+  initDashMonthPicker();
+  const monthStr = getDashMonth();
+  // 月份内的工时日志
+  const monthLogs = allLogs.filter(l=>l.log_date?.startsWith(monthStr));
+  const rawMonthH = monthLogs.reduce((s,l)=>s+parseFloat(l.hours||0),0);
+  const adjMonthH = calcAdjustedHours(rawMonthH);
+  const monthCost = allEmployees.reduce((s,e)=>{
+    const h = monthLogs.filter(l=>l.employee_id===e.id).reduce((a,l)=>a+parseFloat(l.hours||0),0);
+    return s + calcAdjustedHours(h) * (e.hourly_cost||120) / 10000;
+  },0);
+  // 全局统计（不按月）
   const totalContract=allProjects.reduce((s,p)=>s+(p.contract_amount||0),0);
   const totalPaid=allProjects.reduce((s,p)=>s+(p.paid_amount||0),0);
   const totalCost=allProjects.reduce((s,p)=>s+(p.labor_cost||0),0);
   const avgMargin=totalContract>0?Math.round((totalContract-totalCost)/totalContract*100):0;
+  const hint = document.getElementById('dashMonthHint');
+  if(hint) hint.textContent = `本月录入 ${rawMonthH.toFixed(0)}h，含管理折算 ${adjMonthH.toFixed(0)}h，人力成本 ¥${monthCost.toFixed(2)}万`;
   const ds=document.getElementById('dashStats');
   if(ds) ds.innerHTML=`
     <div class="stat-card green"><div class="s-label">合同总额</div><div class="s-val">${totalContract.toFixed(1)}<span class="s-unit">万</span></div></div>
     <div class="stat-card gold"><div class="s-label">综合利润率</div><div class="s-val">${avgMargin}<span class="s-unit">%</span></div></div>
     <div class="stat-card red"><div class="s-label">应收账款</div><div class="s-val">${(totalContract-totalPaid).toFixed(1)}<span class="s-unit">万</span></div><div class="s-change dn">未回款</div></div>
-    <div class="stat-card blue"><div class="s-label">已发生人力成本</div><div class="s-val">${totalCost.toFixed(1)}<span class="s-unit">万</span></div></div>`;
+    <div class="stat-card blue"><div class="s-label">${monthStr.slice(0,7)} 人力成本</div><div class="s-val">${monthCost.toFixed(2)}<span class="s-unit">万</span></div></div>`;
   renderOwnerEquity(totalContract,totalCost,totalPaid);
   renderActionAdvice();
   renderEmpRank();
@@ -1647,14 +1865,15 @@ function renderActionAdvice(){
 function renderEmpRank(){
   const el=document.getElementById('empRankBody');
   if(!el)return;
-  const monthStr=new Date().toISOString().slice(0,7);
+  const monthStr=getDashMonth();
   const ranked=allEmployees.map(e=>{
-    const h=allLogs.filter(l=>l.employee_id===e.id&&l.log_date?.startsWith(monthStr))
+    const rawH=allLogs.filter(l=>l.employee_id===e.id&&l.log_date?.startsWith(monthStr))
       .reduce((s,l)=>s+parseFloat(l.hours||0),0);
+    const h=calcAdjustedHours(rawH);
     const output=h*(e.hourly_cost||120)/10000;
-    const load=Math.round(h/MONTHLY_CAP*100);
-    return {...e,h,output,load};
-  }).sort((a,b)=>b.h-a.h);
+    const load=Math.round(rawH/MONTHLY_CAP*100);
+    return {...e,h,rawH,output,load};
+  }).sort((a,b)=>b.rawH-a.rawH);
   el.innerHTML=ranked.map((e,i)=>`<tr>
     <td style="color:var(--text-sub);font-size:12px">${i+1}</td>
     <td><div style="display:flex;align-items:center;gap:8px">
