@@ -926,7 +926,8 @@ async function loginWithPassword() {
   const {error} = await sb.auth.signInWithPassword({ email, password });
   btn.disabled = false; btn.textContent = '登录';
   if(error){showLoginError('邮箱或密码错误');return}
-  // 成功后 onAuthStateChange 自动触发
+  // 成功后 onAuthStateChange 自动触发，重置锁让它能执行
+  _authHandled = false;
 }
 
 function showLoginError(msg){
@@ -956,6 +957,7 @@ sb.auth.onAuthStateChange(async (event, session) => {
     return;
   }
   if((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user){
+    _authHandled = true;
     currentUser = session.user;
     await loadUserProfile();
     showApp();
@@ -963,9 +965,12 @@ sb.auth.onAuthStateChange(async (event, session) => {
 });
 
 // 保底机制：onAuthStateChange 有时在刷新后不触发，直接检查 session
+let _authHandled = false;
 (async () => {
+  await new Promise(r => setTimeout(r, 800)); // 等 onAuthStateChange 先执行
   const { data } = await sb.auth.getSession();
-  if(data?.session?.user && !currentUser){
+  if(data?.session?.user && !_authHandled){
+    _authHandled = true;
     currentUser = data.session.user;
     await loadUserProfile();
     showApp();
