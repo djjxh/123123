@@ -921,7 +921,23 @@ let allLogs = [];
 let allPayments = [];
 
 // ── 算法常量 ──────────────────────────────────────────────────
-const MONTHLY_CAP = 184;  // 23工作日×8h
+// 动态计算当月工作日（排除周六日）× 6.5小时
+function getMonthlyWorkdays(yearMonth){
+  // yearMonth格式: '2026-03'
+  const [y, m] = (yearMonth || new Date().toISOString().slice(0,7)).split('-').map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  let workdays = 0;
+  for(let d = 1; d <= daysInMonth; d++){
+    const day = new Date(y, m-1, d).getDay();
+    if(day !== 0 && day !== 6) workdays++;
+  }
+  return workdays;
+}
+function getMonthlyCapForMonth(yearMonth){
+  return getMonthlyWorkdays(yearMonth) * 6.5;
+}
+// 当月工时上限（动态）
+const MONTHLY_CAP = getMonthlyCapForMonth(new Date().toISOString().slice(0,7));
 const TYPE_H = {residential:0.70,commercial:0.90,office:0.85,hotel:1.10};
 const LVL_M  = {standard:1.0,premium:1.35,luxury:1.80};
 
@@ -1689,7 +1705,7 @@ function renderEmpLoadBars(){
           <div class="emp-av" style="background:${e.avatar_color||'#888'};width:24px;height:24px;font-size:10px">${(e.name||'?')[0]}</div>
           ${e.name} <span style="font-size:11px;color:var(--text-sub)">${e.job_title||''}</span>
         </span>
-        <span class="mono">${h.toFixed(0)}h / ${MONTHLY_CAP}h &nbsp;<strong>${pct}%</strong></span>
+        <span class="mono">${h.toFixed(0)}h / ${getMonthlyCapForMonth(new Date().toISOString().slice(0,7)).toFixed(0)}h &nbsp;<strong>${pct}%</strong></span>
       </div>
       <div class="prog-track"><div class="prog-fill ${cls}" style="width:${Math.min(pct,100)}%"></div></div>
     </div>`;
@@ -1911,7 +1927,8 @@ function renderEmpRank(){
       .reduce((s,l)=>s+parseFloat(l.hours||0),0);
     const h=calcAdjustedHours(rawH);
     const output=h*(e.hourly_cost||120)/10000;
-    const load=Math.round(rawH/MONTHLY_CAP*100);
+    const cap = getMonthlyCapForMonth(monthStr);
+    const load=Math.round(rawH/cap*100);
     return {...e,h,rawH,output,load};
   }).sort((a,b)=>b.rawH-a.rawH);
   el.innerHTML=ranked.map((e,i)=>`<tr>
