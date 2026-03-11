@@ -613,7 +613,7 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
 
       <div style="background:var(--cream);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:11px;color:var(--text-sub);line-height:1.7">
         📋 自动识别列名：<strong style="color:var(--ink)">负责人、群组、任务内容、日期、工时、修改次数、任务进度</strong><br>
-        只导入「任务进度 = 已完成」的行。列名需与飞书表格完全一致。
+        导入「已完成」和「未完成」的行，未完成工时备注自动标注「待返工」。列名需与飞书表格完全一致。
       </div>
 
       <div id="importDropZone"
@@ -1302,8 +1302,9 @@ async function parseImportFile(file){
     return null;
   }
 
-  // 只取已完成的行
+  // 取已完成和未完成的行（未完成工时仍需记录成本）
   const DONE_KEYWORDS = ['已完成','完成','done','Done','DONE'];
+  const UNDONE_KEYWORDS = ['未完成','进行中','处理中','待完成','返工'];
   importRows = [];
   const warns = [];
   let skipped = 0;
@@ -1311,7 +1312,9 @@ async function parseImportFile(file){
   for(const row of raw){
     const statusKey = findCol(row, COL.status);
     const statusVal = statusKey ? String(row[statusKey]).trim() : '';
-    if(!DONE_KEYWORDS.includes(statusVal)){ skipped++; continue; }
+    const isDone = DONE_KEYWORDS.includes(statusVal);
+    const isUndone = UNDONE_KEYWORDS.includes(statusVal);
+    if(!isDone && !isUndone){ skipped++; continue; }
 
     const personKey   = findCol(row, COL.person);
     const projectKey  = findCol(row, COL.project);
@@ -1344,7 +1347,7 @@ async function parseImportFile(file){
     const finalHours = hours > 0 ? hours : 1;
     if(hours <= 0) { warns.push(`「${person} / ${task.slice(0,10)}」未填工时，已按1小时计入`); }
 
-    importRows.push({ person, project, task, date:dateStr, hours:finalHours, revision:rev, status:statusVal });
+    importRows.push({ person, project, task, date:dateStr, hours:finalHours, revision:rev, status:statusVal, undone:isUndone });
   }
 
   // 渲染预览
@@ -1357,7 +1360,7 @@ async function parseImportFile(file){
       <td>${r.date}</td>
       <td>${r.hours}h</td>
       <td>${r.revision}次</td>
-      <td><span style="color:var(--green);font-weight:600">✓</span></td>
+      <td>${r.undone?'<span style="color:var(--accent);font-weight:600">未完成</span>':'<span style="color:var(--green);font-weight:600">已完成</span>'}</td>
     </tr>`).join('');
 
   document.getElementById('importSummary').textContent =
@@ -1370,7 +1373,7 @@ async function parseImportFile(file){
     : '';
 
   document.getElementById('importPreviewWrap').style.display = importRows.length ? 'block' : 'none';
-  if(!importRows.length) toast('没有找到「已完成」的记录，请检查列名和任务进度字段');
+  if(!importRows.length) toast('没有找到可导入的记录，请检查列名和任务进度字段');
 }
 
 async function doImport(){
@@ -1392,7 +1395,9 @@ async function doImport(){
     if(!proj){ fail++; continue; }
 
     // 去重：同员工+项目+日期+任务名已存在则跳过
-    const noteStr = `${row.task}（修改${row.revision}次）`.slice(0,200);
+    const noteStr = (row.undone
+      ? `【待返工】${row.task}（修改${row.revision}次）`
+      : `${row.task}（修改${row.revision}次）`).slice(0,200);
     const exists = allLogs.find(l=>
       l.employee_id===emp.id &&
       l.project_id===proj.id &&
