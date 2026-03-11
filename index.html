@@ -477,7 +477,7 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
         <div class="card"><div id="anomalyList" style="padding:4px 0 8px"></div></div>
       </div>
       <div>
-        <div class="section-hd"><div class="section-title">多项目利润预测 <span class="intel-badge live">EVM</span></div></div>
+        <div class="section-hd"><div class="section-title">多项目利润预测 <span class="intel-badge live">EVM</span> <span style="cursor:help;color:var(--gold);font-size:13px;font-weight:400" title="挣值管理（Earned Value Management）：综合工时进度和成本，预测项目最终盈亏。数据来源于实际录入工时和合同金额。">ⓘ</span></div></div>
         <div class="card"><div id="evmTable" style="padding:4px 0 8px"></div></div>
         <div class="section-hd"><div class="section-title">负载平衡 <span class="intel-badge live">实时</span></div></div>
         <div class="card">
@@ -485,7 +485,7 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
             <div class="card-action" onclick="runLoadBalance()">重新分析</div></div>
           <div id="loadBalanceResult" style="padding:4px 0 8px"></div>
         </div>
-        <div class="section-hd"><div class="section-title">最优排期 <span class="intel-badge live">EDD</span></div></div>
+        <div class="section-hd"><div class="section-title">最优排期 <span class="intel-badge live">EDD</span> <span style="cursor:help;color:var(--gold);font-size:13px;font-weight:400" title="最早截止日期优先（Earliest Due Date）：按施工图交付日排序，截止日越近优先级越高。施工跟踪阶段的项目单独显示竣工倒计时。">ⓘ</span></div></div>
         <div class="card"><div id="ganttView" style="padding:12px 18px 14px"></div></div>
       </div>
     </div>
@@ -2139,7 +2139,13 @@ function renderEVM(){
   const active=allProjects.filter(p=>p.status!=='done');
   if(!active.length){el.innerHTML='<div class="empty">暂无进行中项目</div>';return}
   el.innerHTML=`<table class="data-table" style="font-size:12px">
-    <thead><tr><th>项目</th><th>CPI</th><th>EAC预测</th><th>预测利润率</th><th>预警</th></tr></thead>
+    <thead><tr>
+      <th>项目</th>
+      <th>CPI <span style="cursor:help;color:var(--gold);font-weight:400" title="成本绩效指数（Cost Performance Index）：CPI=挣值/实际成本。>1说明成本低于预算，<1说明超支。">ⓘ</span></th>
+      <th>EAC预测 <span style="cursor:help;color:var(--gold);font-weight:400" title="完工估算（Estimate At Completion）：按当前成本效率预测项目最终总成本。EAC越接近合同额，利润空间越小。">ⓘ</span></th>
+      <th>预测利润率 <span style="cursor:help;color:var(--gold);font-weight:400" title="按当前CPI推算，项目完成时的预期利润率 = (合同额-EAC)/合同额。低于20%需关注。">ⓘ</span></th>
+      <th>预警 <span style="cursor:help;color:var(--gold);font-weight:400" title="✓健康：CPI≥1且利润率>35%；关注：利润率偏低；注意：CPI<1成本偏高；⚠成本失控：CPI<0.8严重超支。">ⓘ</span></th>
+    </tr></thead>
     <tbody>${active.map(p=>{
       const BAC=p.contract_amount||0;
       const AC=p.labor_cost||0;
@@ -2206,25 +2212,41 @@ function runLoadBalance(){renderLoadBalance();toast('✓ 负载分析完成');}
 function renderGantt(){
   const el=document.getElementById('ganttView');
   if(!el)return;
-  const active=allProjects.filter(p=>p.status!=='done'&&p.deadline)
+  // 进行中项目按施工图截止日排序；施工跟踪按竣工日；排除已暂停/已完结
+  const designProjs = allProjects.filter(p=>p.status==='active'&&p.deadline)
     .sort((a,b)=>new Date(a.deadline)-new Date(b.deadline));
+  const constructionProjs = allProjects.filter(p=>p.status==='construction');
+  const active = [...designProjs, ...constructionProjs];
   if(!active.length){el.innerHTML='<div style="color:var(--text-sub);font-size:12px">请在项目中设置截止日期以启用甘特排期</div>';return}
   const today=new Date();
   el.innerHTML=active.map((p,i)=>{
-    const dl=new Date(p.deadline);
+    const isConstruction = p.status==='construction';
+    // 施工跟踪用竣工日，设计阶段用施工图截止日
+    const dateStr = isConstruction ? p.completion_date : p.deadline;
+    const label = isConstruction ? '预计竣工' : '施工图截止';
+    const tag = isConstruction ? '<span style="font-size:9px;background:#e8f4fd;color:#2980b9;padding:1px 5px;border-radius:3px;margin-left:4px">施工跟踪</span>' : '';
+    if(!dateStr){
+      return `<div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px">
+          <span class="fw6">${i+1}. ${p.name?.slice(0,14)}${tag}</span>
+          <span style="color:var(--text-sub);font-size:11px">未设置竣工日</span>
+        </div>
+      </div>`;
+    }
+    const dl=new Date(dateStr);
     const days=Math.ceil((dl-today)/(864e5));
-    const color=days<14?'var(--accent)':days<30?'var(--gold)':'var(--green)';
+    const color=isConstruction?'#2980b9':days<14?'var(--accent)':days<30?'var(--gold)':'var(--green)';
     const w=Math.max(5,Math.min(100,100-days/180*100));
     return `<div style="margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px">
-        <span class="fw6">${i+1}. ${p.name?.slice(0,14)}</span>
-        <span style="color:${color};font-size:11px">${days>0?`剩余${days}天`:'已超期'}</span>
+        <span class="fw6">${i+1}. ${p.name?.slice(0,14)}${tag}</span>
+        <span style="color:${color};font-size:11px">${days>0?`剩余${days}天`:isConstruction?`已过预计竣工`:'已超期'}</span>
       </div>
       <div style="height:18px;background:var(--cream);border-radius:4px;overflow:hidden">
         <div style="height:100%;width:${w}%;background:${color};opacity:0.75;border-radius:4px;
           display:flex;align-items:center;padding-left:8px">
           <span style="font-size:10px;color:white;font-weight:600;white-space:nowrap">
-            截止 ${p.deadline}
+            ${label} ${dateStr}
           </span>
         </div>
       </div>
