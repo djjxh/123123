@@ -1413,17 +1413,21 @@ async function parseImportFile(file){
     const hours   = hoursKey   ? parseFloat(row[hoursKey]) || 0 : 0;
     const rev     = revKey     ? parseInt(row[revKey])   || 0   : 0;
 
-    // 日期处理
+    // 日期处理（用本地时间避免UTC偏移导致日期减一天）
     let dateStr = '';
     if(dateKey && row[dateKey]){
       const d = row[dateKey];
       if(d instanceof Date){
-        dateStr = d.toISOString().split('T')[0];
+        // 用本地时间格式化，防止 toISOString() 的 UTC 偏移（CST+8会导致日期减一天）
+        const yy = d.getFullYear();
+        const mm = String(d.getMonth()+1).padStart(2,'0');
+        const dd = String(d.getDate()).padStart(2,'0');
+        dateStr = `${yy}-${mm}-${dd}`;
       } else {
         dateStr = String(d).slice(0,10);
       }
     }
-    if(!dateStr) dateStr = new Date().toISOString().split('T')[0];
+    if(!dateStr){ warns.push(`「${person} / ${task.slice(0,10)}」日期为空，已跳过`); continue; }
 
     if(!person)  { warns.push('有行缺少「负责人」，已跳过'); continue; }
     if(!project) { warns.push(`「${person}」的记录缺少「群组」，已跳过`); continue; }
