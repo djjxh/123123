@@ -1405,7 +1405,7 @@ async function doImport(){
     );
     if(!proj){ fail++; continue; }
 
-    // 去重：同员工+项目+日期+任务名已存在则跳过
+    // 去重：同员工+项目+日期+任务名已存在则更新工时，否则插入
     const noteStr = (row.undone
       ? `【待返工】${row.task}（修改${row.revision}次）`
       : `${row.task}（修改${row.revision}次）`).slice(0,200);
@@ -1415,7 +1415,13 @@ async function doImport(){
       l.log_date===row.date &&
       l.note===noteStr
     );
-    if(exists){ fail++; continue; }
+    if(exists){
+      // 工时一致则跳过，不一致则更新
+      if(parseFloat(exists.hours) === row.hours){ fail++; continue; }
+      const {error} = await sb.from('time_logs').update({ hours: row.hours }).eq('id', exists.id);
+      if(error) fail++; else success++;
+      continue;
+    }
     // 写入 time_logs
     const {error} = await sb.from('time_logs').insert({
       employee_id: emp.id,
