@@ -579,12 +579,37 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
     <div class="action-bar">
       <button class="action-btn" style="background:var(--paper);color:var(--ink);border:1px solid var(--border)" onclick="openModal('importModal')">📥 导入飞书数据</button>
       <button class="action-btn" onclick="openModal('inviteModal')">＋ 添加员工</button>
+      <button class="action-btn" style="background:#fff3e0;color:#e65100;border:1px solid #ffcc80" onclick="openModal('fixAmountModal')">🔧 金额单位修正</button>
     </div>
     <div class="card">
       <table class="data-table">
         <thead><tr><th>姓名</th><th>职位</th><th>角色</th><th>小时成本</th><th>状态</th><th>操作</th></tr></thead>
         <tbody id="teamBody"></tbody>
       </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: 金额单位修正 -->
+<div class="modal-overlay" id="fixAmountModal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-title"><button class="modal-close" onclick="closeModal('fixAmountModal')">×</button>🔧 金额单位批量修正</div>
+    <div style="padding:0 20px 20px">
+      <div style="background:#fff3e0;border-radius:8px;padding:12px 14px;font-size:13px;color:#7a3a00;margin-bottom:16px;line-height:1.7">
+        ⚠️ 系统金额单位为<strong>万元</strong>，如果之前按<strong>元</strong>填写，<br>
+        点击下方按钮将所有合同金额和回款金额 <strong>÷ 10000</strong> 修正。<br>
+        <span style="color:#c62828;font-weight:600">此操作不可撤销，请确认后执行。</span>
+      </div>
+      <div style="margin-bottom:14px;font-size:13px;color:var(--text-sub)">
+        修正范围：<br>
+        · projects 表的 contract_amount 字段<br>
+        · payments 表的 amount 字段
+      </div>
+      <div id="fixAmountPreview" style="margin-bottom:14px;font-size:12px;color:var(--text-sub)"></div>
+      <div style="display:flex;gap:10px">
+        <button class="action-btn" style="flex:1;background:var(--paper);color:var(--ink);border:1px solid var(--border)" onclick="previewFixAmount()">👁 预览修正结果</button>
+        <button class="action-btn" id="doFixAmountBtn" style="flex:1;background:#e53935;color:#fff" onclick="doFixAmount()">⚡ 确认执行修正</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1271,6 +1296,58 @@ function handleImportSelect(e){
   if(file) parseImportFile(file);
 }
 
+
+// ══════════════════════════════════════════════════════════════
+// 金额单位修正工具（元 → 万元，÷10000）
+// ══════════════════════════════════════════════════════════════
+async function previewFixAmount(){
+  const preview = document.getElementById('fixAmountPreview');
+  preview.innerHTML = '加载中…';
+  const { data: projects } = await sb.from('projects').select('id,name,contract_amount').order('name');
+  const { data: payments } = await sb.from('payments').select('id,project_id,amount,type,pay_date');
+  let html = '<div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:8px">';
+  html += '<div style="font-weight:600;margin-bottom:6px">合同金额修正预览：</div>';
+  (projects||[]).forEach(p=>{
+    if(!p.contract_amount) return;
+    html += `<div>${p.name?.slice(0,16)}：${p.contract_amount} → <strong>${(p.contract_amount/10000).toFixed(4)}</strong> 万</div>`;
+  });
+  html += '<div style="font-weight:600;margin:8px 0 4px">回款金额修正预览：</div>';
+  (payments||[]).forEach(p=>{
+    if(!p.amount) return;
+    html += `<div>${p.type} ${p.pay_date}：${p.amount} → <strong>${(p.amount/10000).toFixed(4)}</strong> 万</div>`;
+  });
+  html += '</div>';
+  preview.innerHTML = html;
+}
+
+async function doFixAmount(){
+  if(!confirm('确认将所有合同金额和回款金额 ÷ 10000？此操作不可撤销！')) return;
+  const btn = document.getElementById('doFixAmountBtn');
+  btn.disabled = true; btn.textContent = '执行中…';
+
+  const { data: projects } = await sb.from('projects').select('id,contract_amount');
+  const { data: payments } = await sb.from('payments').select('id,amount');
+
+  let ok=0, err=0;
+  for(const p of (projects||[])){
+    if(!p.contract_amount) continue;
+    const { error } = await sb.from('projects').update({ contract_amount: p.contract_amount/10000 }).eq('id', p.id);
+    error ? err++ : ok++;
+  }
+  for(const p of (payments||[])){
+    if(!p.amount) continue;
+    const { error } = await sb.from('payments').update({ amount: p.amount/10000 }).eq('id', p.id);
+    error ? err++ : ok++;
+  }
+
+  btn.disabled = false; btn.textContent = '⚡ 确认执行修正';
+  toast(`修正完成：${ok} 条成功，${err} 条失败`);
+  if(ok > 0){
+    await loadAllData();
+    document.getElementById('fixAmountPreview').innerHTML = '<div style="color:var(--green);font-weight:600">✅ 修正已完成，数据已刷新</div>';
+  }
+}
+
 async function parseImportFile(file){
   // 动态加载 SheetJS
   if(!window.XLSX){
@@ -1405,20 +1482,33 @@ async function doImport(){
     );
     if(!proj){ fail++; continue; }
 
-    // 去重：同员工+项目+日期+任务名已存在则更新工时，否则插入
+    // 去重：同员工+项目+日期+任务内容（note包含task即视为同一条）
     const noteStr = (row.undone
       ? `【待返工】${row.task}（修改${row.revision}次）`
       : `${row.task}（修改${row.revision}次）`).slice(0,200);
-    const exists = allLogs.find(l=>
+    const taskCore = row.task.slice(0,20); // 用任务名前20字做模糊匹配，兼容旧格式
+    const existsList = allLogs.filter(l=>
       l.employee_id===emp.id &&
       l.project_id===proj.id &&
       l.log_date===row.date &&
-      l.note===noteStr
+      (l.note===noteStr || (l.note||'').includes(taskCore))
     );
-    if(exists){
-      // 工时一致则跳过，不一致则更新
-      if(parseFloat(exists.hours) === row.hours){ fail++; continue; }
-      const {error} = await sb.from('time_logs').update({ hours: row.hours }).eq('id', exists.id);
+    // 如果有多条重复（历史遗留），保留最新一条，删除其余
+    if(existsList.length > 1){
+      const sorted = existsList.sort((a,b)=>a.id>b.id?-1:1);
+      const toDelete = sorted.slice(1).map(l=>l.id);
+      await sb.from('time_logs').delete().in('id', toDelete);
+      const keep = sorted[0];
+      if(parseFloat(keep.hours) !== row.hours){
+        await sb.from('time_logs').update({ hours: row.hours, note: noteStr }).eq('id', keep.id);
+      }
+      success++; continue;
+    }
+    if(existsList.length === 1){
+      const exists = existsList[0];
+      // 工时一致且note一致则跳过
+      if(parseFloat(exists.hours) === row.hours && exists.note === noteStr){ fail++; continue; }
+      const {error} = await sb.from('time_logs').update({ hours: row.hours, note: noteStr }).eq('id', exists.id);
       if(error) fail++; else success++;
       continue;
     }
