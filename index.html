@@ -1292,13 +1292,20 @@ async function parseImportFile(file){
     project:  ['群组','所属项目','项目'],
     task:     ['任务内容','任务名称','任务'],
     date:     ['日期','任务日期','完成日期'],
-    hours:    ['工时','工时（小时）','实际工时'],
+    hours:    ['工时','工时（小时）','实际工时','实际工时（员工填写）','计划工时','计划工时（主管填写）'],
     revision: ['修改次数','修改次数（次）'],
     status:   ['任务进度','状态','进度'],
   };
 
   function findCol(row, candidates){
-    for(const k of candidates){ if(k in row) return k; }
+    const keys = Object.keys(row);
+    // 先精确匹配
+    for(const c of candidates){ if(c in row) return c; }
+    // 再模糊匹配：候选名是列名的前缀，或列名包含候选名
+    for(const c of candidates){
+      const found = keys.find(k => k.startsWith(c) || k.includes(c));
+      if(found) return found;
+    }
     return null;
   }
 
@@ -1384,9 +1391,13 @@ async function doImport(){
   let success=0, fail=0;
 
   for(const row of importRows){
-    // 匹配员工（按姓名）
-    const emp = allEmployees.find(e=>e.name===row.person);
-    if(!emp){ fail++; continue; }
+    // 匹配员工（按姓名，支持去空格模糊匹配）
+    const normPerson = row.person.replace(/\s/g,'');
+    const emp = allEmployees.find(e=>
+      e.name === row.person ||
+      e.name.replace(/\s/g,'') === normPerson
+    );
+    if(!emp){ fail++; console.warn('员工未匹配:', row.person); continue; }
 
     // 匹配项目（按名称，先找群组名）
     const proj = allProjects.find(p=>
