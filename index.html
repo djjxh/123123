@@ -427,6 +427,18 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
     <div class="card">
       <div id="paymentTable"><div class="loading"><span class="spinner"></span>加载中…</div></div>
     </div>
+
+    <!-- 项目成本分析 -->
+    <div class="section-hd" style="margin-top:24px">
+      <div class="section-title">📊 项目成本分析</div>
+    </div>
+    <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <select class="form-select" id="costAnalysisProjSel" style="max-width:260px" onchange="renderCostAnalysis()">
+        <option value="">请选择项目</option>
+      </select>
+      <div style="font-size:12px;color:var(--text-sub)">人力成本 = 项目奖金 + 参与期间底薪摊入</div>
+    </div>
+    <div id="costAnalysisArea"></div>
   </div>
 </div>
 
@@ -972,7 +984,16 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
         <div class="form-group"><label class="form-label">姓名</label>
           <input type="text" class="form-input" id="inviteName" placeholder="真实姓名"></div>
         <div class="form-group"><label class="form-label">职位</label>
-          <input type="text" class="form-input" id="inviteTitle" placeholder="高级设计师"></div>
+          <select class="form-select" id="inviteTitle" onchange="autoFillCost('inviteTitle','inviteCost')">
+            <option value="">请选择职位</option>
+            <option value="设计总监">设计总监</option>
+            <option value="设计主管">设计主管</option>
+            <option value="主案设计师">主案设计师</option>
+            <option value="执行设计师">执行设计师</option>
+            <option value="高级深化设计师">高级深化设计师</option>
+            <option value="深化设计师">深化设计师</option>
+            <option value="助理设计师">助理设计师</option>
+          </select></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">角色</label>
@@ -980,8 +1001,8 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
             <option value="employee">员工</option>
             <option value="admin">管理者</option>
           </select></div>
-        <div class="form-group"><label class="form-label">小时成本（元）</label>
-          <input type="number" class="form-input" id="inviteCost" placeholder="120"></div>
+        <div class="form-group"><label class="form-label">月固定薪资（元，自动填入）</label>
+          <input type="number" class="form-input" id="inviteCost" placeholder="自动填入" style="background:var(--cream);color:var(--text-sub)" readonly></div>
       </div>
       <button class="btn-primary" id="inviteBtn" onclick="inviteEmployee()">添加员工</button>
     </div></div></div>
@@ -995,7 +1016,16 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
         <div class="form-group"><label class="form-label">姓名</label>
           <input type="text" class="form-input" id="editEmpName" placeholder="真实姓名"></div>
         <div class="form-group"><label class="form-label">职位</label>
-          <input type="text" class="form-input" id="editEmpTitle" placeholder="高级设计师"></div>
+          <select class="form-select" id="editEmpTitle" onchange="autoFillCost('editEmpTitle','editEmpCost')">
+            <option value="">请选择职位</option>
+            <option value="设计总监">设计总监</option>
+            <option value="设计主管">设计主管</option>
+            <option value="主案设计师">主案设计师</option>
+            <option value="执行设计师">执行设计师</option>
+            <option value="高级深化设计师">高级深化设计师</option>
+            <option value="深化设计师">深化设计师</option>
+            <option value="助理设计师">助理设计师</option>
+          </select></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">角色</label>
@@ -1003,8 +1033,8 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
             <option value="employee">员工</option>
             <option value="admin">管理者</option>
           </select></div>
-        <div class="form-group"><label class="form-label">小时成本（元）</label>
-          <input type="number" class="form-input" id="editEmpCost" placeholder="120"></div>
+        <div class="form-group"><label class="form-label">月固定薪资（元，自动填入）</label>
+          <input type="number" class="form-input" id="editEmpCost" placeholder="自动填入" style="background:var(--cream);color:var(--text-sub)" readonly></div>
       </div>
       <button class="btn-primary" id="editEmpBtn" onclick="saveEditEmp()">保存修改</button>
     </div></div></div>
@@ -1741,6 +1771,7 @@ function openEditEmp(id){
   document.getElementById('editEmpId').value = id;
   document.getElementById('editEmpName').value = e.name||'';
   document.getElementById('editEmpTitle').value = e.job_title||'';
+  autoFillCost('editEmpTitle','editEmpCost');
   document.getElementById('editEmpRole').value = e.role||'employee';
   document.getElementById('editEmpCost').value = e.hourly_cost||120;
   openModal('editEmpModal');
@@ -1756,7 +1787,8 @@ async function saveEditEmp(){
     name,
     job_title: document.getElementById('editEmpTitle').value,
     role: document.getElementById('editEmpRole').value,
-    hourly_cost: parseFloat(document.getElementById('editEmpCost').value)||120,
+    hourly_cost: parseFloat(document.getElementById('editEmpCost').value)||0,
+    monthly_salary: parseFloat(document.getElementById('editEmpCost').value)||0,
   }).eq('id', id);
   btn.disabled=false; btn.textContent='保存修改';
   if(error){toast('保存失败：'+error.message);return}
@@ -1776,7 +1808,8 @@ async function inviteEmployee(){
     email: name + '_' + Date.now() + '@internal.local',
     job_title:document.getElementById('inviteTitle').value,
     role:document.getElementById('inviteRole').value,
-    hourly_cost:parseFloat(document.getElementById('inviteCost').value)||120,
+    hourly_cost:parseFloat(document.getElementById('inviteCost').value)||0,
+    monthly_salary:parseFloat(document.getElementById('inviteCost').value)||0,
     is_active:true
   });
   btn.disabled=false; btn.textContent='添加员工';
@@ -1894,6 +1927,140 @@ async function deletePayment(id){
 // ══════════════════════════════════════════════════════════════
 // 渲染函数
 // ══════════════════════════════════════════════════════════════
+
+
+// ══════════════════════════════════════════════════════════════
+// 项目成本分析模块
+// ══════════════════════════════════════════════════════════════
+function initCostAnalysisSel(){
+  const sel = document.getElementById('costAnalysisProjSel');
+  if(!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">请选择项目</option>' +
+    allProjects.map(p=>`<option value="${p.id}" ${p.id===cur?'selected':''}>${p.name}</option>`).join('');
+}
+
+function renderCostAnalysis(){
+  const projId = document.getElementById('costAnalysisProjSel')?.value;
+  const area = document.getElementById('costAnalysisArea');
+  if(!area) return;
+  if(!projId){ area.innerHTML = ''; return; }
+
+  const proj     = allProjects.find(p=>p.id===projId);
+  if(!proj){ area.innerHTML='<div class="empty">项目未找到</div>'; return; }
+
+  const contract = parseFloat(proj.contract_amount)||0;  // 万元
+  const contractYuan = contract * 10000;
+  const areaM2   = parseFloat(proj.area)||0;
+  const isChain  = proj.is_chain||false;
+  const members  = allMembers.filter(m=>m.project_id===projId);
+  const projLogs = allLogs.filter(l=>l.project_id===projId);
+
+  // 计算每个项目成员的成本
+  let rows = [];
+  let totalBonus = 0, totalSalary = 0;
+
+  members.forEach(m=>{
+    const emp    = allEmployees.find(e=>e.id===m.employee_id);
+    if(!emp) return;
+    const bonus  = getBonusAmount(m.job_role, areaM2, isChain);
+
+    // 底薪摊入：该员工在此项目的工时 / 同期总工时 × 月薪
+    // 取该员工所有工时，计算项目工时占比
+    const projHours = projLogs
+      .filter(l=>l.employee_id===emp.id)
+      .reduce((s,l)=>s+parseFloat(l.hours||0),0);
+    const totalHours = allLogs
+      .filter(l=>l.employee_id===emp.id)
+      .reduce((s,l)=>s+parseFloat(l.hours||0),0);
+    const monthlySalary = getEmpMonthlySalary(emp);
+    // 估算参与月数（按工时推算，每月按130h）
+    const monthsWorked = projHours / 130;
+    const salaryAlloc  = totalHours > 0
+      ? monthlySalary * monthsWorked * (projHours / totalHours)
+      : 0;
+
+    totalBonus  += bonus;
+    totalSalary += salaryAlloc;
+
+    rows.push({ emp, role: m.job_role, bonus, projHours, monthlySalary, salaryAlloc });
+  });
+
+  const totalCost     = totalBonus + totalSalary;
+  const costRate      = contractYuan > 0 ? totalCost / contractYuan * 100 : 0;
+  const target        = contractYuan * 0.4;
+  const remaining     = target - totalCost;
+  const isOver        = costRate > 40;
+  const rateColor     = isOver ? 'var(--accent)' : costRate > 35 ? 'var(--gold)' : 'var(--green)';
+
+  // 汇总卡片
+  let html = `<div class="stat-grid" style="margin-bottom:16px">
+    <div class="stat-card"><div class="s-label">合同额</div>
+      <div class="s-val">${contract}<span class="s-unit">万</span></div></div>
+    <div class="stat-card"><div class="s-label">40%上限</div>
+      <div class="s-val">¥${Math.round(target/10000*100)/100}<span class="s-unit">万</span></div></div>
+    <div class="stat-card ${isOver?'red':'green'}"><div class="s-label">预估人力成本</div>
+      <div class="s-val" style="color:${rateColor}">¥${Math.round(totalCost).toLocaleString()}<span class="s-unit">元</span></div>
+      <div class="s-change ${isOver?'dn':'up'}">${costRate.toFixed(1)}% / 目标≤40%</div></div>
+    <div class="stat-card ${remaining<0?'red':''}"><div class="s-label">${remaining>=0?'剩余空间':'超出预算'}</div>
+      <div class="s-val" style="color:${remaining>=0?'var(--green)':'var(--accent)'}">
+        ¥${Math.abs(Math.round(remaining)).toLocaleString()}<span class="s-unit">元</span></div></div>
+  </div>`;
+
+  // 进度条
+  const barPct = Math.min(costRate/40*100, 100);
+  html += `<div style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-sub);margin-bottom:4px">
+      <span>人力成本占比</span><span style="color:${rateColor};font-weight:600">${costRate.toFixed(1)}%</span>
+    </div>
+    <div style="height:10px;background:var(--cream);border-radius:5px;overflow:hidden">
+      <div style="width:${barPct}%;height:100%;background:${rateColor};border-radius:5px;transition:width 0.4s"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-sub);margin-top:3px">
+      <span>0%</span><span style="color:var(--green)">健康≤35%</span><span style="color:var(--gold)">注意≤40%</span><span style="color:var(--accent)">超标>40%</span>
+    </div>
+  </div>`;
+
+  // 明细表
+  if(rows.length){
+    html += `<div class="card"><div style="overflow-x:auto"><table class="data-table">
+      <thead><tr>
+        <th>员工</th><th>岗位</th><th>项目工时</th><th>月薪</th>
+        <th>摊入底薪</th><th>项目奖金</th><th>合计人力成本</th>
+      </tr></thead><tbody>`;
+    rows.forEach(r=>{
+      const total = r.bonus + r.salaryAlloc;
+      html += `<tr>
+        <td>${r.emp.name}</td>
+        <td style="font-size:11px">${r.role}</td>
+        <td class="mono">${r.projHours.toFixed(1)}h</td>
+        <td class="mono">¥${r.monthlySalary.toLocaleString()}</td>
+        <td class="mono">¥${Math.round(r.salaryAlloc).toLocaleString()}
+          <span style="font-size:10px;color:var(--text-sub)">（${r.projHours>0?(r.projHours/130*100).toFixed(0):'0'}%月薪）</span>
+        </td>
+        <td class="mono">¥${r.bonus.toLocaleString()}</td>
+        <td class="mono fw6">¥${Math.round(total).toLocaleString()}</td>
+      </tr>`;
+    });
+    // 合计行
+    html += `<tr style="background:var(--cream);font-weight:600">
+      <td colspan="4">合计</td>
+      <td class="mono">¥${Math.round(totalSalary).toLocaleString()}</td>
+      <td class="mono">¥${Math.round(totalBonus).toLocaleString()}</td>
+      <td class="mono" style="color:${rateColor}">¥${Math.round(totalCost).toLocaleString()}</td>
+    </tr>`;
+    html += '</tbody></table></div></div>';
+  } else {
+    html += `<div class="notice">⚠ 该项目尚未在「绩效管理」中配置成员，无法计算人力成本。</div>`;
+  }
+
+  // 如果没有工时记录，加提示
+  if(members.length && projLogs.length===0){
+    html += `<div class="notice" style="margin-top:8px">💡 该项目暂无工时记录，底薪摊入按0计算。录入工时后数据将自动更新。</div>`;
+  }
+
+  area.innerHTML = html;
+}
 
 // ══════════════════════════════════════════════════════════════
 // 绩效管理模块
@@ -2261,6 +2428,39 @@ function renderAnnualBonus(){
   area.innerHTML = html;
 }
 
+
+// ══════════════════════════════════════════════════════════════
+// 职位月薪对照表（底薪 + 岗位工资，2025年标准）
+// ══════════════════════════════════════════════════════════════
+const MONTHLY_SALARY = {
+  '设计总监':       10000,
+  '设计主管':       8000,
+  '主案设计师':     8000,
+  '执行设计师':     8000,
+  '高级深化设计师': 8000,
+  '深化设计师':     6500,
+  '助理设计师':     6000,
+};
+
+// 选职位时自动填入月薪（只读）
+function autoFillCost(titleId, costId){
+  const title = document.getElementById(titleId)?.value;
+  const costEl = document.getElementById(costId);
+  if(!costEl) return;
+  const salary = MONTHLY_SALARY[title];
+  if(salary){
+    costEl.value = salary;
+  } else {
+    costEl.value = '';
+  }
+}
+
+// 获取员工月薪（优先用DB记录，fallback用职位对照表）
+function getEmpMonthlySalary(emp){
+  if(emp.monthly_salary && emp.monthly_salary > 0) return emp.monthly_salary;
+  return MONTHLY_SALARY[emp.job_title] || 0;
+}
+
 // 各岗位基础年终奖参考（元）
 const ANNUAL_BASE = {
   '设计总监': 10000,
@@ -2301,6 +2501,7 @@ function renderAll(){
   renderProfile();
   renderTeam();
   renderBonus();
+  initCostAnalysisSel();
 }
 
 // ── 工时页 ────────────────────────────────────────────────────
