@@ -338,6 +338,9 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
     <button class="nav-btn admin-nav admin-only" onclick="nav('team',this)">
       <span class="icon">👥</span>团队管理
     </button>
+    <button class="nav-btn admin-nav admin-only" onclick="nav('bonus',this)">
+      <span class="icon">💰</span>绩效管理
+    </button>
     <div class="nav-group">个人</div>
     <button class="nav-btn" onclick="nav('profile',this)">
       <span class="icon">👤</span>我的档案
@@ -569,6 +572,72 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
   </div>
 </div>
 
+
+<!-- PAGE: 绩效管理（仅管理员） -->
+<div class="page" id="page-bonus">
+  <div class="employee-only" style="padding:60px 0;text-align:center;color:var(--text-sub)">
+    <div style="font-size:48px;margin-bottom:16px">🔒</div>
+    <div style="font-size:15px;font-weight:600">绩效管理仅管理者可见</div>
+  </div>
+  <div class="admin-only">
+    <!-- 标签页切换 -->
+    <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
+      <button id="bonusTab1" class="action-btn" style="background:var(--ink);color:var(--paper)" onclick="switchBonusTab(1)">📋 项目成员配置</button>
+      <button id="bonusTab2" class="action-btn" style="background:var(--paper);color:var(--ink);border:1px solid var(--border)" onclick="switchBonusTab(2)">⭐ 绩效打分</button>
+      <button id="bonusTab3" class="action-btn" style="background:var(--paper);color:var(--ink);border:1px solid var(--border)" onclick="switchBonusTab(3)">💵 奖金核算</button>
+      <button id="bonusTab4" class="action-btn" style="background:var(--paper);color:var(--ink);border:1px solid var(--border)" onclick="switchBonusTab(4)">🎁 年终奖预估</button>
+    </div>
+
+    <!-- Tab1: 项目成员配置 -->
+    <div id="bonusPanel1">
+      <div class="section-hd"><div class="section-title">项目成员配置</div></div>
+      <div class="notice" style="margin-bottom:12px">为每个项目指定参与人员及岗位，系统据此计算对应奖金档位。</div>
+      <div style="margin-bottom:12px">
+        <select class="form-select" id="memberProjSel" style="max-width:260px" onchange="renderMemberConfig()">
+          <option value="">请选择项目</option>
+        </select>
+      </div>
+      <div id="memberConfigArea"></div>
+    </div>
+
+    <!-- Tab2: 绩效打分 -->
+    <div id="bonusPanel2" style="display:none">
+      <div class="section-hd"><div class="section-title">项目绩效打分</div></div>
+      <div class="notice" style="margin-bottom:12px">单个项目绩效打分（0～1），用于计算实际发放金额 = 总额 × (50% + 40% × 打分)。</div>
+      <div style="margin-bottom:12px">
+        <select class="form-select" id="scoreProjSel" style="max-width:260px" onchange="renderScorePanel()">
+          <option value="">请选择项目</option>
+        </select>
+      </div>
+      <div id="scoreArea"></div>
+    </div>
+
+    <!-- Tab3: 奖金核算 -->
+    <div id="bonusPanel3" style="display:none">
+      <div class="section-hd"><div class="section-title">项目奖金核算汇总</div></div>
+      <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <select class="form-select" id="bonusSumProjSel" style="max-width:260px" onchange="renderBonusSummary()">
+          <option value="">全部项目</option>
+        </select>
+        <select class="form-select" id="bonusSumEmpSel" style="max-width:180px" onchange="renderBonusSummary()">
+          <option value="">全部员工</option>
+        </select>
+      </div>
+      <div id="bonusSummaryArea"></div>
+    </div>
+
+    <!-- Tab4: 年终奖预估 -->
+    <div id="bonusPanel4" style="display:none">
+      <div class="section-hd"><div class="section-title">年终奖预估</div></div>
+      <div class="notice" style="margin-bottom:12px">
+        公式：基础年终奖 + 6000元 × 工龄(年) × 年终绩效分数比例<br>
+        <span style="color:var(--text-sub);font-size:11px">注：工龄从入职日起算，年终绩效分数比例需手动录入（基于全年项目打分汇总）</span>
+      </div>
+      <div id="annualBonusArea"></div>
+    </div>
+  </div>
+</div>
+
 <!-- PAGE: 团队管理（仅管理员） -->
 <div class="page" id="page-team">
   <div class="employee-only" style="padding:60px 0;text-align:center;color:var(--text-sub)">
@@ -586,6 +655,66 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
         <thead><tr><th>姓名</th><th>职位</th><th>角色</th><th>小时成本</th><th>状态</th><th>操作</th></tr></thead>
         <tbody id="teamBody"></tbody>
       </table>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL: 添加项目成员 -->
+<div class="modal-overlay" id="addMemberModal" onclick="closeModalOutside(event,'addMemberModal')">
+  <div class="modal-box"><div class="modal-handle"></div>
+    <div class="modal-title"><button class="modal-close" onclick="closeModal('addMemberModal')">×</button>添加项目成员</div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">员工</label>
+        <select class="form-select" id="addMemberEmp"></select></div>
+      <div class="form-group"><label class="form-label">参与岗位</label>
+        <select class="form-select" id="addMemberRole">
+          <option>设计总监</option>
+          <option>设计主管</option>
+          <option>主案设计师</option>
+          <option>执行设计师</option>
+          <option>高级深化设计师</option>
+          <option>深化设计师</option>
+          <option>助理设计师</option>
+        </select></div>
+      <button class="btn-primary" onclick="doAddMember()">确认添加</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: 录入/编辑打分 -->
+<div class="modal-overlay" id="scoreModal" onclick="closeModalOutside(event,'scoreModal')">
+  <div class="modal-box"><div class="modal-handle"></div>
+    <div class="modal-title"><button class="modal-close" onclick="closeModal('scoreModal')">×</button>录入项目绩效打分</div>
+    <div class="modal-body">
+      <input type="hidden" id="scoreMemberId">
+      <div class="form-group"><label class="form-label">员工</label>
+        <input class="form-input" id="scoreEmpName" readonly></div>
+      <div class="form-group"><label class="form-label">绩效打分（0～1）</label>
+        <input type="number" class="form-input" id="scoreValue" min="0" max="1" step="0.05" placeholder="0.80">
+        <div style="font-size:11px;color:var(--text-sub);margin-top:4px">满分1.0；通常范围0.6～1.0</div></div>
+      <div class="form-group"><label class="form-label">备注</label>
+        <input class="form-input" id="scoreNote" placeholder="可选"></div>
+      <button class="btn-primary" onclick="doSaveScore()">保存打分</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: 录入年终绩效分数比例 -->
+<div class="modal-overlay" id="annualScoreModal" onclick="closeModalOutside(event,'annualScoreModal')">
+  <div class="modal-box"><div class="modal-handle"></div>
+    <div class="modal-title"><button class="modal-close" onclick="closeModal('annualScoreModal')">×</button>录入年终绩效分数比例</div>
+    <div class="modal-body">
+      <input type="hidden" id="annualScoreEmpId">
+      <div class="form-group"><label class="form-label">员工</label>
+        <input class="form-input" id="annualScoreEmpName" readonly></div>
+      <div class="form-group"><label class="form-label">年终绩效分数比例（0～1）</label>
+        <input type="number" class="form-input" id="annualScoreValue" min="0" max="1" step="0.05" placeholder="0.80"></div>
+      <div class="form-group"><label class="form-label">入职日期</label>
+        <input type="date" class="form-input" id="annualScoreHireDate"></div>
+      <div class="form-group"><label class="form-label">基础年终奖（元）</label>
+        <input type="number" class="form-input" id="annualScoreBase" placeholder="如 8000"></div>
+      <button class="btn-primary" onclick="doSaveAnnualScore()">保存</button>
     </div>
   </div>
 </div>
@@ -694,6 +823,7 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
       <button class="bnav-btn" onclick="nav('project',this,'bnav')"><span class="bi">📁</span><span>项目</span></button>
       <button class="bnav-btn admin-nav admin-only" onclick="nav('dashboard',this,'bnav')"><span class="bi">📊</span><span>看板</span></button>
       <button class="bnav-btn admin-nav admin-only" onclick="nav('quote',this,'bnav')"><span class="bi">🧮</span><span>报价</span></button>
+      <button class="bnav-btn admin-nav admin-only" onclick="nav('bonus',this,'bnav')"><span class="bi">💰</span><span>绩效</span></button>
       <button class="bnav-btn" onclick="nav('profile',this,'bnav')"><span class="bi">👤</span><span>我的</span></button>
     </div></nav>
   </div>
@@ -779,6 +909,21 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
             <option value="paused">已暂停</option>
             <option value="done">已完结</option>
           </select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">项目类型</label>
+          <select class="form-select" id="npIsChain">
+            <option value="false">单店项目</option>
+            <option value="true">复制店项目</option>
+          </select></div>
+        <div class="form-group"><label class="form-label" style="color:var(--text-sub);font-size:11px">复制店绩效奖金按独立档位计算</label>
+          <div style="height:32px"></div></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">图纸交付日</label>
+          <input type="date" class="form-input" id="npDrawingsDate"></div>
+        <div class="form-group"><label class="form-label">项目落地日</label>
+          <input type="date" class="form-input" id="npConstructionDate"></div>
       </div>
       <button class="btn-primary" id="createProjBtn" onclick="createProject()">创建项目</button>
       <button class="btn-primary" id="saveProjBtn" style="display:none;background:var(--green)" onclick="saveEditProject()">保存修改</button>
@@ -944,6 +1089,8 @@ let allProjects = [];
 let allEmployees = [];
 let allLogs = [];
 let allPayments = [];
+let allMembers = [];   // project_members
+let allScores  = [];   // project_scores
 
 // ── 算法常量 ──────────────────────────────────────────────────
 // 动态计算当月工作日（排除周六日）× 6.5小时
@@ -1067,8 +1214,18 @@ function showApp(){
 // 数据加载
 // ══════════════════════════════════════════════════════════════
 async function loadAllData(){
-  await Promise.all([loadProjects(),loadEmployees(),loadLogs(),loadPayments()]);
+  await Promise.all([loadProjects(),loadEmployees(),loadLogs(),loadPayments(),loadMembersAndScores()]);
   renderAll();
+}
+
+async function loadMembersAndScores(){
+  if(!isAdmin){ allMembers=[]; allScores=[]; return; }
+  const [{data:m},{data:s}] = await Promise.all([
+    sb.from('project_members').select('*'),
+    sb.from('project_scores').select('*'),
+  ]);
+  allMembers = m||[];
+  allScores  = s||[];
 }
 
 async function loadProjects(){
@@ -1169,6 +1326,9 @@ async function createProject(){
     people_count:parseInt(document.getElementById('npPeople').value)||1,
     director_id:document.getElementById('npDirector').value||null,
     status:document.getElementById('npStatus').value||'active',
+    is_chain:document.getElementById('npIsChain').value==='true',
+    drawings_delivered_at:document.getElementById('npDrawingsDate').value||null,
+    construction_done_at:document.getElementById('npConstructionDate').value||null,
     created_by:userProfile.id
   });
   btn.disabled=false; btn.textContent='创建项目';
@@ -1198,6 +1358,9 @@ function editProject(id){
   document.getElementById('npDirector').value = p.director_id||'';
   document.getElementById('npStatus').value = p.status||'active';
   document.getElementById('npCompletion').value = p.completion_date||'';
+  document.getElementById('npIsChain').value = p.is_chain ? 'true' : 'false';
+  document.getElementById('npDrawingsDate').value = p.drawings_delivered_at||'';
+  document.getElementById('npConstructionDate').value = p.construction_done_at||'';
   const hint = document.getElementById('npBudgetHint');
   if(hint) hint.textContent = '可直接修改工时，或重新选择日期自动计算';
   document.getElementById('createProjBtn').style.display='none';
@@ -1223,6 +1386,9 @@ async function saveEditProject(){
     people_count: parseInt(document.getElementById('npPeople').value)||1,
     director_id: document.getElementById('npDirector').value||null,
     status: document.getElementById('npStatus').value||'active',
+    is_chain: document.getElementById('npIsChain').value==='true',
+    drawings_delivered_at: document.getElementById('npDrawingsDate').value||null,
+    construction_done_at: document.getElementById('npConstructionDate').value||null,
   }).eq('id', id);
   btn.disabled=false; btn.textContent='保存修改';
   if(error){toast('保存失败：'+error.message);return}
@@ -1413,21 +1579,17 @@ async function parseImportFile(file){
     const hours   = hoursKey   ? parseFloat(row[hoursKey]) || 0 : 0;
     const rev     = revKey     ? parseInt(row[revKey])   || 0   : 0;
 
-    // 日期处理（用本地时间避免UTC偏移导致日期减一天）
+    // 日期处理
     let dateStr = '';
     if(dateKey && row[dateKey]){
       const d = row[dateKey];
       if(d instanceof Date){
-        // 用本地时间格式化，防止 toISOString() 的 UTC 偏移（CST+8会导致日期减一天）
-        const yy = d.getFullYear();
-        const mm = String(d.getMonth()+1).padStart(2,'0');
-        const dd = String(d.getDate()).padStart(2,'0');
-        dateStr = `${yy}-${mm}-${dd}`;
+        dateStr = d.toISOString().split('T')[0];
       } else {
         dateStr = String(d).slice(0,10);
       }
     }
-    if(!dateStr){ warns.push(`「${person} / ${task.slice(0,10)}」日期为空，已跳过`); continue; }
+    if(!dateStr) dateStr = new Date().toISOString().split('T')[0];
 
     if(!person)  { warns.push('有行缺少「负责人」，已跳过'); continue; }
     if(!project) { warns.push(`「${person}」的记录缺少「群组」，已跳过`); continue; }
@@ -1732,6 +1894,405 @@ async function deletePayment(id){
 // ══════════════════════════════════════════════════════════════
 // 渲染函数
 // ══════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════
+// 绩效管理模块
+// ══════════════════════════════════════════════════════════════
+
+// ── 奖金档位表 ─────────────────────────────────────────────────
+// 单店项目：按面积 0-399 / 400-799 / 800-1500
+const BONUS_SINGLE = {
+  '设计总监':       [10000, 15000, 20000],
+  '设计主管':       [3000,  5000,  7000],
+  '主案设计师':     [8000,  11000, 14000],
+  '执行设计师':     [6000,  8000,  10000],
+  '高级深化设计师': [4000,  6000,  8000],
+  '深化设计师':     [4000,  6000,  8000],
+  '助理设计师':     [2000,  3000,  4000],
+};
+// 复制店项目：按面积 0-100 / 100-399 / 400-799 / 800-1500
+const BONUS_CHAIN = {
+  '设计总监':       [null,  7000,  10500, 14000],
+  '设计主管':       [300,   2100,  3500,  4900],
+  '主案设计师':     [600,   5600,  7700,  9800],
+  '执行设计师':     [600,   4200,  5600,  7000],
+  '高级深化设计师': [600,   2800,  4200,  5600],
+  '深化设计师':     [600,   2800,  4200,  5600],
+  '助理设计师':     [600,   1400,  2100,  2800],
+};
+
+function getBonusAmount(role, area, isChain){
+  const table = isChain ? BONUS_CHAIN : BONUS_SINGLE;
+  const tiers  = table[role];
+  if(!tiers) return 0;
+  if(isChain){
+    if(area <= 100)  return tiers[0]||0;
+    if(area <= 399)  return tiers[1]||0;
+    if(area <= 799)  return tiers[2]||0;
+    return tiers[3]||0;
+  } else {
+    if(area <= 399)  return tiers[0]||0;
+    if(area <= 799)  return tiers[1]||0;
+    return tiers[2]||0;
+  }
+}
+
+// 实际发放金额 = 总额 × (50% + 40% × 打分)
+// 尾款10%部分单独计入年终奖
+function calcPayable(total, score){
+  if(score == null) return { drawings: total*0.5, performance: 0, annual: total*0.1, unpaid: total*0.4 };
+  const payable = total * (0.5 + 0.4 * score);
+  return {
+    drawings:    total * 0.5,           // 图纸交付后发
+    performance: total * 0.4 * score,   // 落地+打分后发
+    annual:      total * 0.1,           // 年终奖
+    total_payable: payable,
+  };
+}
+
+// ── 标签页切换 ─────────────────────────────────────────────────
+let currentBonusTab = 1;
+function switchBonusTab(n){
+  currentBonusTab = n;
+  [1,2,3,4].forEach(i=>{
+    document.getElementById('bonusPanel'+i).style.display = i===n?'':'none';
+    const btn = document.getElementById('bonusTab'+i);
+    if(i===n){
+      btn.style.background='var(--ink)'; btn.style.color='var(--paper)'; btn.style.border='none';
+    } else {
+      btn.style.background='var(--paper)'; btn.style.color='var(--ink)'; btn.style.border='1px solid var(--border)';
+    }
+  });
+  if(n===1) renderMemberConfig();
+  if(n===2) renderScorePanel();
+  if(n===3) renderBonusSummary();
+  if(n===4) renderAnnualBonus();
+}
+
+function renderBonus(){
+  if(!isAdmin) return;
+  // 填充项目下拉
+  const projs = allProjects.filter(p=>p.status!=='done'||true); // 含已完结
+  ['memberProjSel','scoreProjSel','bonusSumProjSel'].forEach(selId=>{
+    const sel = document.getElementById(selId);
+    if(!sel) return;
+    const cur = sel.value;
+    const extra = selId==='bonusSumProjSel' ? '<option value="">全部项目</option>' : '<option value="">请选择项目</option>';
+    sel.innerHTML = extra + projs.map(p=>`<option value="${p.id}" ${p.id===cur?'selected':''}>${p.name}</option>`).join('');
+  });
+  // 员工下拉
+  const empSel = document.getElementById('bonusSumEmpSel');
+  if(empSel){
+    const cur = empSel.value;
+    empSel.innerHTML = '<option value="">全部员工</option>' +
+      allEmployees.map(e=>`<option value="${e.id}" ${e.id===cur?'selected':''}>${e.name}</option>`).join('');
+  }
+  const addEmpSel = document.getElementById('addMemberEmp');
+  if(addEmpSel){
+    addEmpSel.innerHTML = allEmployees.map(e=>`<option value="${e.id}">${e.name}（${e.job_title||'员工'}）</option>`).join('');
+  }
+  if(currentBonusTab===1) renderMemberConfig();
+  if(currentBonusTab===2) renderScorePanel();
+  if(currentBonusTab===3) renderBonusSummary();
+  if(currentBonusTab===4) renderAnnualBonus();
+}
+
+// ── Tab1: 项目成员配置 ─────────────────────────────────────────
+let _memberProjId = '';
+function renderMemberConfig(){
+  const sel = document.getElementById('memberProjSel');
+  const projId = sel?.value;
+  _memberProjId = projId;
+  const area = document.getElementById('memberConfigArea');
+  if(!area) return;
+  if(!projId){ area.innerHTML='<div class="empty">请先选择项目</div>'; return; }
+  const proj = allProjects.find(p=>p.id===projId);
+  const members = allMembers.filter(m=>m.project_id===projId);
+  const areaM2 = proj?.area||0;
+  const isChain = proj?.is_chain||false;
+
+  let html = `<div class="card"><div style="padding:12px 16px 4px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-size:13px;color:var(--text-sub)">
+        面积：<strong>${areaM2}㎡</strong>　类型：<strong>${isChain?'复制店':'单店'}</strong>
+      </div>
+      <button class="btn-sm" style="background:var(--ink);color:var(--paper)" onclick="openAddMember('${projId}')">＋ 添加成员</button>
+    </div>`;
+
+  if(!members.length){
+    html += '<div class="empty" style="padding:20px 0">暂无成员，点击右上角添加</div>';
+  } else {
+    html += `<table class="data-table"><thead><tr>
+      <th>员工</th><th>参与岗位</th><th>奖金档位</th><th>操作</th>
+    </tr></thead><tbody>`;
+    members.forEach(m=>{
+      const emp = allEmployees.find(e=>e.id===m.employee_id);
+      const bonus = getBonusAmount(m.job_role, areaM2, isChain);
+      html += `<tr>
+        <td>${emp?.name||'—'}</td>
+        <td>${m.job_role}</td>
+        <td class="mono">¥${bonus.toLocaleString()}</td>
+        <td><button class="btn-sm" style="color:var(--accent)" onclick="delMember('${m.id}')">删除</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div></div>';
+  area.innerHTML = html;
+}
+
+function openAddMember(projId){
+  _memberProjId = projId;
+  openModal('addMemberModal');
+}
+
+async function doAddMember(){
+  const empId = document.getElementById('addMemberEmp').value;
+  const role  = document.getElementById('addMemberRole').value;
+  if(!_memberProjId||!empId){ toast('请选择员工'); return; }
+  const exists = allMembers.find(m=>m.project_id===_memberProjId&&m.employee_id===empId);
+  if(exists){ toast('该员工已在项目中'); return; }
+  const {error} = await sb.from('project_members').insert({
+    project_id: _memberProjId, employee_id: empId, job_role: role
+  });
+  if(error){ toast('添加失败：'+error.message); return; }
+  toast('✓ 成员已添加');
+  closeModal('addMemberModal');
+  await loadMembersAndScores();
+  renderMemberConfig();
+}
+
+async function delMember(id){
+  if(!confirm('确认移除该成员？')) return;
+  const {error} = await sb.from('project_members').delete().eq('id',id);
+  if(error){ toast('删除失败'); return; }
+  toast('已移除');
+  await loadMembersAndScores();
+  renderMemberConfig();
+}
+
+// ── Tab2: 绩效打分 ─────────────────────────────────────────────
+function renderScorePanel(){
+  const projId = document.getElementById('scoreProjSel')?.value;
+  const area = document.getElementById('scoreArea');
+  if(!area) return;
+  if(!projId){ area.innerHTML='<div class="empty">请先选择项目</div>'; return; }
+  const proj = allProjects.find(p=>p.id===projId);
+  const members = allMembers.filter(m=>m.project_id===projId);
+  if(!members.length){ area.innerHTML='<div class="empty">该项目暂无成员，请先在「项目成员配置」中添加</div>'; return; }
+
+  const areaM2 = proj?.area||0;
+  const isChain = proj?.is_chain||false;
+  let html = `<div class="card"><table class="data-table"><thead><tr>
+    <th>员工</th><th>岗位</th><th>奖金总额</th><th>绩效打分</th><th>图纸发放(50%)</th><th>落地发放(40%×分)</th><th>年终计入(10%)</th><th>操作</th>
+  </tr></thead><tbody>`;
+
+  members.forEach(m=>{
+    const emp  = allEmployees.find(e=>e.id===m.employee_id);
+    const bonus= getBonusAmount(m.job_role, areaM2, isChain);
+    const scoreRec = allScores.find(s=>s.project_id===projId&&s.employee_id===m.employee_id&&s.score_type==='project');
+    const score= scoreRec?.score;
+    const calc = calcPayable(bonus, score!=null?parseFloat(score):null);
+    const scoreDisp = score!=null ? parseFloat(score).toFixed(2) : '—';
+    const drawDisp  = score!=null ? `¥${Math.round(calc.drawings).toLocaleString()}` : `¥${Math.round(bonus*0.5).toLocaleString()}`;
+    const perfDisp  = score!=null ? `¥${Math.round(calc.performance).toLocaleString()}` : '待打分';
+    const annDisp   = `¥${Math.round(bonus*0.1).toLocaleString()}`;
+    html += `<tr>
+      <td>${emp?.name||'—'}</td>
+      <td style="font-size:11px">${m.job_role}</td>
+      <td class="mono">¥${bonus.toLocaleString()}</td>
+      <td class="mono" style="color:${score!=null?'var(--green)':'var(--text-sub)'}">${scoreDisp}</td>
+      <td class="mono">${drawDisp}</td>
+      <td class="mono" style="color:var(--green)">${perfDisp}</td>
+      <td class="mono" style="color:var(--gold)">${annDisp}</td>
+      <td><button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="openScore('${projId}','${m.employee_id}','${emp?.name||''}')">
+        ${score!=null?'修改':'打分'}
+      </button></td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+  area.innerHTML = html;
+}
+
+function openScore(projId, empId, empName){
+  document.getElementById('scoreProjSel').value = projId;
+  const scoreRec = allScores.find(s=>s.project_id===projId&&s.employee_id===empId&&s.score_type==='project');
+  document.getElementById('scoreMemberId').value = `${projId}|${empId}`;
+  document.getElementById('scoreEmpName').value  = empName;
+  document.getElementById('scoreValue').value    = scoreRec ? parseFloat(scoreRec.score).toFixed(2) : '0.80';
+  document.getElementById('scoreNote').value     = scoreRec?.note||'';
+  openModal('scoreModal');
+}
+
+async function doSaveScore(){
+  const [projId, empId] = document.getElementById('scoreMemberId').value.split('|');
+  const score = parseFloat(document.getElementById('scoreValue').value);
+  const note  = document.getElementById('scoreNote').value;
+  if(isNaN(score)||score<0||score>1){ toast('打分需在 0～1 之间'); return; }
+  const exists = allScores.find(s=>s.project_id===projId&&s.employee_id===empId&&s.score_type==='project');
+  let error;
+  if(exists){
+    ({error} = await sb.from('project_scores').update({score, note, scored_at: new Date().toISOString().split('T')[0]}).eq('id',exists.id));
+  } else {
+    ({error} = await sb.from('project_scores').insert({project_id:projId, employee_id:empId, score, note, score_type:'project', created_by:currentUser.id}));
+  }
+  if(error){ toast('保存失败：'+error.message); return; }
+  toast('✓ 打分已保存');
+  closeModal('scoreModal');
+  await loadMembersAndScores();
+  renderScorePanel();
+}
+
+// ── Tab3: 奖金核算汇总 ────────────────────────────────────────
+function renderBonusSummary(){
+  const filterProj = document.getElementById('bonusSumProjSel')?.value;
+  const filterEmp  = document.getElementById('bonusSumEmpSel')?.value;
+  const area = document.getElementById('bonusSummaryArea');
+  if(!area) return;
+
+  // 汇总每个员工×项目的奖金
+  let rows = [];
+  allMembers.forEach(m=>{
+    if(filterProj && m.project_id!==filterProj) return;
+    if(filterEmp  && m.employee_id!==filterEmp)  return;
+    const proj  = allProjects.find(p=>p.id===m.project_id);
+    const emp   = allEmployees.find(e=>e.id===m.employee_id);
+    const bonus = getBonusAmount(m.job_role, proj?.area||0, proj?.is_chain||false);
+    const scoreRec = allScores.find(s=>s.project_id===m.project_id&&s.employee_id===m.employee_id&&s.score_type==='project');
+    const score = scoreRec ? parseFloat(scoreRec.score) : null;
+    const calc  = calcPayable(bonus, score);
+    const drawingsDone = !!(proj?.drawings_delivered_at);
+    const constructionDone = !!(proj?.construction_done_at);
+    rows.push({proj, emp, m, bonus, score, calc, drawingsDone, constructionDone});
+  });
+
+  if(!rows.length){ area.innerHTML='<div class="empty">暂无数据</div>'; return; }
+
+  // 汇总卡片
+  const totalBonus    = rows.reduce((s,r)=>s+r.bonus,0);
+  const totalDrawings = rows.reduce((s,r)=>s+r.calc.drawings,0);
+  const totalPerf     = rows.reduce((s,r)=>s+Math.round(r.score!=null?r.calc.performance:0),0);
+  const totalAnnual   = rows.reduce((s,r)=>s+r.bonus*0.1,0);
+
+  let html = `<div class="stat-grid" style="margin-bottom:16px">
+    <div class="stat-card"><div class="s-label">奖金总池</div><div class="s-val">¥${totalBonus.toLocaleString()}<span class="s-unit">元</span></div></div>
+    <div class="stat-card green"><div class="s-label">图纸发放(50%)</div><div class="s-val">¥${totalDrawings.toLocaleString()}<span class="s-unit">元</span></div></div>
+    <div class="stat-card blue"><div class="s-label">落地发放(40%×分)</div><div class="s-val">¥${totalPerf.toLocaleString()}<span class="s-unit">元</span></div></div>
+    <div class="stat-card gold"><div class="s-label">年终计入(10%)</div><div class="s-val">¥${totalAnnual.toLocaleString()}<span class="s-unit">元</span></div></div>
+  </div>`;
+
+  html += `<div class="card"><table class="data-table"><thead><tr>
+    <th>员工</th><th>项目</th><th>岗位</th><th>奖金总额</th><th>打分</th>
+    <th>图纸发放</th><th>落地发放</th><th>年终计入</th><th>图纸状态</th><th>落地状态</th>
+  </tr></thead><tbody>`;
+  rows.forEach(r=>{
+    const perfAmt = r.score!=null ? Math.round(r.calc.performance) : 0;
+    html += `<tr>
+      <td>${r.emp?.name||'—'}</td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.proj?.name||'—'}</td>
+      <td style="font-size:11px">${r.m.job_role}</td>
+      <td class="mono">¥${r.bonus.toLocaleString()}</td>
+      <td class="mono" style="color:${r.score!=null?'var(--green)':'var(--text-sub)'}">
+        ${r.score!=null?parseFloat(r.score).toFixed(2):'待打分'}
+      </td>
+      <td class="mono">¥${Math.round(r.calc.drawings).toLocaleString()}</td>
+      <td class="mono" style="color:var(--green)">¥${perfAmt.toLocaleString()}</td>
+      <td class="mono" style="color:var(--gold)">¥${Math.round(r.bonus*0.1).toLocaleString()}</td>
+      <td><span class="badge ${r.drawingsDone?'badge-active':'badge-warn'}">${r.drawingsDone?'✓ 已交付':'未交付'}</span></td>
+      <td><span class="badge ${r.constructionDone?'badge-active':'badge-warn'}">${r.constructionDone?'✓ 已落地':'未落地'}</span></td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+  area.innerHTML = html;
+}
+
+// ── Tab4: 年终奖预估 ──────────────────────────────────────────
+// 年终奖临时存储（不进 DB，纯前端计算辅助工具）
+let annualScoreCache = {}; // empId -> {score, hireDate, baseBonus}
+
+function renderAnnualBonus(){
+  const area = document.getElementById('annualBonusArea');
+  if(!area) return;
+
+  let html = `<div class="card"><table class="data-table"><thead><tr>
+    <th>员工</th><th>入职日</th><th>工龄(年)</th><th>基础年终奖</th><th>年终绩效比例</th><th>预计年终奖</th><th>项目尾款奖金</th><th>操作</th>
+  </tr></thead><tbody>`;
+
+  allEmployees.forEach(e=>{
+    const cache = annualScoreCache[e.id]||{};
+    const hireDate = cache.hireDate || e.hire_date || '';
+    const score    = cache.score!=null ? cache.score : null;
+    const baseBonus= cache.baseBonus!=null ? cache.baseBonus : (ANNUAL_BASE[e.job_title]||6000);
+
+    let seniority = 0;
+    if(hireDate){
+      const diff = (new Date() - new Date(hireDate)) / (1000*60*60*24*365.25);
+      seniority  = Math.max(0, diff);
+    }
+    // 项目尾款10%奖金汇总（该员工所有项目）
+    const tail10 = allMembers
+      .filter(m=>m.employee_id===e.id)
+      .reduce((s,m)=>{
+        const proj = allProjects.find(p=>p.id===m.project_id);
+        return s + getBonusAmount(m.job_role, proj?.area||0, proj?.is_chain||false)*0.1;
+      }, 0);
+
+    const annualCalc = score!=null
+      ? Math.round(baseBonus + 6000 * seniority * score)
+      : null;
+
+    html += `<tr>
+      <td>${e.name}</td>
+      <td style="font-size:11px">${hireDate||'—'}</td>
+      <td class="mono">${seniority>0?seniority.toFixed(1):'—'}</td>
+      <td class="mono">¥${baseBonus.toLocaleString()}</td>
+      <td class="mono" style="color:${score!=null?'var(--green)':'var(--text-sub)'}">
+        ${score!=null?parseFloat(score).toFixed(2):'未录入'}
+      </td>
+      <td class="mono" style="color:var(--green);font-weight:600">
+        ${annualCalc!=null?'¥'+annualCalc.toLocaleString():'—'}
+      </td>
+      <td class="mono" style="color:var(--gold)">¥${Math.round(tail10).toLocaleString()}</td>
+      <td><button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="openAnnualScore('${e.id}','${e.name}','${hireDate}',${baseBonus},${score!=null?score:'null'})">录入</button></td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+  html += '<div class="notice" style="margin-top:12px">💡 年终奖 = 基础年终奖 + 6000元 × 工龄(年) × 年终绩效分数比例。项目尾款奖金需尾款实际到账后单独发放。</div>';
+  area.innerHTML = html;
+}
+
+// 各岗位基础年终奖参考（元）
+const ANNUAL_BASE = {
+  '设计总监': 10000,
+  '设计主管': 8000,
+  '主案设计师': 8000,
+  '执行设计师': 8000,
+  '高级深化设计师': 8000,
+  '深化设计师': 6500,
+  '助理设计师': 6000,
+};
+
+function openAnnualScore(empId, empName, hireDate, baseBonus, score){
+  document.getElementById('annualScoreEmpId').value    = empId;
+  document.getElementById('annualScoreEmpName').value  = empName;
+  document.getElementById('annualScoreHireDate').value = hireDate||'';
+  document.getElementById('annualScoreBase').value     = baseBonus||'';
+  document.getElementById('annualScoreValue').value    = score!=null&&score!=='null' ? parseFloat(score).toFixed(2) : '0.80';
+  openModal('annualScoreModal');
+}
+
+function doSaveAnnualScore(){
+  const empId    = document.getElementById('annualScoreEmpId').value;
+  const hireDate = document.getElementById('annualScoreHireDate').value;
+  const base     = parseFloat(document.getElementById('annualScoreBase').value)||6000;
+  const score    = parseFloat(document.getElementById('annualScoreValue').value);
+  if(isNaN(score)||score<0||score>1){ toast('比例需在 0～1 之间'); return; }
+  annualScoreCache[empId] = { score, hireDate, baseBonus: base };
+  toast('✓ 已更新年终奖数据');
+  closeModal('annualScoreModal');
+  renderAnnualBonus();
+}
+
 function renderAll(){
   renderTimePage();
   renderProjectPage();
@@ -1739,6 +2300,7 @@ function renderAll(){
   renderQuote();
   renderProfile();
   renderTeam();
+  renderBonus();
 }
 
 // ── 工时页 ────────────────────────────────────────────────────
@@ -2379,6 +2941,7 @@ const pageInfo={
   dashboard:{title:'经营看板',sub:'公司整体运营状态实时监控'},
   quote:{title:'报价测算',sub:'基于历史数据的报价参考'},
   team:{title:'团队管理',sub:'员工账号与权限管理'},
+  bonus:{title:'绩效管理',sub:'项目成员配置 · 绩效打分 · 奖金核算'},
   profile:{title:'我的档案',sub:'个人工时与效率数据'},
 };
 
