@@ -876,7 +876,7 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
     </div></div></div>
 
 <div class="modal-overlay" id="newProjModal" onclick="closeModalOutside(event,'newProjModal')">
-  <div class="modal-box"><div class="modal-handle"></div>
+  <div class="modal-box" style="max-width:600px"><div class="modal-handle"></div>
     <div class="modal-title"><button class="modal-close" onclick="closeModal('newProjModal')">×</button><span id="npModalTitle">新建项目</span></div>
       <input type="hidden" id="npEditId" value="">
     <div class="modal-body">
@@ -939,6 +939,32 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
       </div>
       <button class="btn-primary" id="createProjBtn" onclick="createProject()">创建项目</button>
       <button class="btn-primary" id="saveProjBtn" style="display:none;background:var(--green)" onclick="saveEditProject()">保存修改</button>
+
+      <!-- 项目成员（仅编辑模式显示） -->
+      <div id="npMembersSection" style="display:none;margin-top:20px;border-top:1px solid var(--border);padding-top:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="font-weight:600;font-size:13px">👥 项目成员 & 分工</div>
+          <button class="btn-sm" style="background:var(--ink);color:var(--paper)" onclick="openInlineAddMember()">＋ 添加</button>
+        </div>
+        <div id="npMembersList"></div>
+        <div id="npAddMemberRow" style="display:none;background:var(--cream);border-radius:8px;padding:10px;margin-top:8px">
+          <div class="form-row" style="margin-bottom:8px">
+            <div class="form-group"><label class="form-label" style="font-size:11px">员工</label>
+              <select class="form-select" id="inlineAddEmp" style="font-size:12px"></select></div>
+            <div class="form-group"><label class="form-label" style="font-size:11px">岗位</label>
+              <select class="form-select" id="inlineAddRole" style="font-size:12px">
+                <option>设计总监</option><option>设计主管</option>
+                <option>主案设计师</option><option>执行设计师</option>
+                <option>高级深化设计师</option><option>深化设计师</option>
+                <option>助理设计师</option>
+              </select></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-sm" style="background:var(--green);color:#fff;flex:1" onclick="doInlineAddMember()">确认添加</button>
+            <button class="btn-sm" style="background:var(--paper);border:1px solid var(--border);flex:1" onclick="document.getElementById('npAddMemberRow').style.display='none'">取消</button>
+          </div>
+        </div>
+      </div>
     </div></div></div>
 
 <div class="modal-overlay" id="paymentModal" onclick="closeModalOutside(event,'paymentModal')">
@@ -1395,6 +1421,8 @@ function editProject(id){
   if(hint) hint.textContent = '可直接修改工时，或重新选择日期自动计算';
   document.getElementById('createProjBtn').style.display='none';
   document.getElementById('saveProjBtn').style.display='block';
+  document.getElementById('npMembersSection').style.display='block';
+  renderInlineMembers(id);
   openModal('newProjModal');
 }
 
@@ -1436,6 +1464,9 @@ function closeModal(id){
     document.getElementById('npModalTitle').textContent='新建项目';
     document.getElementById('createProjBtn').style.display='block';
     document.getElementById('saveProjBtn').style.display='none';
+    document.getElementById('npMembersSection').style.display='none';
+    document.getElementById('npMembersList').innerHTML='';
+    document.getElementById('npAddMemberRow').style.display='none';
     document.getElementById('npName').value='';
     document.getElementById('npClient').value='';
     document.getElementById('npContract').value='';
@@ -1928,6 +1959,84 @@ async function deletePayment(id){
 // 渲染函数
 // ══════════════════════════════════════════════════════════════
 
+
+
+// ── 项目弹窗内联成员管理 ──────────────────────────────────────
+function renderInlineMembers(projId){
+  const list = document.getElementById('npMembersList');
+  if(!list) return;
+  const proj    = allProjects.find(p=>p.id===projId);
+  const members = allMembers.filter(m=>m.project_id===projId);
+  const areaM2  = parseFloat(proj?.area)||0;
+  const isChain = proj?.is_chain||false;
+
+  if(!members.length){
+    list.innerHTML = '<div style="font-size:12px;color:var(--text-sub);padding:4px 0 8px">暂无成员，点击右上角添加</div>';
+    return;
+  }
+
+  list.innerHTML = members.map(m=>{
+    const emp   = allEmployees.find(e=>e.id===m.employee_id);
+    const bonus = getBonusAmount(m.job_role, areaM2, isChain);
+    const score = allScores.find(s=>s.project_id===projId&&s.employee_id===m.employee_id&&s.score_type==='project');
+    const scoreVal = score ? parseFloat(score.score) : null;
+    const payable  = scoreVal!=null ? Math.round(bonus*(0.5+0.4*scoreVal)) : null;
+    return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--cream);border-radius:8px;margin-bottom:6px">
+      <div style="width:30px;height:30px;border-radius:50%;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">
+        ${emp?.name?.slice(0,1)||'?'}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600">${emp?.name||'—'}</div>
+        <div style="font-size:11px;color:var(--text-sub)">${m.job_role}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:12px;font-weight:600;color:var(--green)">¥${bonus.toLocaleString()}</div>
+        <div style="font-size:10px;color:var(--text-sub)">${scoreVal!=null?'实发¥'+payable.toLocaleString():'待打分'}</div>
+      </div>
+      <button onclick="delInlineMember('${m.id}','${projId}')" style="background:none;border:none;color:var(--text-sub);cursor:pointer;font-size:16px;padding:0 4px;flex-shrink:0">×</button>
+    </div>`;
+  }).join('');
+}
+
+function openInlineAddMember(){
+  const projId = document.getElementById('npEditId').value;
+  if(!projId){ toast('请先保存项目'); return; }
+  // 填充员工下拉，排除已添加的
+  const added = allMembers.filter(m=>m.project_id===projId).map(m=>m.employee_id);
+  const sel = document.getElementById('inlineAddEmp');
+  sel.innerHTML = allEmployees
+    .filter(e=>!added.includes(e.id))
+    .map(e=>`<option value="${e.id}">${e.name}（${e.job_title||'员工'}）</option>`)
+    .join('');
+  if(!sel.options.length){ toast('所有员工已添加完毕'); return; }
+  document.getElementById('npAddMemberRow').style.display='block';
+}
+
+async function doInlineAddMember(){
+  const projId = document.getElementById('npEditId').value;
+  const empId  = document.getElementById('inlineAddEmp').value;
+  const role   = document.getElementById('inlineAddRole').value;
+  if(!projId||!empId){ toast('请选择员工'); return; }
+  const {error} = await sb.from('project_members').insert({
+    project_id: projId, employee_id: empId, job_role: role
+  });
+  if(error){ toast('添加失败：'+error.message); return; }
+  toast('✓ 已添加');
+  document.getElementById('npAddMemberRow').style.display='none';
+  await loadMembersAndScores();
+  renderInlineMembers(projId);
+  renderBonus();
+}
+
+async function delInlineMember(memberId, projId){
+  if(!confirm('确认移除该成员？')) return;
+  const {error} = await sb.from('project_members').delete().eq('id', memberId);
+  if(error){ toast('删除失败'); return; }
+  toast('已移除');
+  await loadMembersAndScores();
+  renderInlineMembers(projId);
+  renderBonus();
+}
 
 // ══════════════════════════════════════════════════════════════
 // 项目成本分析模块
