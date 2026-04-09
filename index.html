@@ -806,6 +806,15 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
           </table>
         </div>
         <div id="importWarnBox" style="margin-top:8px"></div>
+
+        <!-- 未匹配项目区块 -->
+        <div id="unmatchedWrap" style="display:none;margin-top:12px">
+          <div style="background:#fff3e0;border-radius:8px;padding:10px 14px;margin-bottom:8px">
+            <div style="font-size:12px;font-weight:600;color:#e65100;margin-bottom:6px">⚠️ 以下群组未找到对应项目，请为每条指定归属项目后再导入：</div>
+            <div id="unmatchedList"></div>
+          </div>
+        </div>
+
         <button class="btn-primary" id="doImportBtn" onclick="doImport()" style="margin-top:14px;width:100%">✅ 确认导入</button>
       </div>
 
@@ -1669,27 +1678,74 @@ async function parseImportFile(file){
     importRows.push({ person, project, task, date:dateStr, hours:finalHours, revision:rev, status:statusVal, undone:isUndone });
   }
 
+  // 找出未匹配项目的行，收集唯一群组名
+  const unmatchedGroups = {}; // groupName -> [rows]
+  for(const row of importRows){
+    const proj = allProjects.find(p=>
+      p.name===row.project || p.name.includes(row.project) || row.project.includes(p.name)
+    );
+    if(!proj){
+      if(!unmatchedGroups[row.project]) unmatchedGroups[row.project] = [];
+      unmatchedGroups[row.project].push(row);
+    }
+  }
+
   // 渲染预览
   const tbody = document.getElementById('importPreviewBody');
-  tbody.innerHTML = importRows.map(r=>`
-    <tr>
+  tbody.innerHTML = importRows.map(r=>{
+    const matched = allProjects.find(p=>
+      p.name===r.project || p.name.includes(r.project) || r.project.includes(p.name)
+    );
+    const rowStyle = matched ? '' : 'background:#fff8e1';
+    return `<tr style="${rowStyle}">
       <td>${r.person}</td>
-      <td>${r.project}</td>
+      <td style="color:${matched?'inherit':'#e65100'}">${r.project}${matched?'':' ⚠'}</td>
       <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.task}</td>
       <td>${r.date}</td>
       <td>${r.hours}h</td>
       <td>${r.revision}次</td>
       <td>${r.undone?'<span style="color:var(--accent);font-weight:600">未完成</span>':'<span style="color:var(--green);font-weight:600">已完成</span>'}</td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 
   document.getElementById('importSummary').textContent =
-    `共 ${importRows.length} 条可导入，跳过 ${skipped + (raw.length - importRows.length - skipped)} 条`;
+    `共 ${importRows.length} 条，其中 ${Object.keys(unmatchedGroups).length} 个群组未匹配项目`;
 
   const warnBox = document.getElementById('importWarnBox');
   warnBox.innerHTML = warns.length
     ? `<div style="background:#fff8e1;border-radius:8px;padding:8px 12px;font-size:11px;color:#7a5800">`
       + [...new Set(warns)].map(w=>`⚠️ ${w}`).join('<br>') + '</div>'
     : '';
+
+  // 渲染未匹配区块
+  const unmatchedWrap = document.getElementById('unmatchedWrap');
+  const unmatchedList = document.getElementById('unmatchedList');
+  const groupNames = Object.keys(unmatchedGroups);
+  if(groupNames.length){
+    unmatchedWrap.style.display = 'block';
+    unmatchedList.innerHTML = groupNames.map(gName=>{
+      const rows = unmatchedGroups[gName];
+      const totalH = rows.reduce((s,r)=>s+r.hours,0);
+      const persons = [...new Set(rows.map(r=>r.person))].join('、');
+      const projOptions = allProjects.map(p=>
+        `<option value="${p.id}">${p.name}</option>`
+      ).join('');
+      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+        <div style="flex:1;min-width:180px">
+          <div style="font-size:12px;font-weight:600">${gName}</div>
+          <div style="font-size:11px;color:var(--text-sub)">${rows.length}条记录 · ${totalH.toFixed(1)}h · ${persons}</div>
+        </div>
+        <select class="form-select" id="unmatch_${gName.replace(/[^a-zA-Z0-9]/g,'_')}"
+          style="font-size:12px;max-width:200px">
+          <option value="">— 跳过这些记录 —</option>
+          <option value="__new__">＋ 新建项目「${gName}」</option>
+          ${projOptions}
+        </select>
+      </div>`;
+    }).join('');
+  } else {
+    unmatchedWrap.style.display = 'none';
+  }
 
   document.getElementById('importPreviewWrap').style.display = importRows.length ? 'block' : 'none';
   if(!importRows.length) toast('没有找到可导入的记录，请检查列名和任务进度字段');
@@ -1700,7 +1756,33 @@ async function doImport(){
   const btn = document.getElementById('doImportBtn');
   btn.disabled=true; btn.textContent='导入中…';
 
-  let success=0, fail=0;
+  // 收集用户对未匹配群组的处理选择
+  const groupMapping = {}; // groupName -> projectId (or null=skip)
+  const groupNames = [...new Set(importRows.map(r=>r.project).filter(g=>{
+    return !allProjects.find(p=>p.name===g||p.name.includes(g)||g.includes(p.name));
+  }))];
+  for(const gName of groupNames){
+    const selId = 'unmatch_' + gName.replace(/[^a-zA-Z0-9]/g,'_');
+    const sel = document.getElementById(selId);
+    const val = sel ? sel.value : '';
+    if(val === '__new__'){
+      // 新建项目
+      const {data:newProj, error} = await sb.from('projects').insert({
+        name: gName, status:'active', created_by: currentUser.id
+      }).select().single();
+      if(!error && newProj){
+        groupMapping[gName] = newProj.id;
+        allProjects.push(newProj);
+        toast(`✓ 已新建项目「${gName.slice(0,12)}」`);
+      }
+    } else if(val){
+      groupMapping[gName] = val;
+    } else {
+      groupMapping[gName] = null; // 跳过
+    }
+  }
+
+  let success=0, fail=0, skippedUnmatched=0;
 
   for(const row of importRows){
     // 匹配员工（按姓名，支持去空格模糊匹配）
@@ -1711,10 +1793,15 @@ async function doImport(){
     );
     if(!emp){ fail++; console.warn('员工未匹配:', row.person); continue; }
 
-    // 匹配项目（按名称，先找群组名）
-    const proj = allProjects.find(p=>
+    // 匹配项目：先找系统项目，找不到再查 groupMapping
+    let proj = allProjects.find(p=>
       p.name===row.project || p.name.includes(row.project) || row.project.includes(p.name)
     );
+    if(!proj){
+      const mappedId = groupMapping[row.project];
+      if(!mappedId){ skippedUnmatched++; continue; } // 用户选择跳过
+      proj = allProjects.find(p=>p.id===mappedId);
+    }
     if(!proj){ fail++; continue; }
 
     // 去重：同员工+项目+日期+任务内容（note包含task即视为同一条）
@@ -1761,7 +1848,8 @@ async function doImport(){
   }
 
   btn.disabled=false; btn.textContent='✅ 确认导入';
-  toast(`导入完成：${success} 条成功，${fail} 条失败（员工或项目未匹配）`);
+  const skipMsg = skippedUnmatched > 0 ? `，${skippedUnmatched} 条已跳过（群组未指定）` : '';
+  toast(`导入完成：${success} 条成功，${fail} 条失败${skipMsg}`);
   if(success>0){
     await loadAllData();
     closeModal('importModal');
