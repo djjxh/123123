@@ -664,7 +664,7 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
     </div>
     <div class="card">
       <table class="data-table">
-        <thead><tr><th>姓名</th><th>职位</th><th>角色</th><th>小时成本</th><th>状态</th><th>操作</th></tr></thead>
+        <thead><tr><th>姓名</th><th>职位</th><th>角色</th><th>月固定薪资</th><th>状态</th><th>操作</th></tr></thead>
         <tbody id="teamBody"></tbody>
       </table>
     </div>
@@ -1062,6 +1062,14 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
         <div class="form-group"><label class="form-label">月固定薪资（元，自动填入）</label>
           <input type="number" class="form-input" id="editEmpCost" placeholder="自动填入" style="background:var(--cream);color:var(--text-sub)" readonly></div>
       </div>
+      <div class="form-row" style="margin-top:4px">
+        <div class="form-group"><label class="form-label">在职状态</label>
+          <select class="form-select" id="editEmpActive">
+            <option value="true">在职</option>
+            <option value="false">已离职</option>
+          </select></div>
+        <div class="form-group"></div>
+      </div>
       <button class="btn-primary" id="editEmpBtn" onclick="saveEditEmp()">保存修改</button>
     </div></div></div>
 
@@ -1291,7 +1299,7 @@ async function loadProjects(){
 }
 
 async function loadEmployees(){
-  const {data,error} = await sb.from('users').select('*').eq('is_active',true);
+  const {data,error} = await sb.from('users').select('*').order('is_active',{ascending:false});
   allEmployees = data||[];
   populateEmpSelects();
 }
@@ -1336,7 +1344,7 @@ function populateEmpSelects(){
   }
   const el=document.getElementById('aEmp');
   if(!el)return;
-  el.innerHTML=allEmployees.map(e=>`<option value="${e.id}">${e.name}（${e.job_title||'员工'}）</option>`).join('');
+  el.innerHTML=allEmployees.filter(e=>e.is_active!==false).map(e=>`<option value="${e.id}">${e.name}（${e.job_title||'员工'}）</option>`).join('');
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1804,7 +1812,7 @@ function openEditEmp(id){
   document.getElementById('editEmpTitle').value = e.job_title||'';
   autoFillCost('editEmpTitle','editEmpCost');
   document.getElementById('editEmpRole').value = e.role||'employee';
-  document.getElementById('editEmpCost').value = e.hourly_cost||120;
+  document.getElementById('editEmpActive').value = e.is_active===false ? 'false' : 'true';
   openModal('editEmpModal');
 }
 
@@ -1820,6 +1828,7 @@ async function saveEditEmp(){
     role: document.getElementById('editEmpRole').value,
     hourly_cost: parseFloat(document.getElementById('editEmpCost').value)||0,
     monthly_salary: parseFloat(document.getElementById('editEmpCost').value)||0,
+    is_active: document.getElementById('editEmpActive').value === 'true',
   }).eq('id', id);
   btn.disabled=false; btn.textContent='保存修改';
   if(error){toast('保存失败：'+error.message);return}
@@ -2939,15 +2948,21 @@ function renderTeam(){
   if(!isAdmin)return;
   const el=document.getElementById('teamBody');
   if(!el)return;
-  el.innerHTML=allEmployees.map(e=>`<tr>
-    <td><div style="display:flex;align-items:center;gap:8px">
-      <div class="emp-av" style="background:${e.avatar_color||'#888'};width:28px;height:28px;font-size:11px">${(e.name||'?')[0]}</div>${e.name}</div></td>
-    <td>${e.job_title||'—'}</td>
-    <td><span class="badge ${e.role==='admin'?'badge-risk':'badge-active'}">${e.role==='admin'?'管理者':'员工'}</span></td>
-    <td class="mono">¥${e.hourly_cost||120}/h</td>
-    <td><span class="badge badge-active">在职</span></td>
-    <td><button class="btn-sm btn-blue" onclick="openEditEmp('${e.id}')">编辑</button></td>
-  </tr>`).join('');
+  el.innerHTML=allEmployees.map(e=>{
+    const salary = MONTHLY_SALARY[e.job_title] || e.monthly_salary || 0;
+    const isActive = e.is_active !== false;
+    return `<tr style="${isActive?'':'opacity:0.5'}">
+      <td><div style="display:flex;align-items:center;gap:8px">
+        <div class="emp-av" style="background:${e.avatar_color||'#888'};width:28px;height:28px;font-size:11px">${(e.name||'?')[0]}</div>
+        ${e.name}${isActive?'':'<span style="font-size:10px;color:var(--text-sub);margin-left:4px">已离职</span>'}
+      </div></td>
+      <td>${e.job_title||'—'}</td>
+      <td><span class="badge ${e.role==='admin'?'badge-risk':'badge-active'}">${e.role==='admin'?'管理者':'员工'}</span></td>
+      <td class="mono">¥${salary.toLocaleString()}/月</td>
+      <td><span class="badge ${isActive?'badge-active':'badge-warn'}">${isActive?'在职':'离职'}</span></td>
+      <td><button class="btn-sm btn-blue" onclick="openEditEmp('${e.id}')">编辑</button></td>
+    </tr>`;
+  }).join('');
 }
 
 // ── 报价测算 ──────────────────────────────────────────────────
