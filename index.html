@@ -2098,14 +2098,13 @@ function renderInlineMembers(projId){
 function openInlineAddMember(){
   const projId = document.getElementById('npEditId').value;
   if(!projId){ toast('请先保存项目'); return; }
-  // 填充员工下拉，排除已添加的
-  const added = allMembers.filter(m=>m.project_id===projId).map(m=>m.employee_id);
+  // 显示全部在职员工（同一人可以不同岗位多次添加）
   const sel = document.getElementById('inlineAddEmp');
   sel.innerHTML = allEmployees
-    .filter(e=>!added.includes(e.id))
+    .filter(e=>e.is_active!==false)
     .map(e=>`<option value="${e.id}">${e.name}（${e.job_title||'员工'}）</option>`)
     .join('');
-  if(!sel.options.length){ toast('所有员工已添加完毕'); return; }
+  if(!sel.options.length){ toast('暂无在职员工'); return; }
   document.getElementById('npAddMemberRow').style.display='block';
 }
 
@@ -2114,6 +2113,9 @@ async function doInlineAddMember(){
   const empId  = document.getElementById('inlineAddEmp').value;
   const role   = document.getElementById('inlineAddRole').value;
   if(!projId||!empId){ toast('请选择员工'); return; }
+  // 同员工+同岗位才算重复
+  const dupCheck = allMembers.find(m=>m.project_id===projId&&m.employee_id===empId&&m.job_role===role);
+  if(dupCheck){ toast('该员工已以此岗位加入，可换其他岗位添加'); return; }
   const {error} = await sb.from('project_members').insert({
     project_id: projId, employee_id: empId, job_role: role
   });
@@ -2423,8 +2425,9 @@ async function doAddMember(){
   const empId = document.getElementById('addMemberEmp').value;
   const role  = document.getElementById('addMemberRole').value;
   if(!_memberProjId||!empId){ toast('请选择员工'); return; }
-  const exists = allMembers.find(m=>m.project_id===_memberProjId&&m.employee_id===empId);
-  if(exists){ toast('该员工已在项目中'); return; }
+  // 同员工+同岗位才算重复，允许同一人担任不同岗位
+  const exists = allMembers.find(m=>m.project_id===_memberProjId&&m.employee_id===empId&&m.job_role===role);
+  if(exists){ toast('该员工已以此岗位加入项目'); return; }
   const {error} = await sb.from('project_members').insert({
     project_id: _memberProjId, employee_id: empId, job_role: role
   });
