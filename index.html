@@ -161,23 +161,6 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
 .badge-construction{background:#e8f4fd;color:#2980b9}
 .badge-warn{background:var(--gold-soft);color:var(--gold)}
 
-.badge-safe{background:var(--green-soft);color:var(--green)}
-.badge-caution{background:var(--gold-soft);color:var(--gold)}
-.badge-danger{background:var(--accent-soft);color:var(--accent)}
-.quick-link{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:7px;padding:7px 10px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Noto Sans SC',sans-serif;white-space:nowrap}
-.quick-link.dark{background:var(--ink);color:var(--paper)}
-.quick-link.light{background:var(--paper);color:var(--ink);border:1px solid var(--border)}
-.quick-link.warn{background:var(--gold-soft);color:var(--gold)}
-.quick-link.danger{background:var(--accent-soft);color:var(--accent)}
-.boss-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
-@media(max-width:900px){.boss-grid{grid-template-columns:1fr}}
-.boss-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
-.boss-kicker{font-size:10px;color:var(--text-sub);letter-spacing:0.08em;margin-bottom:8px;font-weight:600}
-.boss-main{font-size:18px;font-weight:700;line-height:1.45}
-.boss-sub{font-size:12px;color:var(--text-sub);margin-top:6px;line-height:1.6}
-.action-stack{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.table-mini{font-size:11px;color:var(--text-sub)}
-
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:480px){.form-row{grid-template-columns:1fr}}
 .form-group{margin-bottom:14px}
@@ -288,124 +271,6 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
   border-radius:10px;letter-spacing:0.06em;vertical-align:middle;margin-left:6px}
 .intel-badge.live{background:var(--green-soft);color:var(--green)}
 .intel-badge.est{background:var(--gold-soft);color:var(--gold)}
-
-
-/* ── VISUAL UPGRADE 2026-04 ── */
-:root{
-  --shadow:0 10px 30px rgba(31,35,41,0.08);
-  --radius:18px;
-  --shadow-soft:0 4px 14px rgba(31,35,41,0.06);
-  --surface:#fbfcfd;
-}
-body{background:linear-gradient(180deg,#f7f8fa 0%,#f3f5f7 100%);color:var(--ink)}
-.logo-title{font-size:20px}
-.logo-sub{font-size:11px}
-.su-name{font-size:15px}
-.su-role{font-size:12px}
-.nav-group{font-size:11px;padding:16px 10px 8px}
-.nav-btn{font-size:14px;padding:11px 12px;border-radius:10px}
-.sidebar-footer,.logout-btn{font-size:12px}
-.topbar{padding:22px 40px;background:rgba(255,255,255,0.94);backdrop-filter:blur(10px)}
-.topbar-title{font-size:28px;letter-spacing:0.02em}
-.topbar-sub{font-size:14px;margin-top:4px}
-.content{padding:32px 40px 44px;max-width:1360px}
-.section-hd{margin-bottom:18px;margin-top:34px}
-.section-title{font-size:20px;letter-spacing:0.02em}
-.card{border-radius:18px;box-shadow:var(--shadow);border-color:#e7ebf0;background:rgba(255,255,255,0.94)}
-.card-hd{padding:18px 22px 14px}
-.card-title{font-size:15px}
-.card-body{padding:22px 24px}
-.stat-grid{gap:16px;margin-bottom:24px}
-.stat-card{padding:22px;border-radius:18px;box-shadow:var(--shadow-soft)}
-.s-label{font-size:12px;margin-bottom:8px;letter-spacing:0.08em}
-.s-val{font-size:34px}
-.s-unit{font-size:14px}
-.s-change{font-size:12px;margin-top:8px}
-.data-table{font-size:14px}
-.data-table th{font-size:11px;padding:13px 20px}
-.data-table td{padding:15px 20px}
-.badge{font-size:11px;padding:4px 12px}
-.form-label{font-size:12px;margin-bottom:7px}
-.form-select,.form-input{padding:12px 14px;border-radius:12px;font-size:14px}
-.action-bar{gap:12px;margin-bottom:18px}
-.action-btn{padding:10px 18px;border-radius:12px;font-size:13px}
-.btn-sm{padding:8px 14px;border-radius:10px;font-size:12px}
-.notice{padding:15px 16px;border-radius:12px;font-size:13px;line-height:1.8}
-.chip-row{gap:10px;margin-bottom:18px}
-.chip{padding:8px 16px;border-radius:999px;font-size:13px}
-.quick-link{padding:8px 12px;border-radius:10px;font-size:12px}
-.list-item{padding:16px 20px}
-.li-name{font-size:14px;font-weight:600}
-.li-meta{font-size:12px;line-height:1.7;margin-top:4px}
-.table-mini{font-size:12px;line-height:1.6}
-.two-col{gap:24px}
-.intel-badge{font-size:10px;padding:3px 8px}
-
-.dashboard-hero{margin-bottom:16px}
-.hero-shell{display:flex;flex-direction:column;gap:18px}
-.hero-head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap}
-.hero-kicker{font-size:11px;color:var(--text-sub);letter-spacing:0.12em;font-weight:700;text-transform:uppercase;margin-bottom:8px}
-.hero-title{font-family:'Noto Serif SC',serif;font-size:34px;line-height:1.25;font-weight:700;letter-spacing:0.01em;color:var(--ink)}
-.hero-desc{font-size:14px;color:var(--text-sub);margin-top:8px;line-height:1.8;max-width:760px}
-.hero-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 14px}
-.hero-summary{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(320px,0.9fr);gap:16px;margin-top:4px}
-.hero-summary-card{border:1px solid var(--border);border-radius:18px;padding:22px;background:var(--surface)}
-.hero-summary-card.tone-red{background:linear-gradient(180deg,#fff2f1 0%,#ffffff 100%);border-color:#f1c4bf}
-.hero-summary-card.tone-gold{background:linear-gradient(180deg,#fff8ea 0%,#ffffff 100%);border-color:#ecd5a0}
-.hero-summary-card.tone-green{background:linear-gradient(180deg,#eefaf1 0%,#ffffff 100%);border-color:#b6ddc1}
-.hero-summary-main{font-family:'Noto Serif SC',serif;font-size:26px;line-height:1.45;font-weight:700}
-.hero-summary-sub{font-size:13px;color:var(--text-sub);line-height:1.8;margin-top:10px}
-.hero-actions-list{display:flex;flex-direction:column;gap:12px}
-.hero-action-item{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border:1px solid var(--border);border-radius:14px;background:#fff}
-.hero-action-index{width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px}
-.hero-action-copy{font-size:14px;line-height:1.8}
-.boss-grid{gap:16px;margin:18px 0 26px}
-.boss-card{padding:22px;border-radius:18px;box-shadow:var(--shadow-soft);background:linear-gradient(180deg,#ffffff 0%,#fbfcfd 100%)}
-.boss-kicker{font-size:11px;margin-bottom:10px}
-.boss-main{font-size:24px;line-height:1.35}
-.boss-sub{font-size:13px;line-height:1.8;margin-top:8px}
-.dashboard-main-grid{display:grid;grid-template-columns:1.05fr 0.95fr;gap:24px;margin-top:4px}
-.stack-col{display:flex;flex-direction:column;gap:22px}
-.card-title-lg{font-family:'Noto Serif SC',serif;font-size:22px;font-weight:700;line-height:1.3}
-.card-subtitle{font-size:13px;color:var(--text-sub);line-height:1.8;margin-top:6px}
-.metric-caption{font-size:12px;color:var(--text-sub);margin-top:8px}
-
-.project-toolbar{margin-bottom:18px}
-.project-toolbar-grid{display:grid;grid-template-columns:minmax(280px,1.5fr) minmax(180px,0.8fr) minmax(180px,0.8fr);gap:14px;align-items:end}
-.control-group{display:flex;flex-direction:column;gap:0}
-.filter-result-hint{margin-top:12px;font-size:13px;color:var(--text-sub);line-height:1.7}
-.project-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:18px}
-.project-summary-card{background:rgba(255,255,255,0.94);border:1px solid var(--border);border-radius:18px;padding:18px 20px;box-shadow:var(--shadow-soft)}
-.project-summary-label{font-size:11px;color:var(--text-sub);letter-spacing:0.08em;font-weight:700;margin-bottom:8px}
-.project-summary-main{font-family:'DM Mono',monospace;font-size:28px;font-weight:500;line-height:1.1}
-.project-summary-note{font-size:12px;color:var(--text-sub);line-height:1.7;margin-top:8px}
-.project-risk-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:18px}
-.project-risk-card{border:1px solid var(--border);border-radius:16px;padding:18px 18px;background:rgba(255,255,255,0.94);box-shadow:var(--shadow-soft)}
-.project-risk-card.red{background:linear-gradient(180deg,#fff2f1 0%,#ffffff 100%);border-color:#f1c4bf}
-.project-risk-title{font-size:16px;font-weight:700;line-height:1.5}
-.project-risk-meta{font-size:13px;color:var(--text-sub);line-height:1.8;margin-top:6px}
-.project-table-wrap{overflow-x:auto}
-.project-actions{display:flex;gap:6px;flex-wrap:wrap}
-.result-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--border);font-size:12px;color:var(--text-sub)}
-.details-summary{padding:18px 22px;cursor:pointer;font-weight:600;color:var(--ink);font-size:15px}
-
-@media(max-width:1100px){
-  .content{padding:28px 26px 40px}
-  .dashboard-main-grid,.hero-summary{grid-template-columns:1fr}
-  .project-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .project-toolbar-grid{grid-template-columns:1fr 1fr}
-}
-@media(max-width:768px){
-  .content{padding:18px}
-  .hero-title{font-size:28px}
-  .hero-summary-main{font-size:22px}
-  .topbar-title{font-size:24px}
-  .project-risk-grid,.project-summary-grid,.project-toolbar-grid{grid-template-columns:1fr}
-  .stat-grid{grid-template-columns:1fr}
-  .card-body{padding:18px}
-  .data-table th,.data-table td{padding:12px 14px}
-}
-
 </style>
 </head>
 <body>
@@ -468,7 +333,7 @@ body{background:linear-gradient(180deg,#f7f8fa 0%,#f3f5f7 100%);color:var(--ink)
       <span class="icon">📊</span>经营看板
     </button>
     <button class="nav-btn admin-nav admin-only" onclick="nav('quote',this)">
-      <span class="icon">🧮</span>报价测算
+      <span class="icon">🧮</span>报价参考
     </button>
     <button class="nav-btn admin-nav admin-only" onclick="nav('team',this)">
       <span class="icon">👥</span>团队管理
@@ -549,44 +414,15 @@ body{background:linear-gradient(180deg,#f7f8fa 0%,#f3f5f7 100%);color:var(--ink)
       <div class="chip" onclick="filterProj('paused',this)">⏸ 已暂停</div>
       <div class="chip" onclick="filterProj('done',this)">已完结</div>
     </div>
-    <div class="card project-toolbar">
-      <div class="card-body">
-        <div class="project-toolbar-grid">
-          <div class="control-group">
-            <label class="form-label">搜索项目</label>
-            <input type="text" class="form-input" id="projSearchInput" placeholder="项目名 / 客户 / 总监" oninput="setProjectSearch(this.value)">
-          </div>
-          <div class="control-group">
-            <label class="form-label">排序方式</label>
-            <select class="form-select" id="projSortSel" onchange="setProjectSort(this.value)">
-              <option value="risk_desc">风险优先</option>
-              <option value="deadline_asc">截止日最近</option>
-              <option value="cost_desc">成本占比最高</option>
-              <option value="paid_asc">回款率最低</option>
-              <option value="contract_desc">合同额最高</option>
-              <option value="profit_asc">利润率最低</option>
-            </select>
-          </div>
-          <div class="control-group">
-            <label class="form-label">总监筛选</label>
-            <select class="form-select" id="projDirectorFilter" onchange="setProjectDirectorFilter(this.value)">
-              <option value="">全部总监</option>
-            </select>
-          </div>
-        </div>
-        <div class="filter-result-hint" id="projectResultHint">当前显示全部项目</div>
-      </div>
-    </div>
     <div class="action-bar">
       <button class="action-btn secondary" onclick="openModal('compareModal')">📊 横向对比</button>
       <button class="action-btn" onclick="openModal('newProjModal')">＋ 新建项目</button>
     </div>
     <div id="riskAlerts"></div>
-    <div id="projectSummaryBar" class="project-summary-grid"></div>
     <div id="projTable"><div class="loading"><span class="spinner"></span>加载中…</div></div>
     <div class="section-hd">
       <div class="section-title">回款 & 报销记录</div>
-      <button class="action-btn" onclick="openModal('paymentModal')" style="padding:9px 16px;font-size:13px">＋ 录入回款</button>
+      <button class="action-btn" onclick="openModal('paymentModal')" style="padding:7px 14px;font-size:12px">＋ 录入回款</button>
     </div>
     <div class="card">
       <div id="paymentTable"><div class="loading"><span class="spinner"></span>加载中…</div></div>
@@ -613,67 +449,49 @@ body{background:linear-gradient(180deg,#f7f8fa 0%,#f3f5f7 100%);color:var(--ink)
     <div style="font-size:15px;font-weight:600">经营数据仅管理者可见</div>
   </div>
   <div class="admin-only">
-    <div class="card dashboard-hero">
-      <div class="card-body hero-shell">
-        <div class="hero-head">
-          <div>
-            <div class="hero-kicker">管理驾驶舱</div>
-            <div class="hero-title">先看结论，再处理问题</div>
-            <div class="hero-desc">把今天最需要处理的项目风险、回款压力和人员异常放在首屏，避免信息很多但抓不住重点。</div>
-          </div>
-          <div class="hero-controls">
-            <div style="font-size:13px;color:var(--text-sub)">统计月份：</div>
-            <select class="form-select" id="dashMonth" style="width:150px;font-size:14px" onchange="renderDashboard()"></select>
-            <div style="font-size:12px;color:var(--text-sub)" id="dashMonthHint"></div>
-          </div>
-        </div>
-        <div id="dashSummary"></div>
-      </div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+      <div style="font-size:13px;color:var(--text-sub)">统计月份：</div>
+      <select class="form-select" id="dashMonth" style="width:140px;font-size:13px" onchange="renderDashboard()"></select>
+      <div style="font-size:11px;color:var(--text-sub)" id="dashMonthHint"></div>
     </div>
 
-    <div id="bossModeBar"></div>
+    <div id="dashSummary"></div>
     <div id="dashStats" class="stat-grid"></div>
 
-    <div class="dashboard-main-grid">
-      <div class="stack-col">
-        <div>
-          <div class="section-hd"><div class="section-title">今日待办</div></div>
-          <div class="card"><div id="todayTodoList" style="padding:4px 0 8px"></div></div>
-        </div>
-        <div>
-          <div class="section-hd"><div class="section-title">快捷操作</div></div>
-          <div class="card">
-            <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap">
-              <button class="btn-sm" style="background:var(--ink);color:var(--paper)" onclick="openModal('assignModal')">＋ 分派工时</button>
-              <button class="btn-sm btn-blue" onclick="openModal('newProjModal')">＋ 新建项目</button>
-              <button class="btn-sm btn-green" onclick="openModal('paymentModal')">＋ 录入回款</button>
-              <button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="gotoPage('project')">查看项目</button>
-              <button class="btn-sm" style="background:#f3f0ff;color:#6c5ce7" onclick="gotoPage('team')">查看团队</button>
-            </div>
-          </div>
-        </div>
+    <div class="two-col">
+      <div>
+        <div class="section-hd"><div class="section-title">今日待办</div></div>
+        <div class="card"><div id="todayTodoList" style="padding:4px 0 8px"></div></div>
       </div>
-      <div class="stack-col">
-        <div>
-          <div class="section-hd"><div class="section-title">团队异常</div></div>
-          <div class="card"><div id="teamAlertsList" style="padding:4px 0 8px"></div></div>
-        </div>
-        <div>
-          <div class="section-hd"><div class="section-title">本月团队负荷</div></div>
-          <div class="card">
-            <table class="data-table">
-              <thead><tr><th>#</th><th>员工</th><th>实际工时</th><th>估算产值</th><th>负荷率</th><th>建议</th></tr></thead>
-              <tbody id="empRankBody"></tbody>
-            </table>
-          </div>
-        </div>
+      <div>
+        <div class="section-hd"><div class="section-title">团队异常</div></div>
+        <div class="card"><div id="teamAlertsList" style="padding:4px 0 8px"></div></div>
       </div>
     </div>
 
-    <div class="section-hd" style="margin-top:34px"><div class="section-title">分析详情（供主管复核）</div></div>
+    <div class="section-hd"><div class="section-title">快捷操作</div></div>
+    <div class="card">
+      <div class="card-body" style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-sm" style="background:var(--ink);color:var(--paper)" onclick="openModal('assignModal')">＋ 分派工时</button>
+        <button class="btn-sm btn-blue" onclick="openModal('projectModal')">＋ 新建项目</button>
+        <button class="btn-sm btn-green" onclick="openModal('paymentModal')">＋ 录入回款</button>
+        <button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="gotoPage('project')">查看项目</button>
+        <button class="btn-sm" style="background:#f3f0ff;color:#6c5ce7" onclick="gotoPage('team')">查看团队</button>
+      </div>
+    </div>
+
+    <div class="section-hd"><div class="section-title">本月团队负荷</div></div>
+    <div class="card">
+      <table class="data-table">
+        <thead><tr><th>#</th><th>员工</th><th>实际工时</th><th>估算产值</th><th>负荷率</th><th>建议</th></tr></thead>
+        <tbody id="empRankBody"></tbody>
+      </table>
+    </div>
+
+    <div class="section-hd" style="margin-top:32px"><div class="section-title">分析详情（供主管复核）</div></div>
     <details class="card">
-      <summary class="details-summary">展开趋势、异常、利润预测与排期</summary>
-      <div style="padding:0 22px 22px">
+      <summary style="padding:16px 18px;cursor:pointer;font-weight:600;color:var(--ink)">展开趋势、异常、利润预测与排期</summary>
+      <div style="padding:0 18px 18px">
         <div class="two-col">
           <div>
             <div class="section-hd"><div class="section-title">工时趋势预测 <span class="intel-badge est">EWMA</span></div></div>
@@ -708,71 +526,70 @@ body{background:linear-gradient(180deg,#f7f8fa 0%,#f3f5f7 100%);color:var(--ink)
     <div style="font-size:15px;font-weight:600">报价数据仅管理者可见</div>
   </div>
   <div class="admin-only">
+    <div class="notice" style="margin-bottom:18px">💡 这是工装报价参考台，不替老板拍板。系统会基于 <strong>常规 600 元/㎡</strong>、面积梯度、创新/复制店差异和历史项目，给出更贴近你们业务的参考区间。</div>
     <div class="two-col">
       <div>
-        <div class="section-hd"><div class="section-title">项目参数</div></div>
+        <div class="section-hd"><div class="section-title">工装报价参考</div></div>
         <div class="card"><div class="card-body">
-          <div class="form-group">
-            <label class="form-label">项目类型</label>
-            <select class="form-select" id="qType" onchange="calcQuote()">
-              <option value="residential">住宅设计</option>
-              <option value="commercial">商业空间</option>
-              <option value="office">办公室设计</option>
-              <option value="hotel">酒店/民宿</option>
-            </select>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">项目业态</label>
+              <select class="form-select" id="qBizType" onchange="calcQuote()">
+                <option value="restaurant">餐饮空间</option>
+                <option value="retail">零售商业</option>
+                <option value="office">办公配套</option>
+                <option value="other">其他工装</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">项目模式</label>
+              <select class="form-select" id="qModel" onchange="calcQuote()">
+                <option value="innovation">创新店</option>
+                <option value="copy">复制店</option>
+              </select>
+            </div>
           </div>
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">面积（㎡）</label>
-              <input type="number" class="form-input" id="qArea" value="200" oninput="calcQuote()">
+              <input type="number" class="form-input" id="qArea" value="300" oninput="calcQuote()">
             </div>
             <div class="form-group">
               <label class="form-label">复杂度</label>
               <select class="form-select" id="qLevel" onchange="calcQuote()">
-                <option value="standard">标准</option>
-                <option value="premium">精品</option>
-                <option value="luxury">高端定制</option>
+                <option value="regular">常规</option>
+                <option value="complex">较复杂</option>
+                <option value="hard">高复杂</option>
               </select>
             </div>
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">目标利润率</label>
-              <select class="form-select" id="qMargin" onchange="calcQuote()">
-                <option value="0.30">保本 30%</option>
-                <option value="0.38" selected>标准 38%</option>
-                <option value="0.45">优质 45%</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">工期（周）</label>
-              <input type="number" class="form-input" id="qWeeks" value="12" oninput="calcQuote()">
-            </div>
-          </div>
-          <div style="background:var(--ink);border-radius:12px;padding:20px;color:var(--paper)">
-            <div style="font-size:10px;color:var(--warm-mid);letter-spacing:0.1em;margin-bottom:14px">▸ 测算结果</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-              <div><div style="font-size:10px;color:var(--warm-mid);margin-bottom:4px">预估人力成本</div>
-                <div style="font-family:'DM Mono',monospace;font-size:20px" id="qCost">—</div></div>
-              <div><div style="font-size:10px;color:var(--warm-mid);margin-bottom:4px">建议报价区间</div>
-                <div style="font-family:'DM Mono',monospace;font-size:20px;color:#f0c060" id="qPrice">—</div></div>
-              <div><div style="font-size:10px;color:var(--warm-mid);margin-bottom:4px">预计工时</div>
-                <div style="font-family:'DM Mono',monospace;font-size:20px" id="qHours">—</div></div>
-              <div><div style="font-size:10px;color:var(--warm-mid);margin-bottom:4px">目标利润率</div>
-                <div style="font-family:'DM Mono',monospace;font-size:20px;color:#f0c060" id="qPct">—</div></div>
+          <div style="background:var(--ink);border-radius:16px;padding:22px;color:var(--paper);margin-top:4px">
+            <div style="font-size:11px;color:var(--warm-mid);letter-spacing:0.1em;margin-bottom:16px">▸ 报价参考结果</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+              <div><div style="font-size:11px;color:var(--warm-mid);margin-bottom:5px">建议单价区间</div>
+                <div style="font-family:'DM Mono',monospace;font-size:24px;color:#f0c060" id="qUnitPrice">—</div></div>
+              <div><div style="font-size:11px;color:var(--warm-mid);margin-bottom:5px">参考合同额</div>
+                <div style="font-family:'DM Mono',monospace;font-size:24px" id="qPrice">—</div></div>
+              <div><div style="font-size:11px;color:var(--warm-mid);margin-bottom:5px">图纸交付参考</div>
+                <div style="font-family:'DM Mono',monospace;font-size:24px" id="qDrawWeeks">—</div></div>
+              <div><div style="font-size:11px;color:var(--warm-mid);margin-bottom:5px">历史参考样本</div>
+                <div style="font-family:'DM Mono',monospace;font-size:24px" id="qSampleCount">—</div></div>
             </div>
           </div>
+          <div id="qAdvice" style="margin-top:14px"></div>
         </div></div>
       </div>
       <div>
-        <div class="section-hd"><div class="section-title">历史项目参考库</div></div>
+        <div class="section-hd"><div class="section-title">同面积图纸交付节奏</div></div>
+        <div id="qDeliveryCompare"></div>
+        <div class="section-hd"><div class="section-title">历史相似项目</div></div>
         <div class="card">
           <table class="data-table">
-            <thead><tr><th>项目</th><th>类型</th><th>面积</th><th>报价</th><th>利润率</th><th>工时</th></tr></thead>
+            <thead><tr><th>项目</th><th>模式</th><th>面积</th><th>单价</th><th>图纸周数</th><th>合同额</th></tr></thead>
             <tbody id="historyBody"></tbody>
           </table>
         </div>
-        <div class="notice">💡 项目完结后自动归入参考库，样本越多测算越准确。</div>
+        <div class="notice">📚 优先参考面积接近的创新店 / 复制店案例。若历史数据不足，系统会回退到常规 600 元/㎡ 的工装参考逻辑。</div>
       </div>
     </div>
   </div>
@@ -1547,7 +1364,9 @@ function populateEmpSelects(){
   }
   const el=document.getElementById('aEmp');
   if(!el)return;
-  el.innerHTML=allEmployees.filter(e=>e.is_active!==false).map(e=>`<option value="${e.id}">${e.name}（${e.job_title||'员工'}）</option>`).join('');
+  const assignable = getWorkloadEmployees();
+  const list = assignable.length ? assignable : allEmployees.filter(e=>e.is_active!==false);
+  el.innerHTML=list.map(e=>`<option value="${e.id}">${e.name}（${e.job_title||'员工'}）</option>`).join('');
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2870,6 +2689,102 @@ function getEmpHourlyRate(emp){
   return monthlySalary > 0 ? monthlySalary / 130 : 120;
 }
 
+
+const WORKLOAD_EXCLUDED_TITLES = ['设计总监','设计主管'];
+
+function shouldExcludeFromWorkload(emp){
+  if(!emp) return true;
+  const title = (emp.job_title||'').trim();
+  const role = (emp.role||'').trim();
+  const name = (emp.name||'').trim();
+  if(emp.is_active===false) return true;
+  if(role==='admin') return true;
+  if(WORKLOAD_EXCLUDED_TITLES.includes(title)) return true;
+  if(/系统管理员/.test(name)) return true;
+  return false;
+}
+
+function getWorkloadEmployees(){
+  return allEmployees.filter(e=>!shouldExcludeFromWorkload(e));
+}
+
+function getProjectModelLabel(project){
+  return project?.is_chain ? '复制店' : '创新店';
+}
+
+function getProjectDrawWeeks(project){
+  const start = project?.start_date ? new Date(project.start_date) : null;
+  const endStr = project?.drawings_delivered_at || project?.deadline || null;
+  const end = endStr ? new Date(endStr) : null;
+  if(!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return null;
+  const days = Math.max(1, (end - start) / 86400000);
+  return +(days / 7).toFixed(1);
+}
+
+function average(nums){
+  const valid = (nums||[]).filter(n=>Number.isFinite(n));
+  if(!valid.length) return null;
+  return valid.reduce((s,n)=>s+n,0)/valid.length;
+}
+
+function safeNum(v){
+  const n = parseFloat(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function median(nums){
+  const valid = (nums||[]).filter(n=>Number.isFinite(n)).sort((a,b)=>a-b);
+  if(!valid.length) return null;
+  const mid = Math.floor(valid.length/2);
+  return valid.length % 2 ? valid[mid] : (valid[mid-1] + valid[mid]) / 2;
+}
+
+function getIndustrialQuoteBase(area, bizType, level, model){
+  let price = 600;
+  if(area >= 1500) price *= 0.80;
+  else if(area >= 1000) price *= 0.86;
+  else if(area >= 600) price *= 0.92;
+  else if(area <= 120) price *= 1.08;
+
+  const bizFactor = { restaurant:1.05, retail:1.00, office:0.93, other:0.98 }[bizType] || 1;
+  const levelFactor = { regular:1.00, complex:1.08, hard:1.16 }[level] || 1;
+  const modelFactor = model === 'copy' ? 0.90 : 1.00;
+  return price * bizFactor * levelFactor * modelFactor;
+}
+
+function getDrawWeeksBaseline(area, model){
+  let weeks = model === 'copy' ? 3.5 : 5.0;
+  if(area > 200) weeks += model === 'copy' ? 0.4 : 0.7;
+  if(area > 500) weeks += model === 'copy' ? 0.7 : 1.0;
+  if(area > 900) weeks += model === 'copy' ? 1.0 : 1.4;
+  if(area > 1500) weeks += model === 'copy' ? 1.2 : 1.8;
+  return weeks;
+}
+
+function getQuoteReferenceData(area){
+  const done = allProjects.filter(p=>safeNum(p.area)>0 && safeNum(p.contract_amount)>0);
+  const enriched = done.map(p=>{
+    const drawWeeks = getProjectDrawWeeks(p);
+    const areaVal = safeNum(p.area);
+    const unitPrice = areaVal>0 ? +(safeNum(p.contract_amount) * 10000 / areaVal).toFixed(0) : null;
+    return { ...p, areaVal, drawWeeks, unitPrice, modelLabel:getProjectModelLabel(p) };
+  });
+
+  if(!area || area <= 0){
+    return enriched.sort((a,b)=>(b.drawWeeks||0)-(a.drawWeeks||0)).slice(0,8);
+  }
+
+  const minArea = area * 0.7;
+  const maxArea = area * 1.3;
+  let similar = enriched.filter(p=>p.areaVal >= minArea && p.areaVal <= maxArea);
+  if(similar.length < 4){
+    similar = enriched.sort((a,b)=>Math.abs(a.areaVal-area)-Math.abs(b.areaVal-area)).slice(0,8);
+  } else {
+    similar = similar.sort((a,b)=>Math.abs(a.areaVal-area)-Math.abs(b.areaVal-area)).slice(0,8);
+  }
+  return similar;
+}
+
 // 各岗位基础年终奖参考（元）
 const ANNUAL_BASE = {
   '设计总监': 10000,
@@ -2945,19 +2860,17 @@ function renderEmpTime(){
 }
 
 function renderAdminTime(){
-  // 统计卡
   const todayStr=new Date().toISOString().split('T')[0];
   const todayLogs=allLogs.filter(l=>l.log_date===todayStr);
   const weekH=allLogs.filter(l=>isThisWeek(l.log_date)).reduce((s,l)=>s+parseFloat(l.hours||0),0);
+  const visibleEmployees = getWorkloadEmployees();
   const el=document.getElementById('adminTimeStats');
   if(el) el.innerHTML=`
     <div class="stat-card"><div class="s-label">今日分派条数</div><div class="s-val">${todayLogs.length}</div></div>
     <div class="stat-card blue"><div class="s-label">本周总工时</div><div class="s-val">${weekH.toFixed(1)}<span class="s-unit">h</span></div></div>
-    <div class="stat-card gold"><div class="s-label">员工人数</div><div class="s-val">${allEmployees.length}<span class="s-unit">人</span></div></div>
+    <div class="stat-card gold"><div class="s-label">执行层人数</div><div class="s-val">${visibleEmployees.length}<span class="s-unit">人</span></div></div>
     <div class="stat-card green"><div class="s-label">进行中项目</div><div class="s-val">${allProjects.filter(p=>p.status==='active').length}<span class="s-unit">个</span></div></div>`;
-  // 负荷条
   renderEmpLoadBars();
-  // 分派记录表
   const tbl=document.getElementById('assignTable');
   if(!tbl)return;
   if(!allLogs.length){tbl.innerHTML='<div class="empty">暂无记录，点击「分派工时」开始录入</div>';return}
@@ -2982,10 +2895,16 @@ function renderEmpLoadBars(){
   const el=document.getElementById('empLoadBars');
   if(!el)return;
   const monthStr=new Date().toISOString().slice(0,7);
-  el.innerHTML=allEmployees.map(e=>{
+  const cap = getMonthlyCapForMonth(monthStr);
+  const employees = getWorkloadEmployees();
+  if(!employees.length){
+    el.innerHTML='<div class="empty">暂无需要统计负荷的执行层员工</div>';
+    return;
+  }
+  el.innerHTML=employees.map(e=>{
     const h=allLogs.filter(l=>l.employee_id===e.id&&l.log_date?.startsWith(monthStr))
       .reduce((s,l)=>s+parseFloat(l.hours||0),0);
-    const pct=Math.round(h/MONTHLY_CAP*100);
+    const pct=Math.round(h/cap*100);
     const cls=pct>90?'pf-red':pct>70?'pf-gold':'pf-green';
     return `<div class="prog-wrap">
       <div class="prog-hd">
@@ -2993,7 +2912,7 @@ function renderEmpLoadBars(){
           <div class="emp-av" style="background:${e.avatar_color||'#888'};width:24px;height:24px;font-size:10px">${(e.name||'?')[0]}</div>
           ${e.name} <span style="font-size:11px;color:var(--text-sub)">${e.job_title||''}</span>
         </span>
-        <span class="mono">${h.toFixed(0)}h / ${getMonthlyCapForMonth(new Date().toISOString().slice(0,7)).toFixed(0)}h &nbsp;<strong>${pct}%</strong></span>
+        <span class="mono">${h.toFixed(0)}h / ${cap.toFixed(0)}h &nbsp;<strong>${pct}%</strong></span>
       </div>
       <div class="prog-track"><div class="prog-fill ${cls}" style="width:${Math.min(pct,100)}%"></div></div>
     </div>`;
@@ -3002,243 +2921,105 @@ function renderEmpLoadBars(){
 
 // ── 项目页 ────────────────────────────────────────────────────
 let projFilter='all';
-let projSearchKeyword='';
-let projSort='risk_desc';
-let projDirectorFilter='';
-
 function filterProj(s,el){
   document.querySelectorAll('#projFilter .chip').forEach(c=>c.classList.remove('active'));
-  el.classList.add('active');
-  projFilter=s;
-  renderProjectPage();
-}
-
-function setProjectSearch(value){
-  projSearchKeyword = String(value||'').trim().toLowerCase();
-  renderProjectPage();
-}
-
-function setProjectSort(value){
-  projSort = value || 'risk_desc';
-  renderProjectPage();
-}
-
-function setProjectDirectorFilter(value){
-  projDirectorFilter = value || '';
-  renderProjectPage();
-}
-
-function getProjectDirectorName(p){
-  return allEmployees.find(e=>e.id===p?.director_id)?.name || '';
-}
-
-function populateProjectToolbarFilters(){
-  const directorSel = document.getElementById('projDirectorFilter');
-  if(directorSel){
-    const current = projDirectorFilter || directorSel.value || '';
-    const directorMap = new Map();
-    allProjects.forEach(p=>{
-      if(!p?.director_id) return;
-      const name = getProjectDirectorName(p);
-      if(name) directorMap.set(p.director_id, name);
-    });
-    directorSel.innerHTML = `<option value="">全部总监</option>${[...directorMap.entries()].map(([id,name])=>`<option value="${id}">${escapeHtml(name)}</option>`).join('')}`;
-    directorSel.value = directorMap.has(current) ? current : '';
-  }
-  const searchInput = document.getElementById('projSearchInput');
-  if(searchInput && searchInput.value !== projSearchKeyword) searchInput.value = projSearchKeyword;
-  const sortSel = document.getElementById('projSortSel');
-  if(sortSel) sortSel.value = projSort;
-}
-
-function getProjectNumericMetrics(p){
-  const contract = parseFloat(p?.contract_amount)||0;
-  const labor = parseFloat(p?.labor_cost)||0;
-  const paid = parseFloat(p?.paid_amount)||0;
-  const hoursUsed = parseFloat(p?.hours_used)||0;
-  const health = getProjectHealth(p);
-  const margin = contract>0 ? ((contract-labor)/contract) : 0;
-  const paidRatio = contract>0 ? paid/contract : 1;
-  const deadlineTs = p?.deadline ? new Date(p.deadline).getTime() : new Date('2999-12-31').getTime();
-  return { contract, labor, paid, hoursUsed, margin, paidRatio, deadlineTs, health };
-}
-
-function sortProjectList(list){
-  return [...list].sort((a,b)=>{
-    const A = getProjectNumericMetrics(a);
-    const B = getProjectNumericMetrics(b);
-    switch(projSort){
-      case 'deadline_asc':
-        return A.deadlineTs - B.deadlineTs || B.health.score - A.health.score || B.health.costRatio - A.health.costRatio;
-      case 'cost_desc':
-        return B.health.costRatio - A.health.costRatio || B.health.score - A.health.score || A.deadlineTs - B.deadlineTs;
-      case 'paid_asc':
-        return A.paidRatio - B.paidRatio || B.health.score - A.health.score || A.deadlineTs - B.deadlineTs;
-      case 'contract_desc':
-        return B.contract - A.contract || B.health.score - A.health.score;
-      case 'profit_asc':
-        return A.margin - B.margin || B.health.score - A.health.score || A.deadlineTs - B.deadlineTs;
-      case 'risk_desc':
-      default:
-        return B.health.score - A.health.score || Number(B.health.overdue) - Number(A.health.overdue) || B.health.costRatio - A.health.costRatio || A.deadlineTs - B.deadlineTs;
-    }
-  });
-}
-
-function renderProjectSummaryBar(list){
-  const el = document.getElementById('projectSummaryBar');
-  if(!el) return;
-  if(!list.length){ el.innerHTML = ''; return; }
-  const risky = list.filter(p=>['danger','caution'].includes(getProjectHealth(p).level));
-  const overdue = list.filter(p=>getProjectHealth(p).overdue);
-  const avgCostRatio = list.reduce((s,p)=>s+(getProjectHealth(p).costRatio||0),0)/list.length;
-  const avgPaidRatio = list.reduce((s,p)=>s+(getProjectHealth(p).paidRatio||0),0)/list.length;
-  el.innerHTML = `
-    <div class="project-summary-card">
-      <div class="project-summary-label">当前结果</div>
-      <div class="project-summary-main">${list.length}</div>
-      <div class="project-summary-note">符合筛选条件的项目数，方便你先缩小范围再处理。</div>
-    </div>
-    <div class="project-summary-card">
-      <div class="project-summary-label">风险项目</div>
-      <div class="project-summary-main">${risky.length}</div>
-      <div class="project-summary-note">危险 + 警戒项目合计，优先看成本占比和是否超期。</div>
-    </div>
-    <div class="project-summary-card">
-      <div class="project-summary-label">平均成本占比</div>
-      <div class="project-summary-main">${Math.round(avgCostRatio*100)}%</div>
-      <div class="project-summary-note">人力成本最好控制在 40% 内，越接近越要慎投。</div>
-    </div>
-    <div class="project-summary-card">
-      <div class="project-summary-label">平均回款率 / 超期</div>
-      <div class="project-summary-main">${Math.round(avgPaidRatio*100)}% / ${overdue.length}</div>
-      <div class="project-summary-note">先盯回款率偏低项目，再处理已超施工图交付日的项目。</div>
-    </div>`;
+  el.classList.add('active'); projFilter=s; renderProjectPage();
 }
 
 function renderProjectPage(){
   if(!isAdmin){renderEmpProjTable();return}
-  populateProjectToolbarFilters();
-
-  const totalCount = allProjects.length;
-  let list = allProjects.filter(p=>{
-    if(projFilter==='all') return true;
-    if(projFilter==='risk') return ['danger','caution'].includes(getProjectHealth(p).level);
-    return p.status===projFilter;
-  }).filter(p=>{
-    if(!projDirectorFilter) return true;
-    return p.director_id === projDirectorFilter;
-  }).filter(p=>{
-    if(!projSearchKeyword) return true;
-    const searchBase = `${p.name||''} ${p.client||''} ${getProjectDirectorName(p)||''}`.toLowerCase();
-    return searchBase.includes(projSearchKeyword);
-  });
-
-  list = sortProjectList(list);
-
-  const hintEl = document.getElementById('projectResultHint');
-  if(hintEl){
-    const riskyCount = list.filter(p=>['danger','caution'].includes(getProjectHealth(p).level)).length;
-    const directorText = projDirectorFilter ? ` · 总监：${escapeHtml(getProjectDirectorName({director_id:projDirectorFilter}) || '已筛选')}` : '';
-    hintEl.innerHTML = `当前显示 <strong>${list.length}</strong> / ${totalCount} 个项目${directorText} · 风险项目 <strong>${riskyCount}</strong> 个`;
-  }
-
-  renderProjectSummaryBar(list);
-
+  const list=projFilter==='all'?allProjects:allProjects.filter(p=>p.status===projFilter);
+  // 风险预警
   const ra=document.getElementById('riskAlerts');
   if(ra){
-    const risky=list.filter(p=>['danger','caution'].includes(getProjectHealth(p).level)).slice(0,4);
-    ra.innerHTML = risky.length ? `<div class="project-risk-grid">${risky.map(p=>{
-      const h = getProjectHealth(p);
-      const hoursPct = Math.round((h.hoursRatio||0)*100);
-      const costPct = Math.round((h.costRatio||0)*100);
-      return `<div class="project-risk-card ${h.level==='danger'?'red':''}">
-        <div class="project-risk-title">${escapeHtml(p.name?.slice(0,24)||'未命名项目')} · ${h.label}</div>
-        <div class="project-risk-meta">工时 ${hoursPct}% · 成本 ${costPct}% · 建议：${escapeHtml(h.action)}</div>
-        <div class="action-stack">
-          <button class="quick-link warn" onclick="openProjectEditor('${p.id}')">编辑项目</button>
-          <button class="quick-link light" onclick="openPaymentForProject('${p.id}')">处理回款</button>
-        </div>
-      </div>`;
-    }).join('')}</div>` : '';
+    const risky=allProjects.filter(p=>{
+      if(p.status==='done' || p.status==='paused') return false;
+      const hb = parseFloat(p.hours_budget)||0;
+      const hu = parseFloat(p.hours_used)||0;
+      const ca = parseFloat(p.contract_amount)||0;
+      const lc = parseFloat(p.labor_cost)||0;
+      return (hb>0 && hu/hb>0.85) || (ca>0 && lc/ca>0.7);
+    });
+    ra.innerHTML=risky.map(p=>{
+      const hb = parseFloat(p.hours_budget)||0;
+      const hu = parseFloat(p.hours_used)||0;
+      const ca = parseFloat(p.contract_amount)||0;
+      const lc = parseFloat(p.labor_cost)||0;
+      const hoursPct = hb>0 ? Math.round(calcAdjustedHours(hu)/hb*100) : 0;
+      const costPct = ca>0 ? Math.round(lc/ca*100) : 0;
+      return `<div class="notice red">⚠ <strong>${p.name?.slice(0,16)}</strong> — 工时消耗 ${hoursPct}%${ca>0?`，人力成本占合同 ${costPct}%`:'，合同额未填写'}</div>`;
+    }).join('');
   }
-
   const el=document.getElementById('projTable');
   if(!el)return;
-  if(!list.length){el.innerHTML='<div class="empty">没有符合条件的项目，换个筛选试试</div>';return}
-  el.innerHTML=`<div class="card" style="margin-bottom:16px"><div class="project-table-wrap"><table class="data-table">
-    <thead><tr><th>项目名称</th><th>合同额</th><th>已回款</th><th>人力成本</th><th>成本占比</th><th>工时进度</th><th>危险等级</th><th>状态</th><th>操作</th></tr></thead>
+  if(!list.length){el.innerHTML='<div class="empty">暂无项目</div>';return}
+  el.innerHTML=`<div class="card" style="margin-bottom:16px"><div style="overflow-x:auto"><table class="data-table">
+    <thead><tr><th>项目名称</th><th>合同额</th><th>已回款</th><th>人力成本</th><th>利润率</th><th>工时进度 <span title="实际工时含主管10%+总监10%管理折算" style="cursor:help;color:var(--gold)">ⓘ</span></th><th>状态</th><th>操作</th></tr></thead>
     <tbody>${list.map(p=>{
-      const health = getProjectHealth(p);
-      const metrics = getProjectNumericMetrics(p);
-      const margin=Math.round(metrics.margin*100);
-      const pct=Math.round((health.hoursRatio||0)*100);
-      const costPct=Math.round((health.costRatio||0)*100);
+      const margin=p.contract_amount>0?Math.round((p.contract_amount-p.labor_cost)/p.contract_amount*100):0;
+      const adjHours = calcAdjustedHours(p.hours_used||0);
+      const pct=p.hours_budget>0?Math.round(adjHours/p.hours_budget*100):0;
       return `<tr>
-        <td class="fw6" style="min-width:200px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-          ${escapeHtml(p.name||'')}
-          <div class="table-mini">${escapeHtml(p.client||'未填写客户')} · ${escapeHtml(getProjectDirectorName(p)||'未分配总监')}</div>
+        <td class="fw6" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          ${p.name}
+          ${p.director_id?`<div style="font-size:10px;color:var(--text-sub)">${allEmployees.find(e=>e.id===p.director_id)?.name||''}总监</div>`:''}
         </td>
-        <td class="mono">${fmtWan(p.contract_amount)}</td>
-        <td class="mono">${fmtWan(p.paid_amount||0)}</td>
-        <td class="mono">${fmtWan(p.labor_cost||0)}</td>
-        <td><div class="mono ${costPct>=40?'dn':costPct>=35?'neutral':'up'}">${costPct}%</div><div class="table-mini">利润率 ${margin}%</div></td>
-        <td><div style="display:flex;align-items:center;gap:8px">
-          <div style="width:72px;height:6px;background:var(--cream);border-radius:999px;overflow:hidden">
-            <div style="width:${Math.min(pct,100)}%;height:100%;border-radius:999px;background:${pct>=95?'var(--accent)':pct>=85?'var(--gold)':'var(--green)'}"></div>
-          </div><span class="mono" style="font-size:12px">${pct}%</span>
+        <td class="mono">¥${p.contract_amount}万</td>
+        <td class="mono">¥${(p.paid_amount||0).toFixed(1)}万</td>
+        <td class="mono">¥${(p.labor_cost||0).toFixed(1)}万</td>
+        <td class="mono ${margin<20?'dn':margin>=38?'up':''}">${margin}%</td>
+        <td><div style="display:flex;align-items:center;gap:6px">
+          <div style="width:60px;height:5px;background:var(--cream);border-radius:3px;overflow:hidden">
+            <div style="width:${Math.min(pct,100)}%;height:100%;border-radius:3px;background:${pct>90?'var(--accent)':pct>70?'var(--gold)':'var(--green)'}"></div>
+          </div><span class="mono" style="font-size:11px">${pct}% <span style="font-size:9px;color:var(--text-sub)" title="实际录入${Math.round(p.hours_used||0)}h × 1.2管理折算 = ${Math.round(adjHours)}h">ⓘ</span></span>
         </div></td>
-        <td><span class="badge ${health.badgeClass}">${health.label}</span><div class="table-mini">${escapeHtml(health.action)}</div></td>
         <td>
-          ${getProjectStatusBadge(p.status)}
-          ${health.overdue?'<div class="table-mini" style="color:var(--accent);margin-top:4px">已超施工图交付日</div>':''}
-          ${p.status==='construction'&&p.completion_date?`<div class="table-mini">预计竣工：${escapeHtml(p.completion_date)}</div>`:''}
+          <span class="badge badge-${p.status}">${p.status==='active'?'进行中':p.status==='construction'?'🏗施工跟踪':p.status==='paused'?'⏸暂停':p.status==='risk'?'⚠预警':'已完结'}</span>
+          ${p.deadline&&p.status==='active'&&new Date(p.deadline)<new Date()?'<div style="font-size:10px;color:var(--accent);margin-top:2px">⚠施工图已超期</div>':''}
+          ${p.status==='construction'&&p.completion_date?`<div style="font-size:10px;color:var(--text-sub);margin-top:2px">预计竣工：${p.completion_date}</div>`:''}
         </td>
-        <td><div class="project-actions">
-          <button class="btn-sm btn-blue" onclick="openAssignForProject('${p.id}')">分派</button>
-          <button class="btn-sm btn-green" onclick="openPaymentForProject('${p.id}')">回款</button>
-          <button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="openProjectEditor('${p.id}')">编辑</button>
-          <button class="btn-sm btn-red" onclick="deleteProject('${p.id}','${(p.name||'').replace(/'/g,'')}')">删除</button>
-        </div></td>
+        <td style="display:flex;gap:4px">
+          <button class="btn-sm btn-blue" onclick="quickPayment('${p.id}')">回款</button>
+          <button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="editProject('${p.id}')">编辑</button>
+          <button class="btn-sm btn-red" onclick="deleteProject('${p.id}','${p.name?.replace(/'/g,'')}')">删除</button>
+        </td>
       </tr>`;
     }).join('')}</tbody>
   </table></div></div>`;
-
+  // 回款记录
   const pt=document.getElementById('paymentTable');
   if(pt){
-    if(!allPayments.length){pt.innerHTML='<div class="empty">暂无回款记录</div>';} 
-    else pt.innerHTML=`<table class="data-table"><thead><tr><th>日期</th><th>项目</th><th>类型</th><th>金额</th><th>备注</th><th>操作</th></tr></thead>
+    if(!allPayments.length){pt.innerHTML='<div class="empty">暂无回款记录</div>';return}
+    pt.innerHTML=`<table class="data-table"><thead><tr><th>日期</th><th>项目</th><th>类型</th><th>金额</th><th>备注</th></tr></thead>
     <tbody>${allPayments.map(p=>`<tr>
-      <td>${escapeHtml(p.payment_date||'')}</td>
-      <td>${escapeHtml(p.project?.name?.slice(0,18)||'—')}</td>
-      <td><span class="badge ${p.type.includes('回款')||p.type.includes('款')?'badge-active':'badge-warn'}">${escapeHtml(p.type||'')}</span></td>
-      <td class="mono fw6">${fmtWan(p.amount||0)}</td>
-      <td style="color:var(--text-sub)">${escapeHtml(p.note||'—')}</td>
-      <td><div class="project-actions">
+      <td>${p.payment_date}</td>
+      <td>${p.project?.name?.slice(0,14)||'—'}</td>
+      <td><span class="badge ${p.type.includes('回款')||p.type.includes('款')?'badge-active':'badge-warn'}">${p.type}</span></td>
+      <td class="mono fw6">¥${p.amount}万</td>
+      <td style="color:var(--text-sub)">${p.note||'—'}</td>
+      <td style="display:flex;gap:4px">
         <button class="btn-sm btn-blue" onclick="editPayment('${p.id}')">编辑</button>
         <button class="btn-sm btn-red" onclick="deletePayment('${p.id}')">删除</button>
-      </div></td>
+      </td>
     </tr>`).join('')}</tbody></table>`;
   }
-
+  // 横向对比
   const cb=document.getElementById('compareBody');
-  if(cb) cb.innerHTML=sortProjectList(allProjects).map(p=>{
-    const metrics = getProjectNumericMetrics(p);
-    const margin=Math.round(metrics.margin*100);
-    const health = getProjectHealth(p);
-    const pct=Math.round((health.hoursRatio||0)*100);
-    const hourly=(parseFloat(p.hours_used)||0)>0?Math.round((parseFloat(p.contract_amount)||0)*10000/(parseFloat(p.hours_used)||1)):0;
+  if(cb) cb.innerHTML=allProjects.map(p=>{
+    const margin=p.contract_amount>0?Math.round((p.contract_amount-p.labor_cost)/p.contract_amount*100):0;
+    const pct=p.hours_budget>0?Math.round(p.hours_used/p.hours_budget*100):0;
+    const hourly=p.hours_used>0?Math.round(p.contract_amount*10000/p.hours_used):0;
     return `<tr>
-      <td class="fw6">${escapeHtml(p.name?.slice(0,16)||'')}</td>
-      <td class="mono">${fmtWan(p.contract_amount)}</td>
+      <td class="fw6">${p.name?.slice(0,14)}</td>
+      <td class="mono">¥${p.contract_amount}万</td>
       <td class="mono ${margin<20?'dn':margin>=38?'up':''}">${margin}%</td>
-      <td class="mono">${Math.round(parseFloat(p.hours_used)||0)}h</td>
-      <td><div style="display:flex;align-items:center;gap:8px">
-        <div style="width:56px;height:6px;background:var(--cream);border-radius:999px;overflow:hidden">
-          <div style="width:${Math.min(pct,100)}%;height:100%;background:${pct>=95?'var(--accent)':pct>=85?'var(--gold)':'var(--green)'};border-radius:999px"></div>
-        </div><span style="font-size:12px">${pct}%</span></div></td>
+      <td class="mono">${Math.round(p.hours_used||0)}h</td>
+      <td><div style="display:flex;align-items:center;gap:6px">
+        <div style="width:50px;height:5px;background:var(--cream);border-radius:3px;overflow:hidden">
+          <div style="width:${Math.min(pct,100)}%;height:100%;background:${pct>90?'var(--accent)':'var(--green)'};border-radius:3px"></div>
+        </div><span style="font-size:11px">${pct}%</span></div></td>
       <td class="mono">¥${hourly}/h</td>
-      <td><span class="badge ${health.badgeClass}">${health.label}</span></td>
+      <td><span class="badge badge-${p.status}">${p.status==='active'?'进行中':p.status==='construction'?'🏗施工跟踪':p.status==='paused'?'⏸暂停':p.status==='risk'?'⚠预警':'已完结'}</span></td>
     </tr>`;
   }).join('');
 }
@@ -3267,7 +3048,7 @@ function quickPayment(projId){
 function initDashMonthPicker(){
   const sel = document.getElementById('dashMonth');
   if(!sel) return;
-  const currentValue = sel.value;
+  // 生成最近12个月选项
   const months = [];
   const now = new Date();
   for(let i=0;i<12;i++){
@@ -3276,10 +3057,8 @@ function initDashMonthPicker(){
     const label = `${d.getFullYear()}年${d.getMonth()+1}月`;
     months.push({val,label});
   }
-  const target = months.some(m=>m.val===currentValue) ? currentValue : months[0]?.val;
-  sel.innerHTML = months.map(m=>`<option value="${m.val}"${m.val===target?' selected':''}>${m.label}</option>`).join('');
+  sel.innerHTML = months.map((m,i)=>`<option value="${m.val}"${i===0?' selected':''}>${m.label}</option>`).join('');
 }
-
 
 function getDashMonth(){
   const sel = document.getElementById('dashMonth');
@@ -3291,118 +3070,6 @@ function calcAdjustedHours(rawHours){
   return rawHours * 1.2;
 }
 
-function escapeHtml(value){
-  return String(value ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-}
-
-function fmtWan(value, digits=1){
-  return `¥${(parseFloat(value)||0).toFixed(digits)}万`;
-}
-
-function getEmployeeMonthHours(empId, monthStr){
-  return allLogs.filter(l=>l.employee_id===empId && l.log_date?.startsWith(monthStr))
-    .reduce((s,l)=>s+parseFloat(l.hours||0),0);
-}
-
-function getProjectHealth(p){
-  const hb = parseFloat(p?.hours_budget)||0;
-  const huRaw = parseFloat(p?.hours_used)||0;
-  const hu = calcAdjustedHours(huRaw);
-  const ca = parseFloat(p?.contract_amount)||0;
-  const lc = parseFloat(p?.labor_cost)||0;
-  const paid = parseFloat(p?.paid_amount)||0;
-  const hoursRatio = hb>0 ? hu/hb : 0;
-  const costRatio = ca>0 ? lc/ca : 0;
-  const paidRatio = ca>0 ? paid/ca : 0;
-  const overdue = !!(p?.status==='active' && p?.deadline && new Date(p.deadline) < new Date());
-  let level='safe', label='🟢 安全', badgeClass='badge-safe', action='正常推进';
-  if(p?.status==='done'){ return {level:'done',label:'已完结',badgeClass:'badge-done',action:'已完结',hoursRatio,costRatio,paidRatio,overdue,score:0}; }
-  if(p?.status==='paused'){ return {level:'paused',label:'已暂停',badgeClass:'badge-paused',action:'暂停中',hoursRatio,costRatio,paidRatio,overdue,score:0}; }
-  if(costRatio>=0.40 || hoursRatio>=0.95 || overdue){
-    level='danger'; label='🔴 危险'; badgeClass='badge-danger';
-    action = overdue ? '先处理超期' : costRatio>=0.40 ? '控制投入/补款' : '确认交付';
-  } else if(costRatio>=0.35 || hoursRatio>=0.85 || paidRatio<0.40){
-    level='caution'; label='🟡 警戒'; badgeClass='badge-caution';
-    action = paidRatio<0.40 ? '优先催款' : '盯紧进度';
-  }
-  const score = level==='danger' ? 3 : level==='caution' ? 2 : 1;
-  return {level,label,badgeClass,action,hoursRatio,costRatio,paidRatio,overdue,score};
-}
-
-function getProjectStatusBadge(status){
-  return `<span class="badge badge-${status}">${status==='active'?'进行中':status==='construction'?'🏗施工跟踪':status==='paused'?'⏸暂停':status==='risk'?'⚠预警':'已完结'}</span>`;
-}
-
-function setProjectFilter(filter){
-  projFilter = filter;
-  document.querySelectorAll('#projFilter .chip').forEach(c=>{
-    c.classList.toggle('active', c.getAttribute('onclick')?.includes(`'${filter}'`));
-  });
-  gotoPage('project');
-  renderProjectPage();
-}
-
-function openProjectEditor(id){
-  gotoPage('project');
-  editProject(id);
-}
-
-function openPaymentForProject(id){
-  gotoPage('project');
-  quickPayment(id);
-}
-
-function openAssignForProject(projectId){
-  gotoPage('timelog');
-  const sel = document.getElementById('aProj');
-  if(sel) sel.value = projectId;
-  openModal('assignModal');
-}
-
-function openAssignForEmployee(empId){
-  gotoPage('timelog');
-  const sel = document.getElementById('aEmp');
-  if(sel) sel.value = empId;
-  openModal('assignModal');
-}
-
-function renderBossMode(monthStr, metrics){
-  const el=document.getElementById('bossModeBar');
-  if(!el)return;
-  const cap = getMonthlyCapForMonth(monthStr);
-  const teamRows = allEmployees.filter(e=>e.is_active!==false).map(e=>({
-    ...e,
-    hours:getEmployeeMonthHours(e.id, monthStr)
-  }));
-  const overloaded = teamRows.filter(r=>r.hours>cap);
-  const underloaded = teamRows.filter(r=>r.hours<cap*0.35);
-  const dangerProjects = allProjects.filter(p=>['danger'].includes(getProjectHealth(p).level));
-  const cautionProjects = allProjects.filter(p=>getProjectHealth(p).level==='caution');
-  const profitText = metrics.avgMargin >= 30 ? '本月整体还在赚钱' : metrics.avgMargin >= 20 ? '利润偏薄，别再松' : '利润已经偏危险';
-  const peopleText = overloaded.length ? `${overloaded.length}人超载` : underloaded.length ? `${underloaded.length}人可补位` : '团队负荷正常';
-  const riskText = dangerProjects.length ? `${dangerProjects.length}个项目要先处理` : cautionProjects.length ? `${cautionProjects.length}个项目需要盯紧` : '暂无高危项目';
-  el.innerHTML = `
-    <div class="boss-grid">
-      <div class="boss-card">
-        <div class="boss-kicker">老板模式 / 赚钱情况</div>
-        <div class="boss-main">${profitText}</div>
-        <div class="boss-sub">当前综合利润率 ${metrics.avgMargin}%，建议把人力成本占合同额控制在 40% 内，不要在低回款项目上继续加码。</div>
-      </div>
-      <div class="boss-card">
-        <div class="boss-kicker">老板模式 / 项目风险</div>
-        <div class="boss-main">${riskText}</div>
-        <div class="boss-sub">${dangerProjects.slice(0,3).map(p=>escapeHtml(p.name)).join('、') || cautionProjects.slice(0,3).map(p=>escapeHtml(p.name)).join('、') || '当前无需插手重点项目。'}</div>
-        <div class="action-stack"><button class="quick-link warn" onclick="setProjectFilter('risk')">查看风险项目</button></div>
-      </div>
-      <div class="boss-card">
-        <div class="boss-kicker">老板模式 / 人员状态</div>
-        <div class="boss-main">${peopleText}</div>
-        <div class="boss-sub">${overloaded.slice(0,3).map(e=>escapeHtml(e.name)).join('、') || underloaded.slice(0,3).map(e=>escapeHtml(e.name)).join('、') || '人员状态稳定。'}</div>
-        <div class="action-stack"><button class="quick-link light" onclick="gotoPage('team')">查看团队详情</button></div>
-      </div>
-    </div>`;
-}
-
 function renderDashboard(){
   if(!isAdmin)return;
   initDashMonthPicker();
@@ -3410,26 +3077,32 @@ function renderDashboard(){
   const monthLogs = allLogs.filter(l=>l.log_date?.startsWith(monthStr));
   const rawMonthH = monthLogs.reduce((s,l)=>s+parseFloat(l.hours||0),0);
   const adjMonthH = calcAdjustedHours(rawMonthH);
-  const monthCost = allEmployees.reduce((s,e)=>{
-    const h = getEmployeeMonthHours(e.id, monthStr);
+  const workloadEmployees = getWorkloadEmployees();
+  const monthCost = workloadEmployees.reduce((s,e)=>{
+    const h = monthLogs.filter(l=>l.employee_id===e.id).reduce((a,l)=>a+parseFloat(l.hours||0),0);
     return s + calcAdjustedHours(h) * getEmpHourlyRate(e) / 10000;
   },0);
-  const totalContract=allProjects.reduce((s,p)=>s+(parseFloat(p.contract_amount)||0),0);
-  const totalPaid=allProjects.reduce((s,p)=>s+(parseFloat(p.paid_amount)||0),0);
-  const totalCost=allProjects.reduce((s,p)=>s+(parseFloat(p.labor_cost)||0),0);
+  const totalContract=allProjects.reduce((s,p)=>s+(p.contract_amount||0),0);
+  const totalPaid=allProjects.reduce((s,p)=>s+(p.paid_amount||0),0);
+  const totalCost=allProjects.reduce((s,p)=>s+(p.labor_cost||0),0);
   const avgMargin=totalContract>0?Math.round((totalContract-totalCost)/totalContract*100):0;
-  const riskyProjects = allProjects.filter(p=>['danger','caution'].includes(getProjectHealth(p).level));
-  const dangerProjects = riskyProjects.filter(p=>getProjectHealth(p).level==='danger');
+  const riskyProjects = allProjects.filter(p=>{
+    if(p.status==='done' || p.status==='paused') return false;
+    const hb = parseFloat(p.hours_budget)||0;
+    const hu = parseFloat(p.hours_used)||0;
+    const ca = parseFloat(p.contract_amount)||0;
+    const lc = parseFloat(p.labor_cost)||0;
+    return (hb>0 && hu/hb>0.85) || (ca>0 && lc/ca>0.4);
+  });
   const hint = document.getElementById('dashMonthHint');
-  if(hint) hint.textContent = `本月录入 ${rawMonthH.toFixed(0)}h，折算 ${adjMonthH.toFixed(0)}h，人力成本 ${fmtWan(monthCost,2)}`;
+  if(hint) hint.textContent = `本月录入 ${rawMonthH.toFixed(0)}h，含管理折算 ${adjMonthH.toFixed(0)}h，执行层人力成本 ¥${monthCost.toFixed(2)}万`;
   const ds=document.getElementById('dashStats');
   if(ds) ds.innerHTML=`
-    <div class="stat-card green"><div class="s-label">本月人力成本</div><div class="s-val">${monthCost.toFixed(2)}<span class="s-unit">万</span></div><div class="s-change neutral">按月薪 ÷ 130h 摊入</div></div>
-    <div class="stat-card gold"><div class="s-label">综合利润率</div><div class="s-val">${avgMargin}<span class="s-unit">%</span></div><div class="s-change ${avgMargin<20?'dn':avgMargin>=30?'up':'neutral'}">${avgMargin<20?'需要立即收缩成本':avgMargin>=30?'仍在安全区':'利润偏薄'}</div></div>
-    <div class="stat-card red"><div class="s-label">待跟进回款</div><div class="s-val">${(totalContract-totalPaid).toFixed(1)}<span class="s-unit">万</span></div><div class="s-change dn">优先盯低于40%回款项目</div></div>
-    <div class="stat-card blue"><div class="s-label">危险 / 警戒项目</div><div class="s-val">${dangerProjects.length}/${riskyProjects.length}<span class="s-unit">个</span></div><div class="s-change neutral">先看危险，再看警戒</div></div>`;
-  renderBusinessSummary(monthStr, { rawMonthH, adjMonthH, monthCost, totalContract, totalPaid, totalCost, avgMargin, riskyProjects, dangerProjects });
-  renderBossMode(monthStr, { avgMargin, riskyProjects, dangerProjects });
+    <div class="stat-card green"><div class="s-label">合同总额</div><div class="s-val">${totalContract.toFixed(1)}<span class="s-unit">万</span></div></div>
+    <div class="stat-card gold"><div class="s-label">综合利润率</div><div class="s-val">${avgMargin}<span class="s-unit">%</span></div></div>
+    <div class="stat-card red"><div class="s-label">未回款</div><div class="s-val">${(totalContract-totalPaid).toFixed(1)}<span class="s-unit">万</span></div><div class="s-change dn">需跟进</div></div>
+    <div class="stat-card blue"><div class="s-label">风险项目</div><div class="s-val">${riskyProjects.length}<span class="s-unit">个</span></div><div class="s-change neutral">接近上限 / 成本偏高</div></div>`;
+  renderBusinessSummary(monthStr, { rawMonthH, adjMonthH, monthCost, totalContract, totalPaid, totalCost, avgMargin, riskyProjects });
   renderTodayTodoList(monthStr);
   renderTeamAlerts(monthStr);
   renderEmpRank();
@@ -3441,42 +3114,38 @@ function renderBusinessSummary(monthStr, metrics){
   if(!el)return;
   const today=new Date();
   const overdue = allProjects.filter(p=>p.status==='active' && p.deadline && new Date(p.deadline) < today);
-  const lowPaid = allProjects.filter(p=>p.status!=='done' && (parseFloat(p.contract_amount)||0)>0 && ((parseFloat(p.paid_amount)||0) / parseFloat(p.contract_amount)) < 0.4);
+  const lowPaid = allProjects.filter(p=>p.status!=='done' && p.contract_amount>0 && ((p.paid_amount||0) / p.contract_amount) < 0.4);
   const cap = getMonthlyCapForMonth(monthStr);
-  const overloaded = allEmployees.filter(e=>getEmployeeMonthHours(e.id, monthStr) > cap);
+  const overloaded = getWorkloadEmployees().filter(e=>{
+    const h = allLogs.filter(l=>l.employee_id===e.id && l.log_date?.startsWith(monthStr)).reduce((s,l)=>s+parseFloat(l.hours||0),0);
+    return h > cap;
+  });
 
   let tone = 'green';
-  let headline = '✅ 当前经营整体稳定，可以按原计划推进。';
+  let headline = '当前经营整体稳定，可以按原计划推进。';
   const actions = [];
 
-  if(overdue.length || overloaded.length || metrics.avgMargin < 20 || metrics.dangerProjects.length){
+  if(overdue.length || overloaded.length || metrics.avgMargin < 20){
     tone = 'red';
-    headline = `⚠️ 立即处理：${metrics.dangerProjects.length||overdue.length} 个关键风险正在挤压利润和交付。`;
+    headline = `当前经营偏紧，建议今天先处理风险项目，再安排新增任务。`;
   } else if(lowPaid.length || metrics.riskyProjects.length || metrics.avgMargin < 30){
     tone = 'gold';
-    headline = '🟡 重点跟进：回款、排期和人员负荷开始变紧。';
+    headline = '当前经营基本可控，但回款和排期需要优先跟进。';
   }
 
-  if(metrics.dangerProjects.length) actions.push(`先处理 ${metrics.dangerProjects.slice(0,3).map(p=>p.name?.slice(0,10)).join('、')}，必要时暂停继续投入或申请补款。`);
-  if(overdue.length) actions.push(`今天先确认 ${overdue.slice(0,3).map(p=>p.name?.slice(0,10)).join('、')} 的实际交付时间，避免继续超期。`);
-  if(lowPaid.length) actions.push(`优先跟进 ${lowPaid.slice(0,3).map(p=>p.name?.slice(0,10)).join('、')} 的首付款/中期款，把回款率拉到 40% 以上。`);
-  if(overloaded.length) actions.push(`给 ${overloaded.slice(0,3).map(e=>e.name).join('、')} 减负，把任务拆给可补位人员。`);
-  if(!actions.length) actions.push('本周重点盯回款、截止日和人员负荷，按原计划推进即可。');
+  if(overdue.length) actions.push(`先催 ${overdue.slice(0,3).map(p=>p.name?.slice(0,10)).join('、')} 的施工图节点，避免继续超期。`);
+  if(lowPaid.length) actions.push(`跟进 ${lowPaid.slice(0,3).map(p=>p.name?.slice(0,10)).join('、')} 的首付款/中期款，优先把回款率拉到 40% 以上。`);
+  if(overloaded.length) actions.push(`给 ${overloaded.slice(0,3).map(e=>e.name).join('、')} 减负，避免继续挤压交付时间。`);
+  if(!actions.length) actions.push('本周重点盯回款、截止日和执行层负荷，保持节奏即可。');
 
   el.innerHTML = `
-    <div class="hero-summary">
-      <div class="hero-summary-card tone-${tone}">
-        <div class="hero-kicker">一句话经营状态</div>
-        <div class="hero-summary-main">${headline}</div>
-        <div class="hero-summary-sub">本页优先顺序：先处理高风险项目，再看回款，再调团队负荷。让看板直接告诉你该先做什么。</div>
-        <div class="action-stack">
-          <button class="quick-link ${tone==='red'?'danger':'warn'}" onclick="setProjectFilter('risk')">查看风险项目</button>
-          <button class="quick-link warn" onclick="gotoPage('project')">查看项目总表</button>
-          <button class="quick-link light" onclick="gotoPage('team')">查看团队负荷</button>
-        </div>
-      </div>
-      <div class="hero-actions-list">
-        ${actions.slice(0,4).map((t,i)=>`<div class="hero-action-item"><div class="hero-action-index">${String(i+1).padStart(2,'0')}</div><div class="hero-action-copy">${escapeHtml(t)}</div></div>`).join('')}
+    <div class="notice ${tone==='red'?'red':tone==='green'?'green':''}" style="margin-bottom:12px">
+      <strong>一句话经营状态：</strong>${headline}
+    </div>
+    <div class="card" style="margin-bottom:8px">
+      <div class="card-body">
+        <div style="font-size:11px;color:var(--text-sub);margin-bottom:8px">直接行动建议</div>
+        ${actions.map(t=>`<div style="font-size:13px;line-height:1.7;padding:4px 0">• ${t}</div>`).join('')}
       </div>
     </div>`;
 }
@@ -3491,43 +3160,22 @@ function renderTodayTodoList(monthStr){
 
   const items=[];
   allProjects.filter(p=>p.status==='active' && p.deadline && new Date(p.deadline) < today).forEach(p=>{
-    items.push({
-      name:`${p.name} 已超施工图交付日`,
-      meta:`截止 ${p.deadline} · 今天先确认实际交付时间，再决定是否继续追加投入。`,
-      badge:'先处理',cls:'badge-danger',
-      actions:`<button class="quick-link danger" onclick="openProjectEditor('${p.id}')">查看项目</button>`
-    });
+    items.push({name:`${p.name} 已超施工图交付日`,meta:`截止 ${p.deadline} · 建议今天确认实际交付时间`,badge:'立即处理',cls:'badge-risk'});
   });
   allProjects.filter(p=>p.status==='active' && p.deadline && new Date(p.deadline) >= today && new Date(p.deadline) <= in7Days).forEach(p=>{
     const diff=Math.ceil((new Date(p.deadline)-today)/86400000);
-    items.push({
-      name:`${p.name} 即将到期`,
-      meta:`剩余 ${diff} 天 · 今天确认图纸完成度，并预留返工时间。`,
-      badge:'本周盯紧',cls:'badge-caution',
-      actions:`<button class="quick-link warn" onclick="openProjectEditor('${p.id}')">去处理</button>`
-    });
+    items.push({name:`${p.name} 即将到期`,meta:`剩余 ${diff} 天 · 建议今天确认图纸完成度`,badge:'本周跟进',cls:'badge-warn'});
   });
-  allProjects.filter(p=>p.status!=='done' && (parseFloat(p.contract_amount)||0)>0 && ((parseFloat(p.paid_amount)||0) / parseFloat(p.contract_amount)) < 0.4).forEach(p=>{
-    const paidPct=Math.round(((parseFloat(p.paid_amount)||0) / parseFloat(p.contract_amount)) * 100);
-    items.push({
-      name:`${p.name} 回款偏低`,
-      meta:`当前回款 ${paidPct}% · 今天优先催首付款/中期款，避免人力继续垫资。`,
-      badge:'催回款',cls:'badge-caution',
-      actions:`<button class="quick-link warn" onclick="openPaymentForProject('${p.id}')">录入/查看回款</button>`
-    });
+  allProjects.filter(p=>p.status!=='done' && p.contract_amount>0 && ((p.paid_amount||0) / p.contract_amount) < 0.4).forEach(p=>{
+    const paidPct=Math.round(((p.paid_amount||0) / p.contract_amount) * 100);
+    items.push({name:`${p.name} 回款偏低`,meta:`当前回款 ${paidPct}% · 建议今天催款`,badge:'催回款',cls:'badge-warn'});
   });
-  const noLogEmployees = allEmployees.filter(e=>{
-    if(e.is_active===false) return false;
+  const noLogEmployees = getWorkloadEmployees().filter(e=>{
     const h = allLogs.filter(l=>l.employee_id===e.id && l.log_date===todayStr).reduce((s,l)=>s+parseFloat(l.hours||0),0);
     return h===0;
   });
   if(noLogEmployees.length){
-    items.push({
-      name:`${noLogEmployees.length} 名员工今天暂未分派工时`,
-      meta:`先核对是否未开工，再决定补任务还是保留机动。`,
-      badge:'核对分工',cls:'badge-active',
-      actions:`<button class="quick-link dark" onclick="gotoPage('timelog');openModal('assignModal')">立即分派</button>`
-    });
+    items.push({name:`${noLogEmployees.length} 名执行层同事今天暂未录入/分派工时`,meta:`建议核对是否未分派或未开始任务`,badge:'核对分工',cls:'badge-active'});
   }
 
   if(!items.length){
@@ -3535,11 +3183,10 @@ function renderTodayTodoList(monthStr){
     return;
   }
 
-  el.innerHTML = items.slice(0,6).map(item=>`<div class="list-item" style="align-items:flex-start">
+  el.innerHTML = items.slice(0,6).map(item=>`<div class="list-item">
     <div class="li-info">
-      <div class="li-name">${escapeHtml(item.name)}</div>
-      <div class="li-meta">${escapeHtml(item.meta)}</div>
-      <div class="action-stack">${item.actions||''}</div>
+      <div class="li-name">${item.name}</div>
+      <div class="li-meta">${item.meta}</div>
     </div>
     <span class="badge ${item.cls}">${item.badge}</span>
   </div>`).join('');
@@ -3549,49 +3196,37 @@ function renderTeamAlerts(monthStr){
   const el=document.getElementById('teamAlertsList');
   if(!el)return;
   const cap = getMonthlyCapForMonth(monthStr);
-  const rows = allEmployees.filter(e=>e.is_active!==false).map(e=>{
-    const rawH = getEmployeeMonthHours(e.id, monthStr);
+  const rows = getWorkloadEmployees().map(e=>{
+    const rawH = allLogs.filter(l=>l.employee_id===e.id && l.log_date?.startsWith(monthStr)).reduce((s,l)=>s+parseFloat(l.hours||0),0);
     const pct = rawH / cap;
-    const projCount = new Set(allLogs.filter(l=>l.employee_id===e.id && l.log_date?.startsWith(monthStr)).map(l=>l.project_id)).size;
-    return { ...e, rawH, pct, projCount };
+    return { ...e, rawH, pct };
   });
 
   const items = [];
   rows.filter(r=>r.pct>1).forEach(r=>{
-    items.push({
-      name:`${r.name} 已超负荷`,
-      meta:`本月 ${r.rawH.toFixed(0)}h / ${cap.toFixed(0)}h · 先停派新任务，再把非关键任务拆给其他人。`,
-      badge:'超载',cls:'badge-danger',
-      actions:`<button class="quick-link light" onclick="gotoPage('timelog')">查看工时</button>`
-    });
+    items.push({name:`${r.name} 已超负荷`,meta:`本月 ${r.rawH.toFixed(0)}h / ${cap.toFixed(0)}h · 建议立即拆分任务`,badge:'超载',cls:'badge-risk'});
   });
   rows.filter(r=>r.pct<0.35).forEach(r=>{
-    items.push({
-      name:`${r.name} 当前负荷偏低`,
-      meta:`本月 ${r.rawH.toFixed(0)}h · 可以优先承接新项目、返工或补位任务。`,
-      badge:'可补位',cls:'badge-caution',
-      actions:`<button class="quick-link dark" onclick="openAssignForEmployee('${r.id}')">给他分任务</button>`
-    });
+    items.push({name:`${r.name} 当前负荷偏低`,meta:`本月 ${r.rawH.toFixed(0)}h · 可承接新任务或返工任务`,badge:'可补位',cls:'badge-warn'});
   });
-  rows.filter(r=>r.projCount>=4 && r.pct>0.8).forEach(r=>{
-    items.push({
-      name:`${r.name} 同时跟进项目过多`,
-      meta:`本月参与 ${r.projCount} 个项目 · 应减少切换成本，只保留关键项目。`,
-      badge:'需协调',cls:'badge-active',
-      actions:`<button class="quick-link light" onclick="gotoPage('project')">看项目分布</button>`
-    });
+
+  const multiProj = rows.map(r=>{
+    const projCount = new Set(allLogs.filter(l=>l.employee_id===r.id && l.log_date?.startsWith(monthStr)).map(l=>l.project_id)).size;
+    return { ...r, projCount };
+  }).filter(r=>r.projCount>=4 && r.pct>0.8);
+  multiProj.forEach(r=>{
+    items.push({name:`${r.name} 同时跟进项目过多`,meta:`本月参与 ${r.projCount} 个项目 · 建议减少切换成本`,badge:'需协调',cls:'badge-active'});
   });
 
   if(!items.length){
-    el.innerHTML='<div class="list-item"><div style="font-size:20px">🌿</div><div class="li-info"><div class="li-name">当前团队状态正常</div><div class="li-meta">没有明显超载或空转人员</div></div></div>';
+    el.innerHTML='<div class="list-item"><div style="font-size:20px">🌿</div><div class="li-info"><div class="li-name">当前团队状态正常</div><div class="li-meta">执行层没有明显超载或空转人员</div></div></div>';
     return;
   }
 
-  el.innerHTML = items.slice(0,6).map(item=>`<div class="list-item" style="align-items:flex-start">
+  el.innerHTML = items.slice(0,6).map(item=>`<div class="list-item">
     <div class="li-info">
-      <div class="li-name">${escapeHtml(item.name)}</div>
-      <div class="li-meta">${escapeHtml(item.meta)}</div>
-      <div class="action-stack">${item.actions||''}</div>
+      <div class="li-name">${item.name}</div>
+      <div class="li-meta">${item.meta}</div>
     </div>
     <span class="badge ${item.cls}">${item.badge}</span>
   </div>`).join('');
@@ -3626,29 +3261,33 @@ function renderEmpRank(){
   if(!el)return;
   const monthStr=getDashMonth();
   const cap = getMonthlyCapForMonth(monthStr);
-  const ranked=allEmployees.filter(e=>e.is_active!==false).map(e=>{
-    const rawH=getEmployeeMonthHours(e.id, monthStr);
+  const ranked=getWorkloadEmployees().map(e=>{
+    const rawH=allLogs.filter(l=>l.employee_id===e.id&&l.log_date?.startsWith(monthStr))
+      .reduce((s,l)=>s+parseFloat(l.hours||0),0);
     const output=calcAdjustedHours(rawH)*getEmpHourlyRate(e)/10000;
     const load=Math.round(rawH/cap*100);
-    const advice = load>100 ? '暂停派单' : load<35 ? '优先补位' : load>85 ? '盯紧交付' : '正常推进';
+    const advice = load>100 ? '先减负' : load<35 ? '可补位' : load>85 ? '重点盯交付' : '正常推进';
     return {...e,rawH,output,load,advice};
   }).sort((a,b)=>b.rawH-a.rawH);
+  if(!ranked.length){
+    el.innerHTML='<tr><td colspan="6" class="empty">暂无可统计的执行层员工</td></tr>';
+    return;
+  }
   el.innerHTML=ranked.map((e,i)=>`<tr>
     <td style="color:var(--text-sub);font-size:12px">${i+1}</td>
     <td><div style="display:flex;align-items:center;gap:8px">
       <div class="emp-av" style="background:${e.avatar_color||'#888'}">${(e.name||'?')[0]}</div>
-      <div><div class="fw6">${escapeHtml(e.name)}</div><div style="font-size:11px;color:var(--text-sub)">${escapeHtml(e.job_title||'')}</div></div></div></td>
+      <div><div class="fw6">${e.name}</div><div style="font-size:11px;color:var(--text-sub)">${e.job_title||''}</div></div></div></td>
     <td class="mono">${e.rawH.toFixed(0)}h</td>
     <td class="mono">¥${e.output.toFixed(2)}万</td>
     <td><div style="display:flex;align-items:center;gap:6px">
       <div style="width:50px;height:5px;background:var(--cream);border-radius:3px;overflow:hidden">
         <div style="width:${Math.min(e.load,100)}%;height:100%;background:${e.load>100?'var(--accent)':e.load>80?'var(--gold)':'var(--green)'};border-radius:3px"></div>
       </div><span style="font-size:11px">${e.load}%</span></div></td>
-    <td><span class="badge ${e.load>100?'badge-danger':e.load<35?'badge-caution':'badge-active'}">${e.advice}</span></td>
+    <td><span class="badge ${e.load>100?'badge-risk':e.load<35?'badge-warn':'badge-active'}">${e.advice}</span></td>
   </tr>`).join('');
 }
 
-// ── 团队管理 ──────────────────────────────────────────────────
 // ── 团队管理 ──────────────────────────────────────────────────
 // ── 团队管理 ──────────────────────────────────────────────────
 function renderTeam(){
@@ -3672,45 +3311,85 @@ function renderTeam(){
   }).join('');
 }
 
-// ── 报价测算 ──────────────────────────────────────────────────
+// ── 报价参考 ──────────────────────────────────────────────────
 function renderQuote(){
   calcQuote();
-  const el=document.getElementById('historyBody');
-  if(!el)return;
-  const done=allProjects.filter(p=>p.status==='done');
-  if(!done.length){el.innerHTML='<tr><td colspan="6" class="empty">暂无完结项目数据</td></tr>';return}
-  el.innerHTML=done.map(p=>{
-    const margin=p.contract_amount>0?Math.round((p.contract_amount-p.labor_cost)/p.contract_amount*100):0;
-    return `<tr>
-      <td class="fw6">${p.name?.slice(0,12)}</td>
-      <td>—</td>
-      <td class="mono">${p.area||'—'}㎡</td>
-      <td class="mono">¥${p.contract_amount}万</td>
-      <td class="mono ${margin>=38?'up':''}">${margin}%</td>
-      <td class="mono">${Math.round(p.hours_used||0)}h</td>
-    </tr>`;
-  }).join('');
 }
 
 function calcQuote(){
-  const type=(document.getElementById('qType')||{}).value||'residential';
   const area=parseFloat((document.getElementById('qArea')||{}).value)||0;
-  const level=(document.getElementById('qLevel')||{}).value||'standard';
-  const margin=parseFloat((document.getElementById('qMargin')||{}).value)||0.38;
-  const avgCost=allEmployees.length>0
-    ?allEmployees.reduce((s,e)=>s+getEmpHourlyRate(e),0)/allEmployees.length
-    :120;
-  const hrs=area*TYPE_H[type]*LVL_M[level];
-  const cost=hrs*avgCost;
-  const price=cost/(1-margin);
-  const qCost=document.getElementById('qCost');
+  const level=(document.getElementById('qLevel')||{}).value||'regular';
+  const model=(document.getElementById('qModel')||{}).value||'innovation';
+  const bizType=(document.getElementById('qBizType')||{}).value||'restaurant';
+  const history = getQuoteReferenceData(area);
+  const modelLabel = model === 'copy' ? '复制店' : '创新店';
+  const baseUnit = getIndustrialQuoteBase(area, bizType, level, model);
+  const sameModel = history.filter(p=>(model==='copy')===!!p.is_chain && Number.isFinite(p.unitPrice));
+  const sameModelMedian = median(sameModel.map(p=>p.unitPrice));
+  const finalUnit = sameModelMedian ? (baseUnit*0.6 + sameModelMedian*0.4) : baseUnit;
+  const unitLow = Math.round(finalUnit*0.92/10)*10;
+  const unitHigh = Math.round(finalUnit*1.08/10)*10;
+  const totalLow = area>0 ? unitLow * area / 10000 : 0;
+  const totalHigh = area>0 ? unitHigh * area / 10000 : 0;
+
+  const baseWeeks = getDrawWeeksBaseline(area, model);
+  const histWeeks = average(sameModel.map(p=>p.drawWeeks));
+  const refWeeks = histWeeks ? (baseWeeks*0.4 + histWeeks*0.6) : baseWeeks;
+  const weekLow = Math.max(1, +(refWeeks-0.8).toFixed(1));
+  const weekHigh = +(refWeeks+0.8).toFixed(1);
+
+  const qUnitPrice=document.getElementById('qUnitPrice');
   const qPrice=document.getElementById('qPrice');
-  const qHours=document.getElementById('qHours');
-  const qPct=document.getElementById('qPct');
-  if(qCost) qCost.textContent=`¥${(cost/10000).toFixed(1)}万`;
-  if(qPrice) qPrice.textContent=`¥${(price/10000).toFixed(1)}~${(price*1.15/10000).toFixed(1)}万`;
-  if(qHours) qHours.textContent=`${Math.round(hrs)}h`;
-  if(qPct) qPct.textContent=`${Math.round(margin*100)}~${Math.round(margin*100+5)}%`;
+  const qDrawWeeks=document.getElementById('qDrawWeeks');
+  const qSampleCount=document.getElementById('qSampleCount');
+  if(qUnitPrice) qUnitPrice.textContent = area>0 ? `¥${unitLow} ~ ${unitHigh}/㎡` : '—';
+  if(qPrice) qPrice.textContent = area>0 ? `¥${totalLow.toFixed(1)} ~ ${totalHigh.toFixed(1)}万` : '—';
+  if(qDrawWeeks) qDrawWeeks.textContent = area>0 ? `${weekLow} ~ ${weekHigh}周` : '—';
+  if(qSampleCount) qSampleCount.textContent = `${history.length} 个样本`;
+
+  const adviceEl=document.getElementById('qAdvice');
+  if(adviceEl){
+    const adv=[];
+    adv.push(`当前按 ${modelLabel} 逻辑参考，常规工装基准按 600 元/㎡ 起算。`);
+    if(area>=1000) adv.push('面积较大，单价已自动做梯度下调，建议最终仍由老板二次把关。');
+    if(model==='copy') adv.push('复制店通常会比创新店更快出图、单价也更容易下探。');
+    else adv.push('创新店更依赖前期方案推敲，图纸交付节奏通常比复制店更慢。');
+    if(history.length<3) adv.push('历史相似样本偏少，当前结果更偏“经验参考”，不要直接作为最终报价。');
+    adviceEl.innerHTML = `<div class="notice">${adv.map(a=>`• ${a}`).join('<br>')}</div>`;
+  }
+
+  const compareEl=document.getElementById('qDeliveryCompare');
+  if(compareEl){
+    const innovationRows = history.filter(p=>!p.is_chain);
+    const copyRows = history.filter(p=>!!p.is_chain);
+    const makeCard = (label, rows, colorClass, emptyText) => {
+      const avgWeeks = average(rows.map(p=>p.drawWeeks));
+      const projectNames = rows.slice(0,4).map(p=>p.name).join('、');
+      return `<div class="stat-card ${colorClass}" style="margin-bottom:12px">
+        <div class="s-label">${label}</div>
+        <div class="s-val">${avgWeeks?avgWeeks.toFixed(1):'—'}<span class="s-unit">周</span></div>
+        <div class="s-change neutral">${rows.length?`参考 ${rows.length} 个项目` : emptyText}</div>
+        <div style="font-size:12px;color:var(--text-sub);margin-top:8px;line-height:1.7">${rows.length?projectNames:'暂无相近面积案例'}</div>
+      </div>`;
+    };
+    compareEl.innerHTML = makeCard('创新店图纸交付参考', innovationRows, 'blue', '暂无创新店样本') + makeCard('复制店图纸交付参考', copyRows, 'green', '暂无复制店样本');
+  }
+
+  const historyBody=document.getElementById('historyBody');
+  if(historyBody){
+    if(!history.length){
+      historyBody.innerHTML='<tr><td colspan="6" class="empty">暂无可参考的历史项目</td></tr>';
+    } else {
+      historyBody.innerHTML = history.map(p=>`<tr>
+        <td class="fw6">${p.name?.slice(0,16) || '—'}</td>
+        <td>${p.modelLabel}</td>
+        <td class="mono">${p.areaVal||'—'}㎡</td>
+        <td class="mono">${p.unitPrice?`¥${p.unitPrice}/㎡`:'—'}</td>
+        <td class="mono">${p.drawWeeks?`${p.drawWeeks}周`:'—'}</td>
+        <td class="mono">¥${safeNum(p.contract_amount).toFixed(1)}万</td>
+      </tr>`).join('');
+    }
+  }
 }
 
 // ── 我的档案 ──────────────────────────────────────────────────
@@ -3881,27 +3560,27 @@ function renderLoadBalance(){
   const el=document.getElementById('loadBalanceResult');
   if(!el)return;
   const monthStr=new Date().toISOString().slice(0,7);
-  const empLoad=allEmployees.map(e=>{
+  const cap = getMonthlyCapForMonth(monthStr);
+  const empLoad=getWorkloadEmployees().map(e=>{
     const h=allLogs.filter(l=>l.employee_id===e.id&&l.log_date?.startsWith(monthStr))
       .reduce((s,l)=>s+parseFloat(l.hours||0),0);
-    return {...e,h,pct:h/MONTHLY_CAP};
+    return {...e,h,pct:h/cap};
   });
   const overloaded=empLoad.filter(e=>e.pct>1.0);
   const underloaded=empLoad.filter(e=>e.pct<0.5);
   if(!overloaded.length&&!underloaded.length){
-    el.innerHTML='<div class="list-item"><div style="font-size:20px">✅</div><div class="li-info"><div class="li-name">负载均衡</div><div class="li-meta">全员负荷在合理区间</div></div></div>';
+    el.innerHTML='<div class="list-item"><div style="font-size:20px">✅</div><div class="li-info"><div class="li-name">负载均衡</div><div class="li-meta">执行层负荷在合理区间</div></div></div>';
     return;
   }
   let html=[...overloaded,...underloaded].map(e=>`<div class="list-item">
     <div style="width:8px;height:8px;border-radius:50%;background:${e.pct>1?'var(--accent)':'var(--gold)'};flex-shrink:0"></div>
     <div class="li-info"><div class="li-name">${e.name}</div>
-      <div class="li-meta">${e.pct>1?`超载 +${Math.round((e.pct-1)*MONTHLY_CAP)}h`:`空余 ${Math.round((1-e.pct)*MONTHLY_CAP)}h`}</div></div>
+      <div class="li-meta">${e.pct>1?`超载 +${Math.round((e.pct-1)*cap)}h`:`空余 ${Math.round((1-e.pct)*cap)}h`}</div></div>
     <span class="badge ${e.pct>1?'badge-risk':'badge-warn'}">${e.pct>1?'超载':'空余'}</span>
   </div>`).join('');
-  // 贪心建议
   const suggestions=[];
-  let remaining=[...overloaded.map(e=>({...e,overflow:Math.round((e.pct-1)*MONTHLY_CAP)}))];
-  let spare=[...underloaded.map(e=>({...e,space:Math.round((1-e.pct)*MONTHLY_CAP)}))];
+  let remaining=[...overloaded.map(e=>({...e,overflow:Math.round((e.pct-1)*cap)}))];
+  let spare=[...underloaded.map(e=>({...e,space:Math.round((1-e.pct)*cap)}))];
   remaining.forEach(o=>{
     spare.forEach(u=>{
       if(o.overflow>0&&u.space>0){
@@ -3971,7 +3650,7 @@ const pageInfo={
   timelog:{title:'工时记录',sub:'主管分派制 · 工时由主管核定'},
   project:{title:'项目管理',sub:'项目经营数据与风险评估'},
   dashboard:{title:'经营看板',sub:'今日待办 · 一句话经营状态 · 团队异常'},
-  quote:{title:'报价测算',sub:'基于历史数据的报价参考'},
+  quote:{title:'报价参考',sub:'工装报价区间 · 历史案例 · 图纸交付节奏'},
   team:{title:'团队管理',sub:'员工账号与权限管理'},
   bonus:{title:'绩效管理',sub:'项目成员配置 · 绩效打分 · 奖金核算'},
   profile:{title:'我的档案',sub:'个人工时与效率数据'},
