@@ -373,7 +373,7 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
 <div class="page active" id="page-timelog">
   <!-- 员工视图 -->
   <div class="employee-only">
-    <div class="notice">📌 工时由主管直接录入，如有疑问请联系主管。</div>
+    <div class="notice">📌 工时以飞书导入和主管核对结果为准。执行层人效统计仅基于已锁定/已导入数据。</div>
     <div id="myStatsGrid" class="stat-grid" style="grid-template-columns:repeat(2,1fr)"></div>
     <div class="section-hd"><div class="section-title">本月我的工时记录</div></div>
     <div class="card">
@@ -382,7 +382,16 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
   </div>
   <!-- 管理者视图 -->
   <div class="admin-only">
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-body" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="font-size:13px;color:var(--text-sub)">统计周期：</div>
+        <select class="form-select" id="timeGranularity" style="width:110px;font-size:13px" onchange="updateReportGranularity(this.value)"></select>
+        <select class="form-select" id="timePeriod" style="width:170px;font-size:13px" onchange="updateReportPeriod(this.value)"></select>
+        <div style="font-size:12px;color:var(--text-sub)" id="timePeriodHint"></div>
+      </div>
+    </div>
     <div id="adminTimeStats" class="stat-grid"></div>
+    <div id="adminTimeHealth" class="stat-grid"></div>
     <div class="section-hd">
       <div class="section-title">员工负荷总览</div>
     </div>
@@ -449,13 +458,19 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
     <div style="font-size:15px;font-weight:600">经营数据仅管理者可见</div>
   </div>
   <div class="admin-only">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-      <div style="font-size:13px;color:var(--text-sub)">统计月份：</div>
-      <select class="form-select" id="dashMonth" style="width:140px;font-size:13px" onchange="renderDashboard()"></select>
-      <div style="font-size:11px;color:var(--text-sub)" id="dashMonthHint"></div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-body" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="font-size:13px;color:var(--text-sub)">统计维度：</div>
+        <select class="form-select" id="dashGranularity" style="width:110px;font-size:13px" onchange="updateReportGranularity(this.value)"></select>
+        <select class="form-select" id="dashPeriod" style="width:170px;font-size:13px" onchange="updateReportPeriod(this.value)"></select>
+        <div style="font-size:11px;color:var(--text-sub)" id="dashPeriodHint"></div>
+      </div>
     </div>
 
+    <div class="section-hd"><div class="section-title">数据可信度</div></div>
+    <div id="dashDataHealth" class="stat-grid"></div>
     <div id="dashSummary"></div>
+    <div class="section-hd"><div class="section-title">本周期核心统计</div></div>
     <div id="dashStats" class="stat-grid"></div>
 
     <div class="two-col">
@@ -473,14 +488,14 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
     <div class="card">
       <div class="card-body" style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn-sm" style="background:var(--ink);color:var(--paper)" onclick="openModal('assignModal')">＋ 分派工时</button>
-        <button class="btn-sm btn-blue" onclick="openModal('projectModal')">＋ 新建项目</button>
+        <button class="btn-sm btn-blue" onclick="openModal('newProjModal')">＋ 新建项目</button>
         <button class="btn-sm btn-green" onclick="openModal('paymentModal')">＋ 录入回款</button>
         <button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="gotoPage('project')">查看项目</button>
         <button class="btn-sm" style="background:#f3f0ff;color:#6c5ce7" onclick="gotoPage('team')">查看团队</button>
       </div>
     </div>
 
-    <div class="section-hd"><div class="section-title">本月团队负荷</div></div>
+    <div class="section-hd"><div class="section-title">本周期团队负荷</div></div>
     <div class="card">
       <table class="data-table">
         <thead><tr><th>#</th><th>员工</th><th>实际工时</th><th>估算产值</th><th>负荷率</th><th>建议</th></tr></thead>
@@ -1227,10 +1242,14 @@ async function logout(){
   currentUser=null; userProfile=null; isAdmin=false;
   document.getElementById('mainApp').style.display='none';
   document.getElementById('loginScreen').style.display='block';
-  document.getElementById('loginStep1').classList.add('active');
-  document.getElementById('loginStep2').classList.remove('active');
-  document.getElementById('loginEmail').value='';
-  document.getElementById('loginPassword').value='';
+  const step1=document.getElementById('loginStep1');
+  const step2=document.getElementById('loginStep2');
+  if(step1) step1.classList.add('active');
+  if(step2) step2.classList.remove('active');
+  const emailEl=document.getElementById('loginEmail');
+  const pwdEl=document.getElementById('loginPassword');
+  if(emailEl) emailEl.value='';
+  if(pwdEl) pwdEl.value='';
 }
 
 // ── 监听认证状态变化（仅处理退出）──────────────────────────────
@@ -1324,23 +1343,51 @@ async function loadEmployees(){
   populateEmpSelects();
 }
 
+async function fetchAllRows(factory, pageSize=1000, maxRows=20000){
+  let from = 0;
+  const rows = [];
+  while(from < maxRows){
+    const {data, error} = await factory(from, from + pageSize - 1);
+    if(error) throw error;
+    const batch = data || [];
+    rows.push(...batch);
+    if(batch.length < pageSize) break;
+    from += pageSize;
+  }
+  return rows;
+}
+
 async function loadLogs(){
-  let q = sb.from('time_logs').select(`
-    *,
-    employee:users!time_logs_employee_id_fkey(name,avatar_color,job_title),
-    project:projects!time_logs_project_id_fkey(name)
-  `).order('log_date',{ascending:false}).limit(200);
-  if(!isAdmin) q = q.eq('employee_id',userProfile?.id);
-  const {data,error} = await q;
-  allLogs = data||[];
+  try{
+    allLogs = await fetchAllRows((from,to)=>{
+      let q = sb.from('time_logs').select(`
+        *,
+        employee:users!time_logs_employee_id_fkey(name,avatar_color,job_title),
+        project:projects!time_logs_project_id_fkey(name)
+      `).order('log_date',{ascending:false}).range(from,to);
+      if(!isAdmin) q = q.eq('employee_id',userProfile?.id);
+      return q;
+    }, 1000, 30000);
+  }catch(error){
+    console.error('loadLogs failed', error);
+    toast('工时数据加载不完整，请刷新重试');
+    allLogs = allLogs || [];
+  }
 }
 
 async function loadPayments(){
   if(!isAdmin){allPayments=[];return}
-  const {data} = await sb.from('payments').select(`
-    *,project:projects(name)
-  `).order('payment_date',{ascending:false}).limit(100);
-  allPayments = data||[];
+  try{
+    allPayments = await fetchAllRows((from,to)=>
+      sb.from('payments').select(`
+        *,project:projects(name)
+      `).order('payment_date',{ascending:false}).range(from,to), 1000, 10000
+    );
+  }catch(error){
+    console.error('loadPayments failed', error);
+    toast('回款数据加载不完整，请刷新重试');
+    allPayments=[];
+  }
 }
 
 // ── Select 填充 ───────────────────────────────────────────────
@@ -2830,28 +2877,30 @@ function renderAll(){
 
 // ── 工时页 ────────────────────────────────────────────────────
 function renderTimePage(){
+  initReportControls();
   if(isAdmin) renderAdminTime();
   else renderEmpTime();
 }
 
 function renderEmpTime(){
   const myLogs = allLogs.filter(l=>l.employee_id===userProfile?.id);
-  const monthLogs = myLogs.filter(l=>l.log_date?.startsWith(new Date().toISOString().slice(0,7)));
-  const totalH = monthLogs.reduce((s,l)=>s+parseFloat(l.hours||0),0);
-  const proj = new Set(monthLogs.map(l=>l.project_id)).size;
+  const info = getSelectedPeriodInfo();
+  const periodLogs = filterLogsForPeriod(myLogs, info);
+  const totalH = periodLogs.reduce((s,l)=>s+safeNum(l.hours),0);
+  const proj = new Set(periodLogs.map(l=>l.project_id)).size;
   const grid = document.getElementById('myStatsGrid');
   if(grid) grid.innerHTML=`
-    <div class="stat-card green"><div class="s-label">本月累计工时</div>
+    <div class="stat-card green"><div class="s-label">${info.label}累计工时</div>
       <div class="s-val">${totalH.toFixed(1)}<span class="s-unit">h</span></div>
-      <div class="s-change neutral">主管核定</div></div>
+      <div class="s-change neutral">以导入和主管核定为准</div></div>
     <div class="stat-card gold"><div class="s-label">参与项目数</div>
-      <div class="s-val">${proj}<span class="s-unit">个</span></div></div>`;
+      <div class="s-val">${proj}<span class="s-unit">个</span></div><div class="s-change neutral">统计周期：${info.label}</div></div>`;
   const el=document.getElementById('myTimeTable');
   if(!el)return;
   if(!myLogs.length){el.innerHTML='<div class="empty">暂无工时记录</div>';return}
   el.innerHTML=`<table class="data-table"><thead><tr>
     <th>日期</th><th>项目</th><th>阶段</th><th>工时</th>
-  </tr></thead><tbody>${myLogs.slice(0,30).map(l=>`<tr>
+  </tr></thead><tbody>${periodLogs.slice(0,40).map(l=>`<tr>
     <td>${l.log_date}</td>
     <td class="fw6">${l.project?.name?.slice(0,14)||'—'}</td>
     <td>${l.stage}</td>
@@ -2860,23 +2909,27 @@ function renderEmpTime(){
 }
 
 function renderAdminTime(){
+  const info = getSelectedPeriodInfo();
+  const periodLogs = filterLogsForPeriod(allLogs, info);
   const todayStr=new Date().toISOString().split('T')[0];
   const todayLogs=allLogs.filter(l=>l.log_date===todayStr);
-  const weekH=allLogs.filter(l=>isThisWeek(l.log_date)).reduce((s,l)=>s+parseFloat(l.hours||0),0);
+  const periodH=periodLogs.reduce((s,l)=>s+safeNum(l.hours),0);
   const visibleEmployees = getWorkloadEmployees();
+  const coverage = getDataHealthMetrics(info).coveragePct;
   const el=document.getElementById('adminTimeStats');
   if(el) el.innerHTML=`
     <div class="stat-card"><div class="s-label">今日分派条数</div><div class="s-val">${todayLogs.length}</div></div>
-    <div class="stat-card blue"><div class="s-label">本周总工时</div><div class="s-val">${weekH.toFixed(1)}<span class="s-unit">h</span></div></div>
+    <div class="stat-card blue"><div class="s-label">${info.label}总工时</div><div class="s-val">${periodH.toFixed(1)}<span class="s-unit">h</span></div></div>
     <div class="stat-card gold"><div class="s-label">执行层人数</div><div class="s-val">${visibleEmployees.length}<span class="s-unit">人</span></div></div>
-    <div class="stat-card green"><div class="s-label">进行中项目</div><div class="s-val">${allProjects.filter(p=>p.status==='active').length}<span class="s-unit">个</span></div></div>`;
+    <div class="stat-card green"><div class="s-label">记录覆盖率</div><div class="s-val">${coverage}<span class="s-unit">%</span></div></div>`;
+  renderAdminTimeHealth(info);
   renderEmpLoadBars();
   const tbl=document.getElementById('assignTable');
   if(!tbl)return;
   if(!allLogs.length){tbl.innerHTML='<div class="empty">暂无记录，点击「分派工时」开始录入</div>';return}
   tbl.innerHTML=`<table class="data-table"><thead><tr>
     <th>员工</th><th>项目</th><th>阶段</th><th>工时</th><th>日期</th><th>操作</th>
-  </tr></thead><tbody>${allLogs.slice(0,50).map(l=>`<tr>
+  </tr></thead><tbody>${allLogs.slice(0,80).map(l=>`<tr>
     <td><div style="display:flex;align-items:center;gap:8px">
       <div class="emp-av" style="background:${l.employee?.avatar_color||'#888'};width:26px;height:26px;font-size:11px">${(l.employee?.name||'?')[0]}</div>
       ${l.employee?.name||'—'}</div></td>
@@ -2894,17 +2947,17 @@ function renderAdminTime(){
 function renderEmpLoadBars(){
   const el=document.getElementById('empLoadBars');
   if(!el)return;
-  const monthStr=new Date().toISOString().slice(0,7);
-  const cap = getMonthlyCapForMonth(monthStr);
+  const info = getSelectedPeriodInfo();
+  const cap = getPeriodCap(info);
   const employees = getWorkloadEmployees();
   if(!employees.length){
     el.innerHTML='<div class="empty">暂无需要统计负荷的执行层员工</div>';
     return;
   }
   el.innerHTML=employees.map(e=>{
-    const h=allLogs.filter(l=>l.employee_id===e.id&&l.log_date?.startsWith(monthStr))
-      .reduce((s,l)=>s+parseFloat(l.hours||0),0);
-    const pct=Math.round(h/cap*100);
+    const h=filterLogsForPeriod(allLogs, info).filter(l=>l.employee_id===e.id)
+      .reduce((s,l)=>s+safeNum(l.hours),0);
+    const pct=cap>0 ? Math.round(h/cap*100) : 0;
     const cls=pct>90?'pf-red':pct>70?'pf-gold':'pf-green';
     return `<div class="prog-wrap">
       <div class="prog-hd">
@@ -3045,141 +3098,368 @@ function quickPayment(projId){
 }
 
 // ── 经营看板 ──────────────────────────────────────────────────
-function initDashMonthPicker(){
-  const sel = document.getElementById('dashMonth');
-  if(!sel) return;
-  // 生成最近12个月选项
-  const months = [];
-  const now = new Date();
-  for(let i=0;i<12;i++){
-    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
-    const val = d.toISOString().slice(0,7);
-    const label = `${d.getFullYear()}年${d.getMonth()+1}月`;
-    months.push({val,label});
-  }
-  sel.innerHTML = months.map((m,i)=>`<option value="${m.val}"${i===0?' selected':''}>${m.label}</option>`).join('');
-}
-
-function getDashMonth(){
-  const sel = document.getElementById('dashMonth');
-  return sel ? sel.value : new Date().toISOString().slice(0,7);
-}
-
 // 工时折算：实际录入工时 × 1.2（含主管10%+总监10%管理折算）
 function calcAdjustedHours(rawHours){
-  return rawHours * 1.2;
+  return safeNum(rawHours) * 1.2;
+}
+
+const REPORT_STATE = { granularity:'month', periodKey:'' };
+const EFFECTIVE_STAGE_SET = new Set(['概念方案','深化设计','施工图','软装方案','现场跟进','飞书导入']);
+
+function getCurrentPeriodKey(granularity){
+  const now = new Date();
+  const year = now.getFullYear();
+  if(granularity === 'year') return String(year);
+  if(granularity === 'quarter') return `${year}-Q${Math.floor(now.getMonth()/3)+1}`;
+  return now.toISOString().slice(0,7);
+}
+
+function getPeriodOptions(granularity){
+  const now = new Date();
+  const options = [];
+  if(granularity === 'year'){
+    for(let i=0;i<5;i++){
+      const y = now.getFullYear() - i;
+      options.push({ value:String(y), label:`${y}年` });
+    }
+    return options;
+  }
+  if(granularity === 'quarter'){
+    let year = now.getFullYear();
+    let quarter = Math.floor(now.getMonth()/3)+1;
+    for(let i=0;i<8;i++){
+      options.push({ value:`${year}-Q${quarter}`, label:`${year}年 Q${quarter}` });
+      quarter -= 1;
+      if(quarter === 0){ quarter = 4; year -= 1; }
+    }
+    return options;
+  }
+  for(let i=0;i<12;i++){
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    options.push({ value:d.toISOString().slice(0,7), label:`${d.getFullYear()}年${d.getMonth()+1}月` });
+  }
+  return options;
+}
+
+function syncReportSelectPair(granularityId, periodId){
+  const gEl = document.getElementById(granularityId);
+  const pEl = document.getElementById(periodId);
+  if(!gEl || !pEl) return;
+  gEl.innerHTML = [
+    ['month','月度'], ['quarter','季度'], ['year','年度']
+  ].map(([v,l])=>`<option value="${v}"${REPORT_STATE.granularity===v?' selected':''}>${l}</option>`).join('');
+  const options = getPeriodOptions(REPORT_STATE.granularity);
+  if(!REPORT_STATE.periodKey || !options.some(o=>o.value===REPORT_STATE.periodKey)){
+    REPORT_STATE.periodKey = options[0]?.value || getCurrentPeriodKey(REPORT_STATE.granularity);
+  }
+  pEl.innerHTML = options.map(o=>`<option value="${o.value}"${REPORT_STATE.periodKey===o.value?' selected':''}>${o.label}</option>`).join('');
+}
+
+function initReportControls(){
+  if(!REPORT_STATE.periodKey){
+    REPORT_STATE.granularity = REPORT_STATE.granularity || 'month';
+    REPORT_STATE.periodKey = getCurrentPeriodKey(REPORT_STATE.granularity);
+  }
+  syncReportSelectPair('dashGranularity','dashPeriod');
+  syncReportSelectPair('timeGranularity','timePeriod');
+}
+
+function updateReportGranularity(value){
+  REPORT_STATE.granularity = value || 'month';
+  REPORT_STATE.periodKey = '';
+  initReportControls();
+  renderAll();
+}
+
+function updateReportPeriod(value){
+  REPORT_STATE.periodKey = value;
+  initReportControls();
+  renderAll();
+}
+
+function getLastDayOfMonth(year, month){
+  return new Date(year, month, 0).getDate();
+}
+
+function getMonthsBetween(startYM, endYM){
+  const [sy, sm] = startYM.split('-').map(Number);
+  const [ey, em] = endYM.split('-').map(Number);
+  const months = [];
+  let y = sy, m = sm;
+  while(y < ey || (y === ey && m <= em)){
+    months.push(`${y}-${String(m).padStart(2,'0')}`);
+    m += 1;
+    if(m === 13){ m = 1; y += 1; }
+  }
+  return months;
+}
+
+function getSelectedPeriodInfo(){
+  initReportControls();
+  const g = REPORT_STATE.granularity;
+  const key = REPORT_STATE.periodKey || getCurrentPeriodKey(g);
+  if(g === 'year'){
+    const year = parseInt(key,10);
+    const months = Array.from({length:12}, (_,i)=>`${year}-${String(i+1).padStart(2,'0')}`);
+    return { granularity:g, key, label:`${year}年`, start:`${year}-01-01`, end:`${year}-12-31`, months };
+  }
+  if(g === 'quarter'){
+    const [yearStr, qStr] = key.split('-Q');
+    const year = parseInt(yearStr,10);
+    const quarter = parseInt(qStr,10);
+    const startMonth = (quarter-1)*3 + 1;
+    const endMonth = startMonth + 2;
+    const endDay = getLastDayOfMonth(year, endMonth);
+    return {
+      granularity:g, key, label:`${year}年 Q${quarter}`,
+      start:`${year}-${String(startMonth).padStart(2,'0')}-01`,
+      end:`${year}-${String(endMonth).padStart(2,'0')}-${String(endDay).padStart(2,'0')}`,
+      months:getMonthsBetween(`${year}-${String(startMonth).padStart(2,'0')}`, `${year}-${String(endMonth).padStart(2,'0')}`)
+    };
+  }
+  const [year, month] = key.split('-').map(Number);
+  const endDay = getLastDayOfMonth(year, month);
+  return { granularity:g, key, label:`${year}年${month}月`, start:`${key}-01`, end:`${key}-${String(endDay).padStart(2,'0')}`, months:[key] };
+}
+
+function dateInRange(dateStr, start, end){
+  return !!dateStr && dateStr >= start && dateStr <= end;
+}
+
+function filterLogsForPeriod(logs, info=getSelectedPeriodInfo()){
+  return (logs||[]).filter(l=>dateInRange(l.log_date, info.start, info.end));
+}
+
+function getPeriodCap(info=getSelectedPeriodInfo()){
+  return (info.months||[]).reduce((sum, ym)=>sum + getMonthlyCapForMonth(ym), 0);
+}
+
+function getPeriodProjectsForDrawings(info=getSelectedPeriodInfo()){
+  return allProjects.filter(p=>{
+    const drawDate = p.drawings_delivered_at || p.deadline || '';
+    return drawDate && dateInRange(drawDate, info.start, info.end);
+  });
+}
+
+function isReworkLog(log){
+  return log?.stage === '修改调整' || /待返工/.test(log?.note || '');
+}
+
+function isEffectiveLog(log){
+  if(!log) return false;
+  if(isReworkLog(log)) return false;
+  return EFFECTIVE_STAGE_SET.has(log.stage) || /(方案|图纸|深化|现场)/.test(log.note||'');
+}
+
+function daysBetween(dateStrA, dateStrB){
+  if(!dateStrA || !dateStrB) return null;
+  const a = new Date(dateStrA);
+  const b = new Date(dateStrB);
+  if(Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return null;
+  return Math.round((a - b) / 86400000);
+}
+
+function getLatestImportedDate(){
+  const imported = allLogs.filter(l=>l.stage==='飞书导入').map(l=>l.log_date).filter(Boolean).sort();
+  if(imported.length) return imported[imported.length-1];
+  const any = allLogs.map(l=>l.log_date).filter(Boolean).sort();
+  return any.length ? any[any.length-1] : '';
+}
+
+function getDataHealthMetrics(info=getSelectedPeriodInfo()){
+  const ops = getWorkloadEmployees();
+  const opIds = new Set(ops.map(e=>e.id));
+  const periodLogs = filterLogsForPeriod(allLogs, info).filter(l=>opIds.has(l.employee_id));
+  const totalHours = periodLogs.reduce((s,l)=>s+safeNum(l.hours),0);
+  const effectiveHours = periodLogs.filter(isEffectiveLog).reduce((s,l)=>s+safeNum(l.hours),0);
+  const reworkHours = periodLogs.filter(isReworkLog).reduce((s,l)=>s+safeNum(l.hours),0);
+  const loggedEmployeeIds = new Set(periodLogs.map(l=>l.employee_id));
+  const coverageCount = ops.filter(e=>loggedEmployeeIds.has(e.id)).length;
+  const coveragePct = ops.length ? Math.round(coverageCount/ops.length*100) : 100;
+  const latestImportDate = getLatestImportedDate();
+  const lagDays = latestImportDate ? daysBetween(new Date().toISOString().slice(0,10), latestImportDate) : null;
+  const missingEmployees = ops.filter(e=>!loggedEmployeeIds.has(e.id));
+  return {
+    ops, periodLogs, totalHours, effectiveHours, reworkHours, coverageCount, coveragePct,
+    latestImportDate, lagDays, missingEmployees,
+    effectivePct: totalHours ? Math.round(effectiveHours/totalHours*100) : 0,
+    reworkPct: totalHours ? Math.round(reworkHours/totalHours*100) : 0,
+  };
+}
+
+function getPeriodTeamOutput(periodLogs){
+  return getWorkloadEmployees().reduce((sum,e)=>{
+    const h = periodLogs.filter(l=>l.employee_id===e.id).reduce((a,l)=>a+safeNum(l.hours),0);
+    return sum + calcAdjustedHours(h) * getEmpHourlyRate(e) / 10000;
+  },0);
+}
+
+function renderDataHealth(info=getSelectedPeriodInfo()){
+  const el = document.getElementById('dashDataHealth');
+  if(!el) return;
+  const m = getDataHealthMetrics(info);
+  const freshnessLabel = m.latestImportDate ? `${m.latestImportDate}${m.lagDays!=null?` · 滞后 ${m.lagDays} 天`:''}` : '暂无导入记录';
+  el.innerHTML = `
+    <div class="stat-card ${m.lagDays!=null && m.lagDays>4 ? 'red' : 'green'}"><div class="s-label">数据更新至</div><div class="s-val" style="font-size:22px">${m.latestImportDate||'—'}</div><div class="s-change ${m.lagDays!=null && m.lagDays>4 ? 'dn' : 'neutral'}">${m.latestImportDate?freshnessLabel:'建议先导入飞书工时'}</div></div>
+    <div class="stat-card ${m.coveragePct<70 ? 'red' : m.coveragePct<90 ? 'gold' : 'blue'}"><div class="s-label">执行层覆盖率</div><div class="s-val">${m.coveragePct}<span class="s-unit">%</span></div><div class="s-change neutral">${m.coverageCount}/${m.ops.length||0} 人在 ${info.label} 有记录</div></div>
+    <div class="stat-card ${m.effectivePct<65 ? 'gold' : 'green'}"><div class="s-label">有效工时率</div><div class="s-val">${m.effectivePct}<span class="s-unit">%</span></div><div class="s-change neutral">有效项目工时 ${m.effectiveHours.toFixed(0)}h</div></div>
+    <div class="stat-card ${m.reworkPct>18 ? 'red' : m.reworkPct>10 ? 'gold' : 'blue'}"><div class="s-label">返工占比</div><div class="s-val">${m.reworkPct}<span class="s-unit">%</span></div><div class="s-change neutral">修改 / 待返工 ${m.reworkHours.toFixed(0)}h</div></div>`;
+}
+
+function renderAdminTimeHealth(info=getSelectedPeriodInfo()){
+  const el = document.getElementById('adminTimeHealth');
+  const hint = document.getElementById('timePeriodHint');
+  if(hint) hint.textContent = `${info.label} · 理论满载 ${Math.round(getPeriodCap(info))}h / 人`;
+  if(!el) return;
+  const m = getDataHealthMetrics(info);
+  el.innerHTML = `
+    <div class="stat-card ${m.lagDays!=null && m.lagDays>4 ? 'red' : 'green'}"><div class="s-label">最新导入</div><div class="s-val" style="font-size:22px">${m.latestImportDate||'—'}</div><div class="s-change neutral">${m.latestImportDate?`当前滞后 ${m.lagDays||0} 天`:'建议今天先导入'}</div></div>
+    <div class="stat-card ${m.coveragePct<70 ? 'red' : 'gold'}"><div class="s-label">记录覆盖率</div><div class="s-val">${m.coveragePct}<span class="s-unit">%</span></div><div class="s-change neutral">未记录 ${m.missingEmployees.length} 人</div></div>
+    <div class="stat-card blue"><div class="s-label">有效工时率</div><div class="s-val">${m.effectivePct}<span class="s-unit">%</span></div><div class="s-change neutral">返工占比 ${m.reworkPct}%</div></div>
+    <div class="stat-card green"><div class="s-label">建议动作</div><div class="s-val" style="font-size:18px">${m.lagDays!=null && m.lagDays>4 ? '先导入' : m.coveragePct<90 ? '补齐记录' : '可看人效'}</div><div class="s-change neutral">先把数据做新，再看结果</div></div>`;
+}
+
+function renderPeriodStats(info=getSelectedPeriodInfo()){
+  const ds=document.getElementById('dashStats');
+  const hint = document.getElementById('dashPeriodHint');
+  if(!ds) return;
+  const periodLogs = filterLogsForPeriod(allLogs, info);
+  const rawHours = periodLogs.reduce((s,l)=>s+safeNum(l.hours),0);
+  const teamOutput = getPeriodTeamOutput(periodLogs);
+  const drawProjects = getPeriodProjectsForDrawings(info);
+  const innovationWeeks = average(drawProjects.filter(p=>!p.is_chain).map(getProjectDrawWeeks));
+  const copyWeeks = average(drawProjects.filter(p=>p.is_chain).map(getProjectDrawWeeks));
+  const received = allPayments.filter(p=>dateInRange(p.payment_date, info.start, info.end)).reduce((s,p)=>s+safeNum(p.amount),0);
+  if(hint) hint.textContent = `${info.label} · 实际录入 ${rawHours.toFixed(0)}h · 回款 ${received.toFixed(1)}万`;
+  ds.innerHTML = `
+    <div class="stat-card blue"><div class="s-label">本周期总工时</div><div class="s-val">${rawHours.toFixed(0)}<span class="s-unit">h</span></div><div class="s-change neutral">执行层 + 管理核定数据</div></div>
+    <div class="stat-card green"><div class="s-label">估算人效产值</div><div class="s-val">${teamOutput.toFixed(2)}<span class="s-unit">万</span></div><div class="s-change neutral">按月薪 / 130h 折算</div></div>
+    <div class="stat-card gold"><div class="s-label">创新店图纸均值</div><div class="s-val">${innovationWeeks?innovationWeeks.toFixed(1):'—'}<span class="s-unit">周</span></div><div class="s-change neutral">${drawProjects.filter(p=>!p.is_chain).length} 个样本</div></div>
+    <div class="stat-card ${copyWeeks && copyWeeks<=4 ? 'green' : 'blue'}"><div class="s-label">复制店图纸均值</div><div class="s-val">${copyWeeks?copyWeeks.toFixed(1):'—'}<span class="s-unit">周</span></div><div class="s-change neutral">${drawProjects.filter(p=>p.is_chain).length} 个样本</div></div>`;
 }
 
 function renderDashboard(){
   if(!isAdmin)return;
-  initDashMonthPicker();
-  const monthStr = getDashMonth();
-  const monthLogs = allLogs.filter(l=>l.log_date?.startsWith(monthStr));
-  const rawMonthH = monthLogs.reduce((s,l)=>s+parseFloat(l.hours||0),0);
-  const adjMonthH = calcAdjustedHours(rawMonthH);
-  const workloadEmployees = getWorkloadEmployees();
-  const monthCost = workloadEmployees.reduce((s,e)=>{
-    const h = monthLogs.filter(l=>l.employee_id===e.id).reduce((a,l)=>a+parseFloat(l.hours||0),0);
-    return s + calcAdjustedHours(h) * getEmpHourlyRate(e) / 10000;
-  },0);
-  const totalContract=allProjects.reduce((s,p)=>s+(p.contract_amount||0),0);
-  const totalPaid=allProjects.reduce((s,p)=>s+(p.paid_amount||0),0);
-  const totalCost=allProjects.reduce((s,p)=>s+(p.labor_cost||0),0);
-  const avgMargin=totalContract>0?Math.round((totalContract-totalCost)/totalContract*100):0;
+  initReportControls();
+  const info = getSelectedPeriodInfo();
+  const periodLogs = filterLogsForPeriod(allLogs, info);
+  const rawPeriodH = periodLogs.reduce((s,l)=>s+safeNum(l.hours),0);
+  const adjPeriodH = calcAdjustedHours(rawPeriodH);
   const riskyProjects = allProjects.filter(p=>{
     if(p.status==='done' || p.status==='paused') return false;
-    const hb = parseFloat(p.hours_budget)||0;
-    const hu = parseFloat(p.hours_used)||0;
-    const ca = parseFloat(p.contract_amount)||0;
-    const lc = parseFloat(p.labor_cost)||0;
+    const hb = safeNum(p.hours_budget);
+    const hu = safeNum(p.hours_used);
+    const ca = safeNum(p.contract_amount);
+    const lc = safeNum(p.labor_cost);
     return (hb>0 && hu/hb>0.85) || (ca>0 && lc/ca>0.4);
   });
-  const hint = document.getElementById('dashMonthHint');
-  if(hint) hint.textContent = `本月录入 ${rawMonthH.toFixed(0)}h，含管理折算 ${adjMonthH.toFixed(0)}h，执行层人力成本 ¥${monthCost.toFixed(2)}万`;
-  const ds=document.getElementById('dashStats');
-  if(ds) ds.innerHTML=`
-    <div class="stat-card green"><div class="s-label">合同总额</div><div class="s-val">${totalContract.toFixed(1)}<span class="s-unit">万</span></div></div>
-    <div class="stat-card gold"><div class="s-label">综合利润率</div><div class="s-val">${avgMargin}<span class="s-unit">%</span></div></div>
-    <div class="stat-card red"><div class="s-label">未回款</div><div class="s-val">${(totalContract-totalPaid).toFixed(1)}<span class="s-unit">万</span></div><div class="s-change dn">需跟进</div></div>
-    <div class="stat-card blue"><div class="s-label">风险项目</div><div class="s-val">${riskyProjects.length}<span class="s-unit">个</span></div><div class="s-change neutral">接近上限 / 成本偏高</div></div>`;
-  renderBusinessSummary(monthStr, { rawMonthH, adjMonthH, monthCost, totalContract, totalPaid, totalCost, avgMargin, riskyProjects });
-  renderTodayTodoList(monthStr);
-  renderTeamAlerts(monthStr);
+  renderDataHealth(info);
+  renderPeriodStats(info);
+  renderBusinessSummary(info, { rawPeriodH, adjPeriodH, riskyProjects });
+  renderTodayTodoList(info);
+  renderTeamAlerts(info);
   renderEmpRank();
   renderIntelligence();
 }
 
-function renderBusinessSummary(monthStr, metrics){
+function renderBusinessSummary(info, metrics){
   const el=document.getElementById('dashSummary');
   if(!el)return;
   const today=new Date();
+  const health = getDataHealthMetrics(info);
   const overdue = allProjects.filter(p=>p.status==='active' && p.deadline && new Date(p.deadline) < today);
   const lowPaid = allProjects.filter(p=>p.status!=='done' && p.contract_amount>0 && ((p.paid_amount||0) / p.contract_amount) < 0.4);
-  const cap = getMonthlyCapForMonth(monthStr);
+  const cap = getPeriodCap(info);
   const overloaded = getWorkloadEmployees().filter(e=>{
-    const h = allLogs.filter(l=>l.employee_id===e.id && l.log_date?.startsWith(monthStr)).reduce((s,l)=>s+parseFloat(l.hours||0),0);
+    const h = filterLogsForPeriod(allLogs, info).filter(l=>l.employee_id===e.id).reduce((s,l)=>s+safeNum(l.hours),0);
     return h > cap;
   });
 
   let tone = 'green';
-  let headline = '当前经营整体稳定，可以按原计划推进。';
+  let headline = `${info.label} 数据可用，可以直接看人效与项目风险。`;
   const actions = [];
 
-  if(overdue.length || overloaded.length || metrics.avgMargin < 20){
+  if((health.lagDays!=null && health.lagDays>4) || health.coveragePct<70){
     tone = 'red';
-    headline = `当前经营偏紧，建议今天先处理风险项目，再安排新增任务。`;
-  } else if(lowPaid.length || metrics.riskyProjects.length || metrics.avgMargin < 30){
+    headline = `当前先别急着看人效结论，${info.label} 数据还不够新或不够全。`;
+    actions.push('先导入最新飞书工时，再判断团队人效和项目风险。');
+  } else if(overdue.length || overloaded.length){
+    tone = 'red';
+    headline = `当前经营偏紧，建议先处理超期项目和超载人员。`;
+  } else if(lowPaid.length || metrics.riskyProjects.length || health.reworkPct>15){
     tone = 'gold';
-    headline = '当前经营基本可控，但回款和排期需要优先跟进。';
+    headline = '当前数据可信，但回款、返工或成本线需要优先跟进。';
   }
 
-  if(overdue.length) actions.push(`先催 ${overdue.slice(0,3).map(p=>p.name?.slice(0,10)).join('、')} 的施工图节点，避免继续超期。`);
-  if(lowPaid.length) actions.push(`跟进 ${lowPaid.slice(0,3).map(p=>p.name?.slice(0,10)).join('、')} 的首付款/中期款，优先把回款率拉到 40% 以上。`);
+  if(overdue.length) actions.push(`先催 ${overdue.slice(0,3).map(p=>p.name?.slice(0,10)).join('、')} 的施工图节点。`);
+  if(lowPaid.length) actions.push(`跟进 ${lowPaid.slice(0,3).map(p=>p.name?.slice(0,10)).join('、')} 的首付款/中期款。`);
   if(overloaded.length) actions.push(`给 ${overloaded.slice(0,3).map(e=>e.name).join('、')} 减负，避免继续挤压交付时间。`);
-  if(!actions.length) actions.push('本周重点盯回款、截止日和执行层负荷，保持节奏即可。');
+  if(health.reworkPct>15) actions.push(`当前返工占比较高，优先排查“修改调整/待返工”最多的项目。`);
+  if(!actions.length) actions.push('优先看高风险项目、回款和执行层负荷，保持当前节奏即可。');
 
   el.innerHTML = `
     <div class="notice ${tone==='red'?'red':tone==='green'?'green':''}" style="margin-bottom:12px">
       <strong>一句话经营状态：</strong>${headline}
     </div>
     <div class="card" style="margin-bottom:8px">
+      <div class="card-body" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+        <div style="padding:14px;border-radius:12px;background:var(--cream)">
+          <div style="font-size:11px;color:var(--text-sub);margin-bottom:6px">老板模式</div>
+          <div style="font-size:22px;font-weight:700;line-height:1.35">${metrics.riskyProjects.length} 个风险项目</div>
+          <div style="font-size:12px;color:var(--text-sub);margin-top:4px">${info.label} 先盯风险项目、回款和执行层超载</div>
+        </div>
+        <div style="padding:14px;border-radius:12px;background:var(--cream)">
+          <div style="font-size:11px;color:var(--text-sub);margin-bottom:6px">数据可信度</div>
+          <div style="font-size:22px;font-weight:700;line-height:1.35">${health.coveragePct}% 覆盖</div>
+          <div style="font-size:12px;color:var(--text-sub);margin-top:4px">${health.latestImportDate?`更新至 ${health.latestImportDate}`:'暂无飞书导入记录'}</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
       <div class="card-body">
-        <div style="font-size:11px;color:var(--text-sub);margin-bottom:8px">直接行动建议</div>
-        ${actions.map(t=>`<div style="font-size:13px;line-height:1.7;padding:4px 0">• ${t}</div>`).join('')}
+        <div style="font-size:12px;font-weight:600;margin-bottom:10px">建议先做这几件事</div>
+        ${actions.map(a=>`<div style="font-size:13px;line-height:1.8;padding:4px 0;border-bottom:1px solid var(--cream)">${a}</div>`).join('')}
       </div>
     </div>`;
 }
 
-function renderTodayTodoList(monthStr){
+function renderTodayTodoList(info){
   const el=document.getElementById('todayTodoList');
   if(!el)return;
   const today=new Date();
   const todayStr=today.toISOString().slice(0,10);
   const in7Days=new Date(today);
   in7Days.setDate(in7Days.getDate()+7);
+  const health = getDataHealthMetrics(info);
 
   const items=[];
+  if(health.lagDays!=null && health.lagDays>4){
+    items.push({name:`${info.label} 工时数据滞后`,meta:`最近导入 ${health.latestImportDate||'—'} · 建议先导入飞书工时`,badge:'先导入',cls:'badge-risk',action:"openModal('importModal')"});
+  }
+  if(health.missingEmployees.length){
+    items.push({name:`${health.missingEmployees.length} 名执行层同事在 ${info.label} 暂无记录`,meta:`建议核对是否未导入、未分派或未开始任务`,badge:'补齐记录',cls:'badge-warn',action:"gotoPage('timelog')"});
+  }
   allProjects.filter(p=>p.status==='active' && p.deadline && new Date(p.deadline) < today).forEach(p=>{
-    items.push({name:`${p.name} 已超施工图交付日`,meta:`截止 ${p.deadline} · 建议今天确认实际交付时间`,badge:'立即处理',cls:'badge-risk'});
+    items.push({name:`${p.name} 已超施工图交付日`,meta:`截止 ${p.deadline} · 建议今天确认实际交付时间`,badge:'立即处理',cls:'badge-risk',action:"gotoPage('project')"});
   });
   allProjects.filter(p=>p.status==='active' && p.deadline && new Date(p.deadline) >= today && new Date(p.deadline) <= in7Days).forEach(p=>{
     const diff=Math.ceil((new Date(p.deadline)-today)/86400000);
-    items.push({name:`${p.name} 即将到期`,meta:`剩余 ${diff} 天 · 建议今天确认图纸完成度`,badge:'本周跟进',cls:'badge-warn'});
+    items.push({name:`${p.name} 即将到期`,meta:`剩余 ${diff} 天 · 建议今天确认图纸完成度`,badge:'本周跟进',cls:'badge-warn',action:"gotoPage('project')"});
   });
   allProjects.filter(p=>p.status!=='done' && p.contract_amount>0 && ((p.paid_amount||0) / p.contract_amount) < 0.4).forEach(p=>{
     const paidPct=Math.round(((p.paid_amount||0) / p.contract_amount) * 100);
-    items.push({name:`${p.name} 回款偏低`,meta:`当前回款 ${paidPct}% · 建议今天催款`,badge:'催回款',cls:'badge-warn'});
+    items.push({name:`${p.name} 回款偏低`,meta:`当前回款 ${paidPct}% · 建议今天催款`,badge:'催回款',cls:'badge-warn',action:"gotoPage('project')"});
   });
   const noLogEmployees = getWorkloadEmployees().filter(e=>{
-    const h = allLogs.filter(l=>l.employee_id===e.id && l.log_date===todayStr).reduce((s,l)=>s+parseFloat(l.hours||0),0);
+    const h = allLogs.filter(l=>l.employee_id===e.id && l.log_date===todayStr).reduce((s,l)=>s+safeNum(l.hours),0);
     return h===0;
   });
   if(noLogEmployees.length){
-    items.push({name:`${noLogEmployees.length} 名执行层同事今天暂未录入/分派工时`,meta:`建议核对是否未分派或未开始任务`,badge:'核对分工',cls:'badge-active'});
+    items.push({name:`${noLogEmployees.length} 名执行层同事今天暂未录入/分派工时`,meta:`建议核对是否未分派或未开始任务`,badge:'核对分工',cls:'badge-active',action:"gotoPage('timelog')"});
   }
 
   if(!items.length){
-    el.innerHTML='<div class="list-item"><div style="font-size:20px">✅</div><div class="li-info"><div class="li-name">今天没有紧急待办</div><div class="li-meta">按原计划推进即可</div></div></div>';
+    el.innerHTML='<div class="list-item"><div style="font-size:20px">✅</div><div class="li-info"><div class="li-name">当前没有紧急待办</div><div class="li-meta">数据和项目节奏基本正常</div></div></div>';
     return;
   }
 
@@ -3188,34 +3468,38 @@ function renderTodayTodoList(monthStr){
       <div class="li-name">${item.name}</div>
       <div class="li-meta">${item.meta}</div>
     </div>
-    <span class="badge ${item.cls}">${item.badge}</span>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="badge ${item.cls}">${item.badge}</span>
+      <button class="btn-sm btn-blue" onclick="${item.action}">处理</button>
+    </div>
   </div>`).join('');
 }
 
-function renderTeamAlerts(monthStr){
+function renderTeamAlerts(info){
   const el=document.getElementById('teamAlertsList');
   if(!el)return;
-  const cap = getMonthlyCapForMonth(monthStr);
+  const cap = getPeriodCap(info);
+  const periodLogs = filterLogsForPeriod(allLogs, info);
   const rows = getWorkloadEmployees().map(e=>{
-    const rawH = allLogs.filter(l=>l.employee_id===e.id && l.log_date?.startsWith(monthStr)).reduce((s,l)=>s+parseFloat(l.hours||0),0);
-    const pct = rawH / cap;
+    const rawH = periodLogs.filter(l=>l.employee_id===e.id).reduce((s,l)=>s+safeNum(l.hours),0);
+    const pct = cap>0 ? rawH / cap : 0;
     return { ...e, rawH, pct };
   });
 
   const items = [];
   rows.filter(r=>r.pct>1).forEach(r=>{
-    items.push({name:`${r.name} 已超负荷`,meta:`本月 ${r.rawH.toFixed(0)}h / ${cap.toFixed(0)}h · 建议立即拆分任务`,badge:'超载',cls:'badge-risk'});
+    items.push({name:`${r.name} 已超负荷`,meta:`${info.label} ${r.rawH.toFixed(0)}h / ${cap.toFixed(0)}h · 建议立即拆分任务`,badge:'超载',cls:'badge-risk'});
   });
   rows.filter(r=>r.pct<0.35).forEach(r=>{
-    items.push({name:`${r.name} 当前负荷偏低`,meta:`本月 ${r.rawH.toFixed(0)}h · 可承接新任务或返工任务`,badge:'可补位',cls:'badge-warn'});
+    items.push({name:`${r.name} 当前负荷偏低`,meta:`${info.label} ${r.rawH.toFixed(0)}h · 可承接新任务或返工任务`,badge:'可补位',cls:'badge-warn'});
   });
 
   const multiProj = rows.map(r=>{
-    const projCount = new Set(allLogs.filter(l=>l.employee_id===r.id && l.log_date?.startsWith(monthStr)).map(l=>l.project_id)).size;
+    const projCount = new Set(periodLogs.filter(l=>l.employee_id===r.id).map(l=>l.project_id)).size;
     return { ...r, projCount };
   }).filter(r=>r.projCount>=4 && r.pct>0.8);
   multiProj.forEach(r=>{
-    items.push({name:`${r.name} 同时跟进项目过多`,meta:`本月参与 ${r.projCount} 个项目 · 建议减少切换成本`,badge:'需协调',cls:'badge-active'});
+    items.push({name:`${r.name} 同时跟进项目过多`,meta:`${info.label} 参与 ${r.projCount} 个项目 · 建议减少切换成本`,badge:'需协调',cls:'badge-active'});
   });
 
   if(!items.length){
@@ -3228,7 +3512,10 @@ function renderTeamAlerts(monthStr){
       <div class="li-name">${item.name}</div>
       <div class="li-meta">${item.meta}</div>
     </div>
-    <span class="badge ${item.cls}">${item.badge}</span>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="badge ${item.cls}">${item.badge}</span>
+      <button class="btn-sm btn-blue" onclick="gotoPage('timelog')">处理</button>
+    </div>
   </div>`).join('');
 }
 
@@ -3259,15 +3546,18 @@ function renderActionAdvice(){
 function renderEmpRank(){
   const el=document.getElementById('empRankBody');
   if(!el)return;
-  const monthStr=getDashMonth();
-  const cap = getMonthlyCapForMonth(monthStr);
+  const info=getSelectedPeriodInfo();
+  const cap = getPeriodCap(info);
+  const periodLogs = filterLogsForPeriod(allLogs, info);
   const ranked=getWorkloadEmployees().map(e=>{
-    const rawH=allLogs.filter(l=>l.employee_id===e.id&&l.log_date?.startsWith(monthStr))
-      .reduce((s,l)=>s+parseFloat(l.hours||0),0);
+    const rawH=periodLogs.filter(l=>l.employee_id===e.id)
+      .reduce((s,l)=>s+safeNum(l.hours),0);
     const output=calcAdjustedHours(rawH)*getEmpHourlyRate(e)/10000;
-    const load=Math.round(rawH/cap*100);
-    const advice = load>100 ? '先减负' : load<35 ? '可补位' : load>85 ? '重点盯交付' : '正常推进';
-    return {...e,rawH,output,load,advice};
+    const load=cap>0?Math.round(rawH/cap*100):0;
+    const effective = periodLogs.filter(l=>l.employee_id===e.id && isEffectiveLog(l)).reduce((s,l)=>s+safeNum(l.hours),0);
+    const rework = periodLogs.filter(l=>l.employee_id===e.id && isReworkLog(l)).reduce((s,l)=>s+safeNum(l.hours),0);
+    const advice = load>100 ? '先减负' : load<35 ? '可补位' : rework>rawH*0.18 ? '查返工' : load>85 ? '重点盯交付' : '正常推进';
+    return {...e,rawH,output,load,advice,effective,rework};
   }).sort((a,b)=>b.rawH-a.rawH);
   if(!ranked.length){
     el.innerHTML='<tr><td colspan="6" class="empty">暂无可统计的执行层员工</td></tr>';
@@ -3559,12 +3849,13 @@ function renderEVM(){
 function renderLoadBalance(){
   const el=document.getElementById('loadBalanceResult');
   if(!el)return;
-  const monthStr=new Date().toISOString().slice(0,7);
-  const cap = getMonthlyCapForMonth(monthStr);
+  const info = getSelectedPeriodInfo();
+  const cap = getPeriodCap(info);
+  const periodLogs = filterLogsForPeriod(allLogs, info);
   const empLoad=getWorkloadEmployees().map(e=>{
-    const h=allLogs.filter(l=>l.employee_id===e.id&&l.log_date?.startsWith(monthStr))
-      .reduce((s,l)=>s+parseFloat(l.hours||0),0);
-    return {...e,h,pct:h/cap};
+    const h=periodLogs.filter(l=>l.employee_id===e.id)
+      .reduce((s,l)=>s+safeNum(l.hours),0);
+    return {...e,h,pct:cap>0?h/cap:0};
   });
   const overloaded=empLoad.filter(e=>e.pct>1.0);
   const underloaded=empLoad.filter(e=>e.pct<0.5);
@@ -3647,9 +3938,9 @@ function renderGantt(){
 // UI工具函数
 // ══════════════════════════════════════════════════════════════
 const pageInfo={
-  timelog:{title:'工时记录',sub:'主管分派制 · 工时由主管核定'},
+  timelog:{title:'工时记录',sub:'飞书导入核对 · 执行层负荷与人效'},
   project:{title:'项目管理',sub:'项目经营数据与风险评估'},
-  dashboard:{title:'经营看板',sub:'今日待办 · 一句话经营状态 · 团队异常'},
+  dashboard:{title:'经营看板',sub:'数据可信度 · 人效概览 · 风险待办'},
   quote:{title:'报价参考',sub:'工装报价区间 · 历史案例 · 图纸交付节奏'},
   team:{title:'团队管理',sub:'员工账号与权限管理'},
   bonus:{title:'绩效管理',sub:'项目成员配置 · 绩效打分 · 奖金核算'},
