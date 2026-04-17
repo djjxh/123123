@@ -1,0 +1,3577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工时管家 · 室内设计工作室</title>
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;600&display=swap');
+
+:root {
+  --ink:#1f2329; --paper:#f5f6f7; --cream:#f0f1f3; --warm-mid:#8f959e;
+  --accent:#3370ff; --accent-soft:#e8f0ff;
+  --gold:#2da44e; --gold-soft:#e3f5e9;
+  --green:#2da44e; --green-soft:#e3f5e9;
+  --blue:#3370ff; --blue-soft:#e8f0ff;
+  --text-sub:#646a73; --border:#e0e3e8; --card:#ffffff;
+  --shadow:0 2px 8px rgba(31,35,41,0.08); --radius:8px;
+  --sidebar-w:220px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-height:100vh}
+
+/* ── LAYOUT ── */
+.app-shell{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar-w);background:#1d2129;color:#f0f1f3;
+  display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;
+  z-index:50;padding:28px 0 20px;transition:transform 0.3s}
+.sidebar-logo{padding:0 22px 20px;border-bottom:1px solid rgba(255,255,255,0.08)}
+.logo-title{font-family:'Noto Serif SC',serif;font-size:18px;font-weight:700;letter-spacing:0.04em}
+.logo-sub{font-size:10px;color:var(--warm-mid);letter-spacing:0.12em;margin-top:3px}
+.sidebar-user{padding:14px 22px;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:8px}
+.su-name{font-size:14px;font-weight:600;margin-bottom:2px}
+.su-role{font-size:11px;color:var(--warm-mid)}
+.nav-list{flex:1;padding:4px 12px;overflow-y:auto}
+.nav-group{font-size:9px;color:rgba(200,184,154,0.45);letter-spacing:0.14em;
+  padding:14px 10px 6px;font-weight:600}
+.nav-btn{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;
+  border-radius:8px;border:none;background:transparent;
+  color:rgba(245,240,232,0.5);font-size:13px;font-weight:500;
+  cursor:pointer;font-family:'Noto Sans SC',sans-serif;text-align:left;
+  transition:all 0.15s;letter-spacing:0.03em}
+.nav-btn .icon{font-size:16px;width:20px;text-align:center;flex-shrink:0}
+.nav-btn:hover{background:rgba(255,255,255,0.06);color:var(--paper)}
+.nav-btn.active{background:rgba(192,57,43,0.22);color:var(--paper)}
+.nav-btn.admin-nav{display:none}
+.admin-only{display:none!important}
+.admin-mode .admin-only{display:block!important}
+.employee-only{display:block}
+.admin-mode .employee-only{display:none!important}
+.admin-mode .nav-btn.admin-nav{display:flex!important}
+.admin-mode .bnav-btn.admin-nav{display:flex!important}
+.sidebar-footer{padding:16px 22px 0;border-top:1px solid rgba(255,255,255,0.08);
+  font-size:11px;color:rgba(200,184,154,0.4)}
+.logout-btn{display:flex;align-items:center;gap:8px;width:100%;padding:10px 12px;
+  border-radius:8px;border:none;background:transparent;
+  color:rgba(245,240,232,0.4);font-size:12px;cursor:pointer;
+  font-family:'Noto Sans SC',sans-serif;margin-top:8px;transition:all 0.15s}
+.logout-btn:hover{color:var(--accent-soft);background:rgba(192,57,43,0.15)}
+
+.main{margin-left:var(--sidebar-w);flex:1;min-height:100vh;display:flex;flex-direction:column}
+.topbar{background:var(--card);border-bottom:1px solid var(--border);
+  padding:16px 32px;display:flex;justify-content:space-between;align-items:center;
+  position:sticky;top:0;z-index:40}
+.topbar-title{font-family:'Noto Serif SC',serif;font-size:20px;font-weight:700}
+.topbar-sub{font-size:12px;color:var(--text-sub);margin-top:2px}
+.content{padding:28px 32px;max-width:1200px}
+
+/* Mobile */
+.mobile-topbar{display:none;background:var(--ink);color:var(--paper);
+  padding:14px 18px 10px;position:sticky;top:0;z-index:50;
+  justify-content:space-between;align-items:center}
+.hamburger{background:none;border:none;color:var(--paper);font-size:22px;cursor:pointer;padding:2px 6px}
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;
+  background:var(--ink);border-top:1px solid rgba(255,255,255,0.08);z-index:50}
+.bottom-nav-inner{display:flex}
+.bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;
+  padding:9px 4px 13px;gap:3px;border:none;background:transparent;
+  cursor:pointer;color:rgba(245,240,232,0.35);font-size:10px;
+  font-family:'Noto Sans SC',sans-serif;transition:color 0.15s}
+.bnav-btn .bi{font-size:19px}
+.bnav-btn.active{color:var(--paper)}
+.bnav-btn.admin-nav{display:none}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:49}
+.sidebar-overlay.open{display:block}
+
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0;padding-bottom:70px}
+  .mobile-topbar{display:flex}
+  .bottom-nav{display:block}
+  .topbar{display:none}
+  .content{padding:16px}
+}
+
+/* ── PAGES ── */
+.page{display:none}
+.page.active{display:block}
+
+/* ── LOGIN ── */
+.login-screen{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:var(--ink);padding:20px}
+.login-box{
+  background:var(--paper);border-radius:20px;
+  padding:40px;width:100%;max-width:420px;
+  box-shadow:0 24px 80px rgba(0,0,0,0.4)}
+.login-logo{font-family:'Noto Serif SC',serif;font-size:28px;font-weight:700;
+  margin-bottom:6px;color:var(--ink)}
+.login-sub{font-size:12px;color:var(--text-sub);letter-spacing:0.08em;margin-bottom:32px}
+.login-step{display:none}
+.login-step.active{display:block}
+
+/* ── COMPONENTS ── */
+.section-hd{display:flex;justify-content:space-between;align-items:baseline;
+  margin-bottom:14px;margin-top:28px}
+.section-hd:first-child{margin-top:0}
+.section-title{font-family:'Noto Serif SC',serif;font-size:16px;font-weight:600;letter-spacing:0.04em}
+.section-action{font-size:12px;color:var(--accent);cursor:pointer;font-weight:500}
+
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);
+  box-shadow:var(--shadow);overflow:hidden;margin-bottom:16px}
+.card-hd{padding:14px 18px 12px;border-bottom:1px solid var(--cream);
+  display:flex;justify-content:space-between;align-items:center}
+.card-title{font-size:13px;font-weight:600;letter-spacing:0.03em}
+.card-action{font-size:11px;color:var(--accent);cursor:pointer;font-weight:500}
+.card-body{padding:16px 18px}
+
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:900px){.stat-grid{grid-template-columns:repeat(2,1fr)}}
+.stat-card{background:var(--card);border-radius:12px;padding:16px;
+  border:1px solid var(--border);box-shadow:var(--shadow)}
+.stat-card.green{background:var(--green-soft);border-color:#a8d5c2}
+.stat-card.gold{background:var(--gold-soft);border-color:#d4c090}
+.stat-card.red{background:var(--accent-soft);border-color:#ddb8b5}
+.stat-card.blue{background:var(--blue-soft);border-color:#a8c4d8}
+.s-label{font-size:10px;color:var(--text-sub);letter-spacing:0.06em;margin-bottom:6px;font-weight:500}
+.s-val{font-family:'DM Mono',monospace;font-size:26px;font-weight:500;line-height:1}
+.s-unit{font-size:12px;margin-left:2px}
+.s-change{font-size:11px;margin-top:5px}
+.up{color:var(--green)}.dn{color:var(--accent)}.neutral{color:var(--text-sub)}
+
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table th{text-align:left;font-size:10px;color:var(--text-sub);
+  letter-spacing:0.08em;font-weight:600;padding:10px 18px;
+  border-bottom:2px solid var(--cream);white-space:nowrap}
+.data-table td{padding:12px 18px;border-bottom:1px solid var(--cream);vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:rgba(237,232,220,0.4)}
+.mono{font-family:'DM Mono',monospace}
+.fw6{font-weight:600}
+
+.badge{display:inline-block;font-size:10px;font-weight:600;padding:3px 10px;
+  border-radius:20px;white-space:nowrap}
+.badge-active{background:var(--green-soft);color:var(--green)}
+.badge-risk{background:var(--accent-soft);color:var(--accent)}
+.badge-done{background:var(--cream);color:var(--text-sub)}
+.badge-paused{background:#e8e8e8;color:#888}
+.badge-construction{background:#e8f4fd;color:#2980b9}
+.badge-warn{background:var(--gold-soft);color:var(--gold)}
+
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:480px){.form-row{grid-template-columns:1fr}}
+.form-group{margin-bottom:14px}
+.form-label{font-size:11px;color:var(--text-sub);letter-spacing:0.06em;
+  font-weight:600;margin-bottom:5px;display:block}
+.form-select,.form-input{width:100%;background:white;border:1px solid var(--border);
+  border-radius:8px;padding:10px 13px;font-size:14px;
+  font-family:'Noto Sans SC',sans-serif;color:var(--ink);
+  outline:none;appearance:none;-webkit-appearance:none;transition:border-color 0.2s}
+.form-select:focus,.form-input:focus{border-color:var(--accent)}
+.hours-picker{display:flex;align-items:center;gap:0;
+  background:white;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.hp-btn{width:44px;height:44px;border:none;background:var(--cream);
+  font-size:20px;cursor:pointer;color:var(--ink);flex-shrink:0;
+  transition:background 0.15s;display:flex;align-items:center;justify-content:center}
+.hp-btn:hover{background:var(--border)}
+.hp-display{flex:1;text-align:center;font-family:'DM Mono',monospace;font-size:20px;font-weight:500}
+.btn-primary{width:100%;background:var(--ink);color:var(--paper);border:none;
+  border-radius:10px;padding:13px;font-size:14px;font-weight:600;
+  cursor:pointer;font-family:'Noto Sans SC',sans-serif;letter-spacing:0.05em;
+  transition:opacity 0.2s;margin-top:4px}
+.btn-primary:hover{opacity:0.88}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed}
+.btn-sm{padding:5px 12px;border-radius:6px;border:none;font-size:11px;font-weight:600;
+  cursor:pointer;font-family:'Noto Sans SC',sans-serif;white-space:nowrap}
+.btn-red{background:var(--accent-soft);color:var(--accent)}
+.btn-green{background:var(--green-soft);color:var(--green)}
+.btn-blue{background:var(--blue-soft);color:var(--blue)}
+
+.action-bar{display:flex;justify-content:flex-end;gap:10px;margin-bottom:16px}
+.action-btn{display:flex;align-items:center;gap:6px;background:var(--ink);
+  color:var(--paper);border:none;border-radius:8px;padding:9px 16px;
+  font-size:13px;font-weight:600;cursor:pointer;font-family:'Noto Sans SC',sans-serif;
+  letter-spacing:0.04em;transition:opacity 0.2s}
+.action-btn:hover{opacity:0.85}
+.action-btn.secondary{background:var(--card);color:var(--ink);border:1px solid var(--border)}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(26,22,18,0.55);
+  z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--paper);border-radius:16px;width:100%;max-width:520px;
+  max-height:90vh;overflow-y:auto;animation:fadeUp 0.25s ease;
+  box-shadow:0 24px 60px rgba(0,0,0,0.25)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:600px){
+  .modal-overlay{align-items:flex-end;padding:0}
+  .modal-box{border-radius:20px 20px 0 0;max-height:92vh}
+}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;
+  margin:12px auto 0;display:none}
+@media(max-width:600px){.modal-handle{display:block}}
+.modal-title{font-family:'Noto Serif SC',serif;font-size:17px;font-weight:700;
+  padding:16px 22px;border-bottom:1px solid var(--cream)}
+.modal-body{padding:20px 22px}
+.modal-close{float:right;background:none;border:none;font-size:20px;cursor:pointer;
+  color:var(--text-sub);margin-top:-2px;padding:0 4px}
+
+.notice{background:var(--gold-soft);border-left:3px solid var(--gold);
+  border-radius:6px;padding:11px 14px;font-size:12px;color:#5a4010;
+  margin-bottom:16px;line-height:1.7}
+.notice.red{background:var(--accent-soft);border-color:var(--accent);color:#7a1a0a}
+.notice.green{background:var(--green-soft);border-color:var(--green);color:#0a3a20}
+
+.chip-row{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:2px}
+.chip{white-space:nowrap;padding:6px 14px;border-radius:20px;
+  border:1px solid var(--border);background:white;color:var(--text-sub);
+  font-size:12px;font-weight:500;cursor:pointer;transition:all 0.15s}
+.chip.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:768px){.two-col{grid-template-columns:1fr}}
+
+.prog-wrap{margin-bottom:10px}
+.prog-hd{display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px}
+.prog-track{height:6px;background:var(--cream);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;transition:width 0.7s ease}
+.pf-green{background:var(--green)}.pf-gold{background:var(--gold)}
+.pf-red{background:var(--accent)}.pf-blue{background:var(--blue)}
+
+.list-item{display:flex;align-items:center;gap:12px;
+  padding:12px 18px;border-bottom:1px solid var(--cream)}
+.list-item:last-child{border-bottom:none}
+.li-info{flex:1;min-width:0}
+.li-name{font-size:13px;font-weight:500}
+.li-meta{font-size:11px;color:var(--text-sub);margin-top:1px}
+.li-right{text-align:right;flex-shrink:0}
+
+.emp-av{width:34px;height:34px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:700;color:white}
+
+/* Loading */
+.loading{text-align:center;padding:40px;color:var(--text-sub);font-size:13px}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;
+  margin-right:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.empty{text-align:center;padding:36px;color:var(--text-sub);font-size:13px}
+.toast{position:fixed;top:24px;left:50%;transform:translateX(-50%) translateY(-10px);
+  background:var(--ink);color:var(--paper);padding:10px 22px;
+  border-radius:24px;font-size:13px;font-weight:500;
+  z-index:300;opacity:0;transition:all 0.3s;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* 智能分析 */
+.intel-badge{display:inline-block;font-size:9px;font-weight:700;padding:2px 7px;
+  border-radius:10px;letter-spacing:0.06em;vertical-align:middle;margin-left:6px}
+.intel-badge.live{background:var(--green-soft);color:var(--green)}
+.intel-badge.est{background:var(--gold-soft);color:var(--gold)}
+</style>
+</head>
+<body>
+
+<!-- ════ LOGIN SCREEN ════ -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">工时管家</div>
+    <div class="login-sub">INTERIOR DESIGN STUDIO · 内部管理系统</div>
+
+    <!-- 邮箱+密码登录 -->
+    <div class="login-step active" id="loginStep1">
+      <div class="form-group">
+        <label class="form-label">邮箱</label>
+        <input type="email" class="form-input" id="loginEmail"
+          placeholder="your@email.com" style="font-size:15px"
+          onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()">
+      </div>
+      <div class="form-group" style="margin-top:12px">
+        <label class="form-label">密码</label>
+        <input type="password" class="form-input" id="loginPassword"
+          placeholder="请输入密码" style="font-size:15px"
+          onkeydown="if(event.key==='Enter')loginWithPassword()">
+      </div>
+      <button class="btn-primary" id="loginBtn" onclick="loginWithPassword()" style="margin-top:16px">登录</button>
+      <div style="margin-top:14px;font-size:11px;color:var(--text-sub);text-align:center">
+        账号由管理员创建，如需帮助请联系主管
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div id="loginError" style="display:none;margin-top:12px;font-size:12px;
+      color:var(--accent);padding:10px;background:var(--accent-soft);border-radius:8px"></div>
+  </div>
+</div>
+
+<!-- ════ MAIN APP ════ -->
+<div id="mainApp" style="display:none">
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-title">工时管家</div>
+    <div class="logo-sub">INTERIOR DESIGN STUDIO</div>
+  </div>
+  <div class="sidebar-user">
+    <div class="su-name" id="sidebarName">—</div>
+    <div class="su-role" id="sidebarRole">—</div>
+  </div>
+  <nav class="nav-list">
+    <div class="nav-group">工作台</div>
+    <button class="nav-btn active" onclick="nav('timelog',this)">
+      <span class="icon">⏱</span>工时记录
+    </button>
+    <button class="nav-btn" onclick="nav('project',this)">
+      <span class="icon">📁</span>项目管理
+    </button>
+    <div class="nav-group admin-nav admin-only">管理者工具</div>
+    <button class="nav-btn admin-nav admin-only" onclick="nav('dashboard',this)">
+      <span class="icon">📊</span>经营看板
+    </button>
+    <button class="nav-btn admin-nav admin-only" onclick="nav('quote',this)">
+      <span class="icon">🧮</span>报价测算
+    </button>
+    <button class="nav-btn admin-nav admin-only" onclick="nav('team',this)">
+      <span class="icon">👥</span>团队管理
+    </button>
+    <button class="nav-btn admin-nav admin-only" onclick="nav('bonus',this)">
+      <span class="icon">💰</span>绩效管理
+    </button>
+    <div class="nav-group">个人</div>
+    <button class="nav-btn" onclick="nav('profile',this)">
+      <span class="icon">👤</span>我的档案
+    </button>
+  </nav>
+  <div style="padding:0 12px 8px">
+    <button class="logout-btn" onclick="logout()">
+      <span>⎋</span>退出登录
+    </button>
+  </div>
+  <div class="sidebar-footer">© 2025 工时管家</div>
+</div>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<div class="app-shell">
+  <div class="main">
+    <div class="mobile-topbar">
+      <div class="logo-title" style="font-size:15px">工时管家</div>
+      <button class="hamburger" onclick="toggleSidebar()">☰</button>
+    </div>
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="pageTitle">工时记录</div>
+        <div style="font-size:12px;color:var(--text-sub)" id="pageSubtitle">主管分派制</div>
+      </div>
+    </div>
+    <div class="content">
+
+<!-- PAGE: 工时 -->
+<div class="page active" id="page-timelog">
+  <!-- 员工视图 -->
+  <div class="employee-only">
+    <div class="notice">📌 工时由主管直接录入，如有疑问请联系主管。</div>
+    <div id="myStatsGrid" class="stat-grid" style="grid-template-columns:repeat(2,1fr)"></div>
+    <div class="section-hd"><div class="section-title">本月我的工时记录</div></div>
+    <div class="card">
+      <div id="myTimeTable"><div class="loading"><span class="spinner"></span>加载中…</div></div>
+    </div>
+  </div>
+  <!-- 管理者视图 -->
+  <div class="admin-only">
+    <div id="adminTimeStats" class="stat-grid"></div>
+    <div class="section-hd">
+      <div class="section-title">员工负荷总览</div>
+    </div>
+    <div class="card"><div class="card-body" id="empLoadBars"></div></div>
+    <div class="section-hd">
+      <div class="section-title">分派工时记录</div>
+      <button class="action-btn" onclick="openModal('assignModal')" style="padding:7px 14px;font-size:12px">＋ 分派工时</button>
+    </div>
+    <div class="card">
+      <div id="assignTable"><div class="loading"><span class="spinner"></span>加载中…</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: 项目 -->
+<div class="page" id="page-project">
+  <div class="employee-only">
+    <div class="notice">📁 显示你参与的项目，财务数据由管理者管理。</div>
+    <div class="card">
+      <div id="empProjTable"><div class="loading"><span class="spinner"></span>加载中…</div></div>
+    </div>
+  </div>
+  <div class="admin-only">
+    <div class="chip-row" id="projFilter">
+      <div class="chip active" onclick="filterProj('all',this)">全部</div>
+      <div class="chip" onclick="filterProj('active',this)">进行中</div>
+      <div class="chip" onclick="filterProj('construction',this)">🏗 施工跟踪</div>
+      <div class="chip" onclick="filterProj('risk',this)">⚠ 风险</div>
+      <div class="chip" onclick="filterProj('paused',this)">⏸ 已暂停</div>
+      <div class="chip" onclick="filterProj('done',this)">已完结</div>
+    </div>
+    <div class="action-bar">
+      <button class="action-btn secondary" onclick="openModal('compareModal')">📊 横向对比</button>
+      <button class="action-btn" onclick="openModal('newProjModal')">＋ 新建项目</button>
+    </div>
+    <div id="riskAlerts"></div>
+    <div id="projTable"><div class="loading"><span class="spinner"></span>加载中…</div></div>
+    <div class="section-hd">
+      <div class="section-title">回款 & 报销记录</div>
+      <button class="action-btn" onclick="openModal('paymentModal')" style="padding:7px 14px;font-size:12px">＋ 录入回款</button>
+    </div>
+    <div class="card">
+      <div id="paymentTable"><div class="loading"><span class="spinner"></span>加载中…</div></div>
+    </div>
+
+    <!-- 项目成本分析 -->
+    <div class="section-hd" style="margin-top:24px">
+      <div class="section-title">📊 项目成本分析</div>
+    </div>
+    <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <select class="form-select" id="costAnalysisProjSel" style="max-width:260px" onchange="renderCostAnalysis()">
+        <option value="">请选择项目</option>
+      </select>
+      <div style="font-size:12px;color:var(--text-sub)">人力成本 = 项目奖金 + 参与期间底薪摊入</div>
+    </div>
+    <div id="costAnalysisArea"></div>
+  </div>
+</div>
+
+<!-- PAGE: 经营看板 -->
+<div class="page" id="page-dashboard">
+  <div class="employee-only" style="padding:60px 0;text-align:center;color:var(--text-sub)">
+    <div style="font-size:48px;margin-bottom:16px">🔒</div>
+    <div style="font-size:15px;font-weight:600">经营数据仅管理者可见</div>
+  </div>
+  <div class="admin-only">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+      <div style="font-size:13px;color:var(--text-sub)">统计月份：</div>
+      <select class="form-select" id="dashMonth" style="width:140px;font-size:13px" onchange="renderDashboard()"></select>
+      <div style="font-size:11px;color:var(--text-sub)" id="dashMonthHint"></div>
+    </div>
+
+    <div id="dashSummary"></div>
+    <div id="dashStats" class="stat-grid"></div>
+
+    <div class="two-col">
+      <div>
+        <div class="section-hd"><div class="section-title">今日待办</div></div>
+        <div class="card"><div id="todayTodoList" style="padding:4px 0 8px"></div></div>
+      </div>
+      <div>
+        <div class="section-hd"><div class="section-title">团队异常</div></div>
+        <div class="card"><div id="teamAlertsList" style="padding:4px 0 8px"></div></div>
+      </div>
+    </div>
+
+    <div class="section-hd"><div class="section-title">快捷操作</div></div>
+    <div class="card">
+      <div class="card-body" style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-sm" style="background:var(--ink);color:var(--paper)" onclick="openModal('assignModal')">＋ 分派工时</button>
+        <button class="btn-sm btn-blue" onclick="openModal('projectModal')">＋ 新建项目</button>
+        <button class="btn-sm btn-green" onclick="openModal('paymentModal')">＋ 录入回款</button>
+        <button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="gotoPage('project')">查看项目</button>
+        <button class="btn-sm" style="background:#f3f0ff;color:#6c5ce7" onclick="gotoPage('team')">查看团队</button>
+      </div>
+    </div>
+
+    <div class="section-hd"><div class="section-title">本月团队负荷</div></div>
+    <div class="card">
+      <table class="data-table">
+        <thead><tr><th>#</th><th>员工</th><th>实际工时</th><th>估算产值</th><th>负荷率</th><th>建议</th></tr></thead>
+        <tbody id="empRankBody"></tbody>
+      </table>
+    </div>
+
+    <div class="section-hd" style="margin-top:32px"><div class="section-title">分析详情（供主管复核）</div></div>
+    <details class="card">
+      <summary style="padding:16px 18px;cursor:pointer;font-weight:600;color:var(--ink)">展开趋势、异常、利润预测与排期</summary>
+      <div style="padding:0 18px 18px">
+        <div class="two-col">
+          <div>
+            <div class="section-hd"><div class="section-title">工时趋势预测 <span class="intel-badge est">EWMA</span></div></div>
+            <div class="card">
+              <div class="card-body" id="ewmaChart"></div>
+              <div style="padding:0 18px 12px;font-size:11px;color:var(--text-sub)" id="ewmaInsight"></div>
+            </div>
+            <div class="section-hd"><div class="section-title">成本异常识别 <span class="intel-badge live">MAD</span></div></div>
+            <div class="card"><div id="anomalyList" style="padding:4px 0 8px"></div></div>
+          </div>
+          <div>
+            <div class="section-hd"><div class="section-title">多项目利润预测 <span class="intel-badge live">EVM</span> <span style="cursor:help;color:var(--gold);font-size:13px;font-weight:400" title="挣值管理（Earned Value Management）：综合工时进度和成本，预测项目最终盈亏。数据来源于实际录入工时和合同金额。">ⓘ</span></div></div>
+            <div class="card"><div id="evmTable" style="padding:4px 0 8px"></div></div>
+            <div class="section-hd"><div class="section-title">负载平衡 <span class="intel-badge live">实时</span></div></div>
+            <div class="card">
+              <div class="card-hd"><div class="card-title">冲突检测与重排建议</div><div class="card-action" onclick="runLoadBalance()">重新分析</div></div>
+              <div id="loadBalanceResult" style="padding:4px 0 8px"></div>
+            </div>
+            <div class="section-hd"><div class="section-title">最优排期 <span class="intel-badge live">EDD</span> <span style="cursor:help;color:var(--gold);font-size:13px;font-weight:400" title="最早截止日期优先（Earliest Due Date）：按施工图交付日排序，截止日越近优先级越高。施工跟踪阶段的项目单独显示竣工倒计时。">ⓘ</span></div></div>
+            <div class="card"><div id="ganttView" style="padding:12px 18px 14px"></div></div>
+          </div>
+        </div>
+      </div>
+    </details>
+  </div>
+</div>
+
+<!-- PAGE: 报价 -->
+<div class="page" id="page-quote">
+  <div class="employee-only" style="padding:60px 0;text-align:center;color:var(--text-sub)">
+    <div style="font-size:48px;margin-bottom:16px">🔒</div>
+    <div style="font-size:15px;font-weight:600">报价数据仅管理者可见</div>
+  </div>
+  <div class="admin-only">
+    <div class="two-col">
+      <div>
+        <div class="section-hd"><div class="section-title">项目参数</div></div>
+        <div class="card"><div class="card-body">
+          <div class="form-group">
+            <label class="form-label">项目类型</label>
+            <select class="form-select" id="qType" onchange="calcQuote()">
+              <option value="residential">住宅设计</option>
+              <option value="commercial">商业空间</option>
+              <option value="office">办公室设计</option>
+              <option value="hotel">酒店/民宿</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">面积（㎡）</label>
+              <input type="number" class="form-input" id="qArea" value="200" oninput="calcQuote()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">复杂度</label>
+              <select class="form-select" id="qLevel" onchange="calcQuote()">
+                <option value="standard">标准</option>
+                <option value="premium">精品</option>
+                <option value="luxury">高端定制</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">目标利润率</label>
+              <select class="form-select" id="qMargin" onchange="calcQuote()">
+                <option value="0.30">保本 30%</option>
+                <option value="0.38" selected>标准 38%</option>
+                <option value="0.45">优质 45%</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">工期（周）</label>
+              <input type="number" class="form-input" id="qWeeks" value="12" oninput="calcQuote()">
+            </div>
+          </div>
+          <div style="background:var(--ink);border-radius:12px;padding:20px;color:var(--paper)">
+            <div style="font-size:10px;color:var(--warm-mid);letter-spacing:0.1em;margin-bottom:14px">▸ 测算结果</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+              <div><div style="font-size:10px;color:var(--warm-mid);margin-bottom:4px">预估人力成本</div>
+                <div style="font-family:'DM Mono',monospace;font-size:20px" id="qCost">—</div></div>
+              <div><div style="font-size:10px;color:var(--warm-mid);margin-bottom:4px">建议报价区间</div>
+                <div style="font-family:'DM Mono',monospace;font-size:20px;color:#f0c060" id="qPrice">—</div></div>
+              <div><div style="font-size:10px;color:var(--warm-mid);margin-bottom:4px">预计工时</div>
+                <div style="font-family:'DM Mono',monospace;font-size:20px" id="qHours">—</div></div>
+              <div><div style="font-size:10px;color:var(--warm-mid);margin-bottom:4px">目标利润率</div>
+                <div style="font-family:'DM Mono',monospace;font-size:20px;color:#f0c060" id="qPct">—</div></div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+      <div>
+        <div class="section-hd"><div class="section-title">历史项目参考库</div></div>
+        <div class="card">
+          <table class="data-table">
+            <thead><tr><th>项目</th><th>类型</th><th>面积</th><th>报价</th><th>利润率</th><th>工时</th></tr></thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+        </div>
+        <div class="notice">💡 项目完结后自动归入参考库，样本越多测算越准确。</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- PAGE: 绩效管理（仅管理员） -->
+<div class="page" id="page-bonus">
+  <div class="employee-only" style="padding:60px 0;text-align:center;color:var(--text-sub)">
+    <div style="font-size:48px;margin-bottom:16px">🔒</div>
+    <div style="font-size:15px;font-weight:600">绩效管理仅管理者可见</div>
+  </div>
+  <div class="admin-only">
+    <!-- 标签页切换 -->
+    <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
+      <button id="bonusTab1" class="action-btn" style="background:var(--ink);color:var(--paper)" onclick="switchBonusTab(1)">📋 项目成员配置</button>
+      <button id="bonusTab2" class="action-btn" style="background:var(--paper);color:var(--ink);border:1px solid var(--border)" onclick="switchBonusTab(2)">⭐ 绩效打分</button>
+      <button id="bonusTab3" class="action-btn" style="background:var(--paper);color:var(--ink);border:1px solid var(--border)" onclick="switchBonusTab(3)">💵 奖金核算</button>
+      <button id="bonusTab4" class="action-btn" style="background:var(--paper);color:var(--ink);border:1px solid var(--border)" onclick="switchBonusTab(4)">🎁 年终奖预估</button>
+    </div>
+
+    <!-- Tab1: 项目成员配置 -->
+    <div id="bonusPanel1">
+      <div class="section-hd"><div class="section-title">项目成员配置</div></div>
+      <div class="notice" style="margin-bottom:12px">为每个项目指定参与人员及岗位，系统据此计算对应奖金档位。</div>
+      <div style="margin-bottom:12px">
+        <select class="form-select" id="memberProjSel" style="max-width:260px" onchange="renderMemberConfig()">
+          <option value="">请选择项目</option>
+        </select>
+      </div>
+      <div id="memberConfigArea"></div>
+    </div>
+
+    <!-- Tab2: 绩效打分 -->
+    <div id="bonusPanel2" style="display:none">
+      <div class="section-hd"><div class="section-title">项目绩效打分</div></div>
+      <div class="notice" style="margin-bottom:12px">单个项目绩效打分（0～1），用于计算实际发放金额 = 总额 × (50% + 40% × 打分)。</div>
+      <div style="margin-bottom:12px">
+        <select class="form-select" id="scoreProjSel" style="max-width:260px" onchange="renderScorePanel()">
+          <option value="">请选择项目</option>
+        </select>
+      </div>
+      <div id="scoreArea"></div>
+    </div>
+
+    <!-- Tab3: 奖金核算 -->
+    <div id="bonusPanel3" style="display:none">
+      <div class="section-hd"><div class="section-title">项目奖金核算汇总</div></div>
+      <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <select class="form-select" id="bonusSumProjSel" style="max-width:260px" onchange="renderBonusSummary()">
+          <option value="">全部项目</option>
+        </select>
+        <select class="form-select" id="bonusSumEmpSel" style="max-width:180px" onchange="renderBonusSummary()">
+          <option value="">全部员工</option>
+        </select>
+      </div>
+      <div id="bonusSummaryArea"></div>
+    </div>
+
+    <!-- Tab4: 年终奖预估 -->
+    <div id="bonusPanel4" style="display:none">
+      <div class="section-hd"><div class="section-title">年终奖预估</div></div>
+      <div class="notice" style="margin-bottom:12px">
+        公式：基础年终奖 + 6000元 × 工龄(年) × 年终绩效分数比例<br>
+        <span style="color:var(--text-sub);font-size:11px">注：工龄从入职日起算，年终绩效分数比例需手动录入（基于全年项目打分汇总）</span>
+      </div>
+      <div id="annualBonusArea"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: 团队管理（仅管理员） -->
+<div class="page" id="page-team">
+  <div class="employee-only" style="padding:60px 0;text-align:center;color:var(--text-sub)">
+    <div style="font-size:48px;margin-bottom:16px">🔒</div>
+    <div style="font-size:15px;font-weight:600">团队管理仅管理者可见</div>
+  </div>
+  <div class="admin-only">
+    <div class="action-bar">
+      <button class="action-btn" style="background:var(--paper);color:var(--ink);border:1px solid var(--border)" onclick="openModal('importModal')">📥 导入飞书数据</button>
+      <button class="action-btn" onclick="openModal('inviteModal')">＋ 添加员工</button>
+      <button class="action-btn" style="background:#fff3e0;color:#e65100;border:1px solid #ffcc80" onclick="openModal('fixAmountModal')">🔧 金额单位修正</button>
+    </div>
+    <div class="card">
+      <table class="data-table">
+        <thead><tr><th>姓名</th><th>职位</th><th>角色</th><th>月固定薪资</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody id="teamBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL: 添加项目成员 -->
+<div class="modal-overlay" id="addMemberModal" onclick="closeModalOutside(event,'addMemberModal')">
+  <div class="modal-box"><div class="modal-handle"></div>
+    <div class="modal-title"><button class="modal-close" onclick="closeModal('addMemberModal')">×</button>添加项目成员</div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">员工</label>
+        <select class="form-select" id="addMemberEmp"></select></div>
+      <div class="form-group"><label class="form-label">参与岗位</label>
+        <select class="form-select" id="addMemberRole">
+          <option>设计总监</option>
+          <option>设计主管</option>
+          <option>主案设计师</option>
+          <option>执行设计师</option>
+          <option>高级深化设计师</option>
+          <option>深化设计师</option>
+          <option>助理设计师</option>
+        </select></div>
+      <button class="btn-primary" onclick="doAddMember()">确认添加</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: 录入/编辑打分 -->
+<div class="modal-overlay" id="scoreModal" onclick="closeModalOutside(event,'scoreModal')">
+  <div class="modal-box"><div class="modal-handle"></div>
+    <div class="modal-title"><button class="modal-close" onclick="closeModal('scoreModal')">×</button>录入项目绩效打分</div>
+    <div class="modal-body">
+      <input type="hidden" id="scoreMemberId">
+      <div class="form-group"><label class="form-label">员工</label>
+        <input class="form-input" id="scoreEmpName" readonly></div>
+      <div class="form-group"><label class="form-label">绩效打分（0～1）</label>
+        <input type="number" class="form-input" id="scoreValue" min="0" max="1" step="0.05" placeholder="0.80">
+        <div style="font-size:11px;color:var(--text-sub);margin-top:4px">满分1.0；通常范围0.6～1.0</div></div>
+      <div class="form-group"><label class="form-label">备注</label>
+        <input class="form-input" id="scoreNote" placeholder="可选"></div>
+      <button class="btn-primary" onclick="doSaveScore()">保存打分</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: 录入年终绩效分数比例 -->
+<div class="modal-overlay" id="annualScoreModal" onclick="closeModalOutside(event,'annualScoreModal')">
+  <div class="modal-box"><div class="modal-handle"></div>
+    <div class="modal-title"><button class="modal-close" onclick="closeModal('annualScoreModal')">×</button>录入年终绩效分数比例</div>
+    <div class="modal-body">
+      <input type="hidden" id="annualScoreEmpId">
+      <div class="form-group"><label class="form-label">员工</label>
+        <input class="form-input" id="annualScoreEmpName" readonly></div>
+      <div class="form-group"><label class="form-label">年终绩效分数比例（0～1）</label>
+        <input type="number" class="form-input" id="annualScoreValue" min="0" max="1" step="0.05" placeholder="0.80"></div>
+      <div class="form-group"><label class="form-label">入职日期</label>
+        <input type="date" class="form-input" id="annualScoreHireDate"></div>
+      <div class="form-group"><label class="form-label">基础年终奖（元）</label>
+        <input type="number" class="form-input" id="annualScoreBase" placeholder="如 8000"></div>
+      <button class="btn-primary" onclick="doSaveAnnualScore()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: 金额单位修正 -->
+<div class="modal-overlay" id="fixAmountModal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-title"><button class="modal-close" onclick="closeModal('fixAmountModal')">×</button>🔧 金额单位批量修正</div>
+    <div style="padding:0 20px 20px">
+      <div style="background:#fff3e0;border-radius:8px;padding:12px 14px;font-size:13px;color:#7a3a00;margin-bottom:16px;line-height:1.7">
+        ⚠️ 系统金额单位为<strong>万元</strong>，如果之前按<strong>元</strong>填写，<br>
+        点击下方按钮将所有合同金额和回款金额 <strong>÷ 10000</strong> 修正。<br>
+        <span style="color:#c62828;font-weight:600">此操作不可撤销，请确认后执行。</span>
+      </div>
+      <div style="margin-bottom:14px;font-size:13px;color:var(--text-sub)">
+        修正范围：<br>
+        · projects 表的 contract_amount 字段<br>
+        · payments 表的 amount 字段
+      </div>
+      <div id="fixAmountPreview" style="margin-bottom:14px;font-size:12px;color:var(--text-sub)"></div>
+      <div style="display:flex;gap:10px">
+        <button class="action-btn" style="flex:1;background:var(--paper);color:var(--ink);border:1px solid var(--border)" onclick="previewFixAmount()">👁 预览修正结果</button>
+        <button class="action-btn" id="doFixAmountBtn" style="flex:1;background:#e53935;color:#fff" onclick="doFixAmount()">⚡ 确认执行修正</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: 飞书导入 -->
+<div class="modal-overlay" id="importModal" onclick="closeModalOutside(event,'importModal')">
+  <div class="modal-box" style="max-width:660px">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><button class="modal-close" onclick="closeModal('importModal')">×</button>📥 从飞书导入工时数据</div>
+    <div class="modal-body">
+
+      <div style="display:flex;gap:0;margin-bottom:18px;border-radius:10px;overflow:hidden;border:1px solid var(--border)">
+        <div style="flex:1;padding:12px 8px;text-align:center;background:var(--ink);color:var(--paper)">
+          <div style="font-size:18px">①</div><div style="font-size:11px;font-weight:600;margin-top:2px">飞书导出</div>
+          <div style="font-size:10px;opacity:.7;margin-top:2px">表格→右上角···→导出→xlsx</div>
+        </div>
+        <div style="flex:1;padding:12px 8px;text-align:center;background:var(--cream)">
+          <div style="font-size:18px">②</div><div style="font-size:11px;font-weight:600;margin-top:2px">上传文件</div>
+          <div style="font-size:10px;color:var(--text-sub);margin-top:2px">拖入下方区域</div>
+        </div>
+        <div style="flex:1;padding:12px 8px;text-align:center;background:var(--cream)">
+          <div style="font-size:18px">③</div><div style="font-size:11px;font-weight:600;margin-top:2px">确认导入</div>
+          <div style="font-size:10px;color:var(--text-sub);margin-top:2px">预览后一键写入</div>
+        </div>
+      </div>
+
+      <div style="background:var(--cream);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:11px;color:var(--text-sub);line-height:1.7">
+        📋 自动识别列名：<strong style="color:var(--ink)">负责人、群组、任务内容、日期、工时、修改次数、任务进度</strong><br>
+        导入「已完成」和「未完成」的行，未完成工时备注自动标注「待返工」。列名需与飞书表格完全一致。
+      </div>
+
+      <div id="importDropZone"
+        style="border:2px dashed var(--border);border-radius:12px;padding:36px 24px;text-align:center;cursor:pointer;transition:all .2s"
+        onclick="document.getElementById('importFileInput').click()"
+        ondragover="event.preventDefault();this.style.borderColor='var(--accent)';this.style.background='#fdf5f0'"
+        ondragleave="this.style.borderColor='var(--border)';this.style.background=''"
+        ondrop="handleImportDrop(event)">
+        <div style="font-size:36px;margin-bottom:8px">📂</div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px">点击选择 或 拖入 Excel 文件</div>
+        <div style="font-size:12px;color:var(--text-sub)">飞书导出的 .xlsx 文件</div>
+        <input type="file" id="importFileInput" accept=".xlsx,.xls" style="display:none" onchange="handleImportSelect(event)">
+      </div>
+
+      <div id="importPreviewWrap" style="display:none;margin-top:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-size:13px;font-weight:600">导入预览</div>
+          <div id="importSummary" style="font-size:12px;color:var(--text-sub)"></div>
+        </div>
+        <div style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+          <table class="data-table" style="font-size:12px">
+            <thead><tr><th>负责人</th><th>项目</th><th>任务摘要</th><th>日期</th><th>工时</th><th>修改次数</th><th>状态</th></tr></thead>
+            <tbody id="importPreviewBody"></tbody>
+          </table>
+        </div>
+        <div id="importWarnBox" style="margin-top:8px"></div>
+
+        <!-- 未匹配项目区块 -->
+        <div id="unmatchedWrap" style="display:none;margin-top:12px">
+          <div style="background:#fff3e0;border-radius:8px;padding:10px 14px;margin-bottom:8px">
+            <div style="font-size:12px;font-weight:600;color:#e65100;margin-bottom:6px">⚠️ 以下群组未找到对应项目，请为每条指定归属项目后再导入：</div>
+            <div id="unmatchedList"></div>
+          </div>
+        </div>
+
+        <button class="btn-primary" id="doImportBtn" onclick="doImport()" style="margin-top:14px;width:100%">✅ 确认导入</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: 我的档案 -->
+<div class="page" id="page-profile">
+  <div class="two-col">
+    <div>
+      <div id="profileCard" style="background:var(--ink);border-radius:var(--radius);padding:24px;color:var(--paper);margin-bottom:20px"></div>
+      <div id="profileStats" class="stat-grid" style="grid-template-columns:1fr 1fr"></div>
+    </div>
+    <div>
+      <div class="section-hd"><div class="section-title">近6月产工比趋势</div></div>
+      <div class="card"><div class="card-body" id="personalTrend"></div></div>
+      <div class="section-hd"><div class="section-title">工时阶段分布（本月）</div></div>
+      <div class="card"><div class="card-body" id="timeDistribution"></div></div>
+    </div>
+  </div>
+</div>
+
+    </div><!-- /content -->
+    <nav class="bottom-nav"><div class="bottom-nav-inner">
+      <button class="bnav-btn active" onclick="nav('timelog',this,'bnav')"><span class="bi">⏱</span><span>工时</span></button>
+      <button class="bnav-btn" onclick="nav('project',this,'bnav')"><span class="bi">📁</span><span>项目</span></button>
+      <button class="bnav-btn admin-nav admin-only" onclick="nav('dashboard',this,'bnav')"><span class="bi">📊</span><span>看板</span></button>
+      <button class="bnav-btn admin-nav admin-only" onclick="nav('quote',this,'bnav')"><span class="bi">🧮</span><span>报价</span></button>
+      <button class="bnav-btn admin-nav admin-only" onclick="nav('bonus',this,'bnav')"><span class="bi">💰</span><span>绩效</span></button>
+      <button class="bnav-btn" onclick="nav('profile',this,'bnav')"><span class="bi">👤</span><span>我的</span></button>
+    </div></nav>
+  </div>
+</div>
+</div><!-- /mainApp -->
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="assignModal" onclick="closeModalOutside(event,'assignModal')">
+  <div class="modal-box"><div class="modal-handle"></div>
+    <div class="modal-title"><button class="modal-close" onclick="closeModal('assignModal')">×</button>分派工时</div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">员工</label>
+        <select class="form-select" id="aEmp"></select></div>
+      <div class="form-group"><label class="form-label">所属项目</label>
+        <select class="form-select" id="aProj"></select></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">工作阶段</label>
+          <select class="form-select" id="aStage">
+            <option>概念方案</option><option>深化设计</option><option>施工图</option>
+            <option>软装方案</option><option>项目沟通/会议</option><option>现场跟进</option>
+            <option>修改调整</option><option>资料整理</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">日期</label>
+          <input type="date" class="form-input" id="aDate"></div>
+      </div>
+      <div class="form-group"><label class="form-label">工时</label>
+        <div class="hours-picker">
+          <button class="hp-btn" onclick="changeH(-0.5)">−</button>
+          <div class="hp-display"><span id="hVal">4.0</span> h</div>
+          <button class="hp-btn" onclick="changeH(0.5)">＋</button>
+        </div></div>
+      <div class="form-group"><label class="form-label">备注（选填）</label>
+        <input type="text" class="form-input" id="aNote" placeholder="任务说明"></div>
+      <button class="btn-primary" id="assignBtn" onclick="submitAssign()">确认分派</button>
+    </div></div></div>
+
+<div class="modal-overlay" id="newProjModal" onclick="closeModalOutside(event,'newProjModal')">
+  <div class="modal-box" style="max-width:600px"><div class="modal-handle"></div>
+    <div class="modal-title"><button class="modal-close" onclick="closeModal('newProjModal')">×</button><span id="npModalTitle">新建项目</span></div>
+      <input type="hidden" id="npEditId" value="">
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">项目名称</label>
+          <input type="text" class="form-input" id="npName" placeholder="项目全称"></div>
+        <div class="form-group"><label class="form-label">业主/客户</label>
+          <input type="text" class="form-input" id="npClient" placeholder="甲方名称"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">合同金额（万元）</label>
+          <input type="number" class="form-input" id="npContract" placeholder="0"></div>
+        <div class="form-group"><label class="form-label">设计面积（㎡）</label>
+          <input type="number" class="form-input" id="npArea" placeholder="0"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">开始日期</label>
+          <input type="date" class="form-input" id="npStart" onchange="calcBudget()"></div>
+        <div class="form-group"><label class="form-label">施工图交付日（合同截止）</label>
+          <input type="date" class="form-input" id="npDeadline" onchange="calcBudget()"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">预计竣工日</label>
+          <input type="date" class="form-input" id="npCompletion"></div>
+        <div class="form-group"><label class="form-label" style="color:var(--text-sub);font-size:11px">施工跟踪阶段截止日，可留空</label>
+          <div style="height:32px"></div></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">执行设计人数 <span style="font-size:10px;color:var(--text-sub);font-weight:400">（不含主管/总监）</span></label>
+          <input type="number" class="form-input" id="npPeople" placeholder="1" min="1" value="1" onchange="calcBudget()"></div>
+        <div class="form-group"><label class="form-label">预计工时（自动计算）</label>
+          <input type="number" class="form-input" id="npBudget" placeholder="自动计算" style="background:var(--cream);color:var(--text-sub)" readonly></div>
+      </div>
+      <div id="npBudgetHint" style="font-size:11px;color:var(--text-sub);margin-bottom:12px"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">负责总监</label>
+          <select class="form-select" id="npDirector"><option value="">请选择总监</option></select></div>
+        <div class="form-group"><label class="form-label">项目状态</label>
+          <select class="form-select" id="npStatus">
+            <option value="active">进行中</option>
+            <option value="construction">施工跟踪</option>
+            <option value="paused">已暂停</option>
+            <option value="done">已完结</option>
+          </select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">项目类型</label>
+          <select class="form-select" id="npIsChain">
+            <option value="false">单店项目</option>
+            <option value="true">复制店项目</option>
+          </select></div>
+        <div class="form-group"><label class="form-label" style="color:var(--text-sub);font-size:11px">复制店绩效奖金按独立档位计算</label>
+          <div style="height:32px"></div></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">图纸交付日</label>
+          <input type="date" class="form-input" id="npDrawingsDate"></div>
+        <div class="form-group"><label class="form-label">项目落地日</label>
+          <input type="date" class="form-input" id="npConstructionDate"></div>
+      </div>
+      <button class="btn-primary" id="createProjBtn" onclick="createProject()">创建项目</button>
+      <button class="btn-primary" id="saveProjBtn" style="display:none;background:var(--green)" onclick="saveEditProject()">保存修改</button>
+
+      <!-- 项目成员（仅编辑模式显示） -->
+      <div id="npMembersSection" style="display:none;margin-top:20px;border-top:1px solid var(--border);padding-top:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="font-weight:600;font-size:13px">👥 项目成员 & 分工</div>
+          <button class="btn-sm" style="background:var(--ink);color:var(--paper)" onclick="openInlineAddMember()">＋ 添加</button>
+        </div>
+        <div id="npMembersList"></div>
+        <div id="npAddMemberRow" style="display:none;background:var(--cream);border-radius:8px;padding:10px;margin-top:8px">
+          <div class="form-row" style="margin-bottom:8px">
+            <div class="form-group"><label class="form-label" style="font-size:11px">员工</label>
+              <select class="form-select" id="inlineAddEmp" style="font-size:12px"></select></div>
+            <div class="form-group"><label class="form-label" style="font-size:11px">岗位</label>
+              <select class="form-select" id="inlineAddRole" style="font-size:12px">
+                <option>设计总监</option><option>设计主管</option>
+                <option>主案设计师</option><option>执行设计师</option>
+                <option>高级深化设计师</option><option>深化设计师</option>
+                <option>助理设计师</option>
+              </select></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn-sm" style="background:var(--green);color:#fff;flex:1" onclick="doInlineAddMember()">确认添加</button>
+            <button class="btn-sm" style="background:var(--paper);border:1px solid var(--border);flex:1" onclick="document.getElementById('npAddMemberRow').style.display='none'">取消</button>
+          </div>
+        </div>
+      </div>
+    </div></div></div>
+
+<div class="modal-overlay" id="paymentModal" onclick="closeModalOutside(event,'paymentModal')">
+  <div class="modal-box"><div class="modal-handle"></div>
+    <div class="modal-title"><button class="modal-close" onclick="closeModal('paymentModal')">×</button>录入回款/报销</div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">所属项目</label>
+        <select class="form-select" id="payProj"></select></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">类型</label>
+          <select class="form-select" id="payType">
+            <option>回款（合同款）</option><option>首付款</option><option>中期款</option>
+            <option>尾款</option><option>报销（差旅）</option>
+            <option>报销（打图/模型）</option><option>外包付款</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">金额（万元）</label>
+          <input type="number" class="form-input" id="payAmt" placeholder="0.00"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">日期</label>
+          <input type="date" class="form-input" id="payDate"></div>
+        <div class="form-group"><label class="form-label">备注</label>
+          <input type="text" class="form-input" id="payNote" placeholder="可选"></div>
+      </div>
+      <button class="btn-primary" id="payBtn" onclick="submitPayment()">确认录入</button>
+    </div></div></div>
+
+<div class="modal-overlay" id="compareModal" onclick="closeModalOutside(event,'compareModal')">
+  <div class="modal-box" style="max-width:700px"><div class="modal-handle"></div>
+    <div class="modal-title"><button class="modal-close" onclick="closeModal('compareModal')">×</button>项目横向对比</div>
+    <div class="modal-body"><div style="overflow-x:auto">
+      <table class="data-table">
+        <thead><tr><th>项目</th><th>合同额</th><th>利润率</th><th>已用工时</th><th>工时进度</th><th>小时产值</th><th>状态</th></tr></thead>
+        <tbody id="compareBody"></tbody>
+      </table>
+    </div></div></div></div>
+
+<div class="modal-overlay" id="inviteModal" onclick="closeModalOutside(event,'inviteModal')">
+  <div class="modal-box"><div class="modal-handle"></div>
+    <div class="modal-title"><button class="modal-close" onclick="closeModal('inviteModal')">×</button>添加员工</div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">姓名</label>
+          <input type="text" class="form-input" id="inviteName" placeholder="真实姓名"></div>
+        <div class="form-group"><label class="form-label">职位</label>
+          <select class="form-select" id="inviteTitle" onchange="autoFillCost('inviteTitle','inviteCost')">
+            <option value="">请选择职位</option>
+            <option value="设计总监">设计总监</option>
+            <option value="设计主管">设计主管</option>
+            <option value="主案设计师">主案设计师</option>
+            <option value="执行设计师">执行设计师</option>
+            <option value="高级深化设计师">高级深化设计师</option>
+            <option value="深化设计师">深化设计师</option>
+            <option value="助理设计师">助理设计师</option>
+          </select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">角色</label>
+          <select class="form-select" id="inviteRole">
+            <option value="employee">员工</option>
+            <option value="admin">管理者</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">月固定薪资（元，自动填入）</label>
+          <input type="number" class="form-input" id="inviteCost" placeholder="自动填入" style="background:var(--cream);color:var(--text-sub)" readonly></div>
+      </div>
+      <button class="btn-primary" id="inviteBtn" onclick="inviteEmployee()">添加员工</button>
+    </div></div></div>
+
+<div class="modal-overlay" id="editEmpModal" onclick="closeModalOutside(event,'editEmpModal')">
+  <div class="modal-box"><div class="modal-handle"></div>
+    <div class="modal-title"><button class="modal-close" onclick="closeModal('editEmpModal')">×</button>编辑员工</div>
+    <div class="modal-body">
+      <input type="hidden" id="editEmpId">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">姓名</label>
+          <input type="text" class="form-input" id="editEmpName" placeholder="真实姓名"></div>
+        <div class="form-group"><label class="form-label">职位</label>
+          <select class="form-select" id="editEmpTitle" onchange="autoFillCost('editEmpTitle','editEmpCost')">
+            <option value="">请选择职位</option>
+            <option value="设计总监">设计总监</option>
+            <option value="设计主管">设计主管</option>
+            <option value="主案设计师">主案设计师</option>
+            <option value="执行设计师">执行设计师</option>
+            <option value="高级深化设计师">高级深化设计师</option>
+            <option value="深化设计师">深化设计师</option>
+            <option value="助理设计师">助理设计师</option>
+          </select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">角色</label>
+          <select class="form-select" id="editEmpRole">
+            <option value="employee">员工</option>
+            <option value="admin">管理者</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">月固定薪资（元，自动填入）</label>
+          <input type="number" class="form-input" id="editEmpCost" placeholder="自动填入" style="background:var(--cream);color:var(--text-sub)" readonly></div>
+      </div>
+      <div class="form-row" style="margin-top:4px">
+        <div class="form-group"><label class="form-label">在职状态</label>
+          <select class="form-select" id="editEmpActive">
+            <option value="true">在职</option>
+            <option value="false">已离职</option>
+          </select></div>
+        <div class="form-group"></div>
+      </div>
+      <button class="btn-primary" id="editEmpBtn" onclick="saveEditEmp()">保存修改</button>
+    </div></div></div>
+
+<!-- 编辑工时弹窗 -->
+<div class="modal-overlay" id="editLogModal" onclick="closeModalOutside(event,'editLogModal')">
+  <div class="modal-box"><div class="modal-handle"></div>
+    <div class="modal-title"><button class="modal-close" onclick="closeModal('editLogModal')">×</button>编辑工时记录</div>
+    <div class="modal-body">
+      <input type="hidden" id="editLogId">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">员工</label>
+          <select class="form-select" id="editLogEmp"></select></div>
+        <div class="form-group"><label class="form-label">项目</label>
+          <select class="form-select" id="editLogProj"></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">日期</label>
+          <input type="date" class="form-input" id="editLogDate"></div>
+        <div class="form-group"><label class="form-label">工时（h）</label>
+          <input type="number" class="form-input" id="editLogHours" step="0.5" min="0.5"></div>
+      </div>
+      <div class="form-group"><label class="form-label">阶段</label>
+        <input type="text" class="form-input" id="editLogStage" placeholder="飞书导入"></div>
+      <div class="form-group"><label class="form-label">备注</label>
+        <input type="text" class="form-input" id="editLogNote"></div>
+      <button class="btn-primary" id="editLogBtn" onclick="saveEditLog()">保存修改</button>
+    </div></div></div>
+
+<!-- 编辑回款弹窗 -->
+<div class="modal-overlay" id="editPayModal" onclick="closeModalOutside(event,'editPayModal')">
+  <div class="modal-box"><div class="modal-handle"></div>
+    <div class="modal-title"><button class="modal-close" onclick="closeModal('editPayModal')">×</button>编辑回款记录</div>
+    <div class="modal-body">
+      <input type="hidden" id="editPayId">
+      <div class="form-group"><label class="form-label">所属项目</label>
+        <select class="form-select" id="editPayProj"></select></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">类型</label>
+          <select class="form-select" id="editPayType">
+            <option>回款（合同款）</option><option>首付款</option><option>中期款</option>
+            <option>尾款</option><option>报销（差旅）</option>
+            <option>报销（打图/模型）</option><option>外包付款</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">金额（万元）</label>
+          <input type="number" class="form-input" id="editPayAmt" placeholder="0.00"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">日期</label>
+          <input type="date" class="form-input" id="editPayDate"></div>
+        <div class="form-group"><label class="form-label">备注</label>
+          <input type="text" class="form-input" id="editPayNote" placeholder="可选"></div>
+      </div>
+      <button class="btn-primary" id="editPayBtn" onclick="saveEditPayment()">保存修改</button>
+    </div></div></div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// ⚙️  配置区域 — 部署时替换这两个值
+// ══════════════════════════════════════════════════════════════
+const SUPABASE_URL = 'https://bgjvuszufqbbialkyeiq.supabase.co';       // 例: https://xxxxx.supabase.co
+const SUPABASE_ANON_KEY = 'sb_publishable_2yQgdIPmNnxQRTswLSLSwQ_KFaIuUjv'; // Supabase项目的anon key
+
+// ══════════════════════════════════════════════════════════════
+// 初始化 Supabase
+// ══════════════════════════════════════════════════════════════
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    storage: window.sessionStorage,
+    persistSession: true,
+    detectSessionInUrl: false,
+  }
+});
+
+// ── 全局状态 ──────────────────────────────────────────────────
+let currentUser = null;   // Supabase auth user
+let userProfile = null;   // users表记录
+let isAdmin = false;
+let currentH = 4.0;
+let allProjects = [];
+let allEmployees = [];
+let allLogs = [];
+let allPayments = [];
+let allMembers = [];   // project_members
+let allScores  = [];   // project_scores
+
+// ── 算法常量 ──────────────────────────────────────────────────
+// 动态计算当月工作日（排除周六日）× 6.5小时
+function getMonthlyWorkdays(yearMonth){
+  // yearMonth格式: '2026-03'
+  const [y, m] = (yearMonth || new Date().toISOString().slice(0,7)).split('-').map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  let workdays = 0;
+  for(let d = 1; d <= daysInMonth; d++){
+    const day = new Date(y, m-1, d).getDay();
+    if(day !== 0 && day !== 6) workdays++;
+  }
+  return workdays;
+}
+function getMonthlyCapForMonth(yearMonth){
+  return getMonthlyWorkdays(yearMonth) * 6.5;
+}
+// 当月工时上限（动态）
+const MONTHLY_CAP = getMonthlyCapForMonth(new Date().toISOString().slice(0,7));
+const TYPE_H = {residential:0.70,commercial:0.90,office:0.85,hotel:1.10};
+const LVL_M  = {standard:1.0,premium:1.35,luxury:1.80};
+
+// ══════════════════════════════════════════════════════════════
+// 认证系统
+// ══════════════════════════════════════════════════════════════
+async function loginWithPassword() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  if(!email){showLoginError('请输入邮箱');return}
+  if(!password){showLoginError('请输入密码');return}
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.textContent = '登录中…';
+  const {data, error} = await sb.auth.signInWithPassword({ email, password });
+  btn.disabled = false; btn.textContent = '登录';
+  if(error){showLoginError('邮箱或密码错误');return}
+  // 直接处理，不依赖onAuthStateChange
+  currentUser = data.user;
+  await loadUserProfile();
+  showApp();
+}
+
+function showLoginError(msg){
+  const el=document.getElementById('loginError');
+  el.textContent=msg; el.style.display='block';
+  setTimeout(()=>el.style.display='none',4000);
+}
+
+async function logout(){
+  await sb.auth.signOut();
+  currentUser=null; userProfile=null; isAdmin=false;
+  document.getElementById('mainApp').style.display='none';
+  document.getElementById('loginScreen').style.display='block';
+  document.getElementById('loginStep1').classList.add('active');
+  document.getElementById('loginStep2').classList.remove('active');
+  document.getElementById('loginEmail').value='';
+  document.getElementById('loginPassword').value='';
+}
+
+// ── 监听认证状态变化（仅处理退出）──────────────────────────────
+sb.auth.onAuthStateChange((event, session) => {
+  if(event === 'SIGNED_OUT'){
+    currentUser=null; userProfile=null; isAdmin=false;
+    document.getElementById('loginScreen').style.display='block';
+    document.getElementById('mainApp').style.display='none';
+  }
+});
+
+// 刷新页面后恢复登录状态
+(async () => {
+  const { data } = await sb.auth.getSession();
+  if(data?.session?.user){
+    currentUser = data.session.user;
+    await loadUserProfile();
+    showApp();
+  }
+})();
+
+async function loadUserProfile(){
+  const uid = currentUser.id;
+
+
+  const {data, error} = await sb.from('users')
+    .select('*').eq('id', uid).maybeSingle();
+
+
+  if(data){
+    userProfile = data;
+    isAdmin = data.role === 'admin';
+  } else {
+    const {data:byEmail} = await sb.from('users')
+      .select('*').eq('email', currentUser.email).maybeSingle();
+    if(byEmail){
+      userProfile = byEmail;
+      isAdmin = byEmail.role === 'admin';
+    } else {
+      const {data:newUser} = await sb.from('users').insert({
+        id: uid,
+        email: currentUser.email,
+        name: currentUser.email.split('@')[0],
+        role: 'employee'
+      }).select().single();
+      userProfile = newUser;
+      isAdmin = false;
+    }
+  }
+}
+
+function showApp(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('mainApp').style.display='block';
+  document.body.classList.toggle('admin-mode',isAdmin);
+  document.getElementById('sidebarName').textContent = userProfile?.name||'—';
+  document.getElementById('sidebarRole').textContent = isAdmin?'管理者':'员工';
+  const today = new Date().toISOString().split('T')[0];
+  const dateInputs=['aDate','payDate'];
+  dateInputs.forEach(id=>{const el=document.getElementById(id);if(el)el.value=today});
+  loadAllData();
+}
+
+// ══════════════════════════════════════════════════════════════
+// 数据加载
+// ══════════════════════════════════════════════════════════════
+async function loadAllData(){
+  await Promise.all([loadProjects(),loadEmployees(),loadLogs(),loadPayments(),loadMembersAndScores()]);
+  renderAll();
+}
+
+async function loadMembersAndScores(){
+  if(!isAdmin){ allMembers=[]; allScores=[]; return; }
+  const [{data:m},{data:s}] = await Promise.all([
+    sb.from('project_members').select('*'),
+    sb.from('project_scores').select('*'),
+  ]);
+  allMembers = m||[];
+  allScores  = s||[];
+}
+
+async function loadProjects(){
+  const {data,error} = await sb.from('project_cost_summary').select('*');
+  allProjects = data||[];
+  populateProjSelects();
+}
+
+async function loadEmployees(){
+  const {data,error} = await sb.from('users').select('*').order('is_active',{ascending:false});
+  allEmployees = data||[];
+  populateEmpSelects();
+}
+
+async function loadLogs(){
+  let q = sb.from('time_logs').select(`
+    *,
+    employee:users!time_logs_employee_id_fkey(name,avatar_color,job_title),
+    project:projects!time_logs_project_id_fkey(name)
+  `).order('log_date',{ascending:false}).limit(200);
+  if(!isAdmin) q = q.eq('employee_id',userProfile?.id);
+  const {data,error} = await q;
+  allLogs = data||[];
+}
+
+async function loadPayments(){
+  if(!isAdmin){allPayments=[];return}
+  const {data} = await sb.from('payments').select(`
+    *,project:projects(name)
+  `).order('payment_date',{ascending:false}).limit(100);
+  allPayments = data||[];
+}
+
+// ── Select 填充 ───────────────────────────────────────────────
+function populateProjSelects(){
+  const ids=['aProj','payProj'];
+  ids.forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    el.innerHTML=allProjects.filter(p=>p.status!=='done')
+      .map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  });
+}
+
+function populateEmpSelects(){
+  // 填充负责总监下拉（只显示admin角色）
+  const dirSel = document.getElementById('npDirector');
+  if(dirSel){
+    const admins = allEmployees.filter(e=>e.role==='admin');
+    dirSel.innerHTML = '<option value="">请选择总监</option>' +
+      admins.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+  }
+  const el=document.getElementById('aEmp');
+  if(!el)return;
+  el.innerHTML=allEmployees.filter(e=>e.is_active!==false).map(e=>`<option value="${e.id}">${e.name}（${e.job_title||'员工'}）</option>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// 写入操作
+// ══════════════════════════════════════════════════════════════
+async function submitAssign(){
+  if(!isAdmin){toast('仅管理者可分派工时');return}
+  const btn=document.getElementById('assignBtn');
+  btn.disabled=true; btn.textContent='提交中…';
+  const empId=document.getElementById('aEmp').value;
+  const projId=document.getElementById('aProj').value;
+  const stage=document.getElementById('aStage').value;
+  const date=document.getElementById('aDate').value;
+  const note=document.getElementById('aNote').value;
+  const {error}=await sb.from('time_logs').insert({
+    employee_id:empId, project_id:projId,
+    stage, log_date:date, hours:currentH,
+    note, created_by:userProfile.id
+  });
+  btn.disabled=false; btn.textContent='确认分派';
+  if(error){toast('分派失败：'+error.message);return}
+  closeModal('assignModal');
+  toast('✓ 工时已分派');
+  await loadLogs();
+  renderAll();
+}
+
+async function createProject(){
+  if(!isAdmin){toast('仅管理者可创建项目');return}
+  const name=document.getElementById('npName').value.trim();
+  if(!name){toast('请填写项目名称');return}
+  const btn=document.getElementById('createProjBtn');
+  btn.disabled=true; btn.textContent='创建中…';
+  const {error}=await sb.from('projects').insert({
+    name,
+    client:document.getElementById('npClient').value,
+    contract_amount:parseFloat(document.getElementById('npContract').value)||0,
+    area:parseFloat(document.getElementById('npArea').value)||0,
+    hours_budget:parseInt(document.getElementById('npBudget').value)||0,
+    start_date:document.getElementById('npStart').value||null,
+    deadline:document.getElementById('npDeadline').value||null,
+    completion_date:document.getElementById('npCompletion').value||null,
+    people_count:parseInt(document.getElementById('npPeople').value)||1,
+    director_id:document.getElementById('npDirector').value||null,
+    status:document.getElementById('npStatus').value||'active',
+    is_chain:document.getElementById('npIsChain').value==='true',
+    drawings_delivered_at:document.getElementById('npDrawingsDate').value||null,
+    construction_done_at:document.getElementById('npConstructionDate').value||null,
+    created_by:userProfile.id
+  });
+  btn.disabled=false; btn.textContent='创建项目';
+  if(error){toast('创建失败：'+error.message);return}
+  closeModal('newProjModal');
+  toast(`✓ 项目「${name.slice(0,10)}」已创建`);
+  await loadProjects();
+  renderAll();
+}
+
+function editProject(id){
+  const p = allProjects.find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('npEditId').value = id;
+  document.getElementById('npModalTitle').textContent = '编辑项目';
+  document.getElementById('npName').value = p.name||'';
+  document.getElementById('npClient').value = p.client||'';
+  document.getElementById('npContract').value = p.contract_amount||'';
+  document.getElementById('npArea').value = p.area||'';
+  document.getElementById('npBudget').value = p.hours_budget||'';
+  document.getElementById('npBudget').readOnly = false;
+  document.getElementById('npBudget').style.background = '';
+  document.getElementById('npBudget').style.color = '';
+  document.getElementById('npStart').value = p.start_date||'';
+  document.getElementById('npDeadline').value = p.deadline||'';
+  document.getElementById('npPeople').value = p.people_count||1;
+  document.getElementById('npDirector').value = p.director_id||'';
+  document.getElementById('npStatus').value = p.status||'active';
+  document.getElementById('npCompletion').value = p.completion_date||'';
+  document.getElementById('npIsChain').value = p.is_chain ? 'true' : 'false';
+  document.getElementById('npDrawingsDate').value = p.drawings_delivered_at||'';
+  document.getElementById('npConstructionDate').value = p.construction_done_at||'';
+  const hint = document.getElementById('npBudgetHint');
+  if(hint) hint.textContent = '可直接修改工时，或重新选择日期自动计算';
+  document.getElementById('createProjBtn').style.display='none';
+  document.getElementById('saveProjBtn').style.display='block';
+  document.getElementById('npMembersSection').style.display='block';
+  renderInlineMembers(id);
+  openModal('newProjModal');
+}
+
+async function saveEditProject(){
+  const id = document.getElementById('npEditId').value;
+  const name = document.getElementById('npName').value.trim();
+  if(!name){toast('请填写项目名称');return}
+  const btn = document.getElementById('saveProjBtn');
+  btn.disabled=true; btn.textContent='保存中…';
+  const {error} = await sb.from('projects').update({
+    name,
+    client: document.getElementById('npClient').value,
+    contract_amount: parseFloat(document.getElementById('npContract').value)||0,
+    area: parseFloat(document.getElementById('npArea').value)||0,
+    hours_budget: parseInt(document.getElementById('npBudget').value)||0,
+    start_date: document.getElementById('npStart').value||null,
+    deadline: document.getElementById('npDeadline').value||null,
+    completion_date: document.getElementById('npCompletion').value||null,
+    people_count: parseInt(document.getElementById('npPeople').value)||1,
+    director_id: document.getElementById('npDirector').value||null,
+    status: document.getElementById('npStatus').value||'active',
+    is_chain: document.getElementById('npIsChain').value==='true',
+    drawings_delivered_at: document.getElementById('npDrawingsDate').value||null,
+    construction_done_at: document.getElementById('npConstructionDate').value||null,
+  }).eq('id', id);
+  btn.disabled=false; btn.textContent='保存修改';
+  if(error){toast('保存失败：'+error.message);return}
+  closeModal('newProjModal');
+  toast('✓ 项目信息已更新');
+  await loadProjects();
+  renderAll();
+}
+
+// 关闭弹窗时重置状态
+const _origCloseModal = closeModal;
+function closeModal(id){
+  if(id==='newProjModal'){
+    document.getElementById('npEditId').value='';
+    document.getElementById('npModalTitle').textContent='新建项目';
+    document.getElementById('createProjBtn').style.display='block';
+    document.getElementById('saveProjBtn').style.display='none';
+    document.getElementById('npMembersSection').style.display='none';
+    document.getElementById('npMembersList').innerHTML='';
+    document.getElementById('npAddMemberRow').style.display='none';
+    document.getElementById('npName').value='';
+    document.getElementById('npClient').value='';
+    document.getElementById('npContract').value='';
+    document.getElementById('npArea').value='';
+    document.getElementById('npBudget').value='';
+    document.getElementById('npBudget').readOnly=true;
+    document.getElementById('npBudget').style.background='var(--cream)';
+    document.getElementById('npBudget').style.color='var(--text-sub)';
+    document.getElementById('npStart').value='';
+    document.getElementById('npDeadline').value='';
+    document.getElementById('npPeople').value='1';
+    const h=document.getElementById('npBudgetHint');if(h)h.textContent='';
+    const ds=document.getElementById('npDirector');if(ds)ds.value='';
+    const st=document.getElementById('npStatus');if(st)st.value='active';
+    const cp=document.getElementById('npCompletion');if(cp)cp.value='';
+  }
+  _origCloseModal(id);
+}
+
+async function submitPayment(){
+  if(!isAdmin){toast('仅管理者可录入回款');return}
+  const btn=document.getElementById('payBtn');
+  btn.disabled=true; btn.textContent='提交中…';
+  const {error}=await sb.from('payments').insert({
+    project_id:document.getElementById('payProj').value,
+    type:document.getElementById('payType').value,
+    amount:parseFloat(document.getElementById('payAmt').value)||0,
+    payment_date:document.getElementById('payDate').value,
+    note:document.getElementById('payNote').value,
+    created_by:userProfile.id
+  });
+  btn.disabled=false; btn.textContent='确认录入';
+  if(error){toast('录入失败：'+error.message);return}
+  closeModal('paymentModal');
+  toast('✓ 回款已录入');
+  await Promise.all([loadProjects(),loadPayments()]);
+  renderAll();
+}
+
+// ══════════════════════════════════════════════════════════════
+// 飞书 Excel 导入模块
+// ══════════════════════════════════════════════════════════════
+let importRows = [];   // 解析后待导入的行
+
+function handleImportDrop(e){
+  e.preventDefault();
+  const dz = document.getElementById('importDropZone');
+  dz.style.borderColor=''; dz.style.background='';
+  const file = e.dataTransfer.files[0];
+  if(file) parseImportFile(file);
+}
+function handleImportSelect(e){
+  const file = e.target.files[0];
+  if(file) parseImportFile(file);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// 金额单位修正工具（元 → 万元，÷10000）
+// ══════════════════════════════════════════════════════════════
+async function previewFixAmount(){
+  const preview = document.getElementById('fixAmountPreview');
+  preview.innerHTML = '加载中…';
+  const { data: projects } = await sb.from('projects').select('id,name,contract_amount').order('name');
+  const { data: payments } = await sb.from('payments').select('id,project_id,amount,type,pay_date');
+  let html = '<div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:8px">';
+  html += '<div style="font-weight:600;margin-bottom:6px">合同金额修正预览：</div>';
+  (projects||[]).forEach(p=>{
+    if(!p.contract_amount) return;
+    html += `<div>${p.name?.slice(0,16)}：${p.contract_amount} → <strong>${(p.contract_amount/10000).toFixed(4)}</strong> 万</div>`;
+  });
+  html += '<div style="font-weight:600;margin:8px 0 4px">回款金额修正预览：</div>';
+  (payments||[]).forEach(p=>{
+    if(!p.amount) return;
+    html += `<div>${p.type} ${p.pay_date}：${p.amount} → <strong>${(p.amount/10000).toFixed(4)}</strong> 万</div>`;
+  });
+  html += '</div>';
+  preview.innerHTML = html;
+}
+
+async function doFixAmount(){
+  if(!confirm('确认将所有合同金额和回款金额 ÷ 10000？此操作不可撤销！')) return;
+  const btn = document.getElementById('doFixAmountBtn');
+  btn.disabled = true; btn.textContent = '执行中…';
+
+  const { data: projects } = await sb.from('projects').select('id,contract_amount');
+  const { data: payments } = await sb.from('payments').select('id,amount');
+
+  let ok=0, err=0;
+  for(const p of (projects||[])){
+    if(!p.contract_amount) continue;
+    const { error } = await sb.from('projects').update({ contract_amount: p.contract_amount/10000 }).eq('id', p.id);
+    error ? err++ : ok++;
+  }
+  for(const p of (payments||[])){
+    if(!p.amount) continue;
+    const { error } = await sb.from('payments').update({ amount: p.amount/10000 }).eq('id', p.id);
+    error ? err++ : ok++;
+  }
+
+  btn.disabled = false; btn.textContent = '⚡ 确认执行修正';
+  toast(`修正完成：${ok} 条成功，${err} 条失败`);
+  if(ok > 0){
+    await loadAllData();
+    document.getElementById('fixAmountPreview').innerHTML = '<div style="color:var(--green);font-weight:600">✅ 修正已完成，数据已刷新</div>';
+  }
+}
+
+async function parseImportFile(file){
+  // 动态加载 SheetJS
+  if(!window.XLSX){
+    await new Promise((res,rej)=>{
+      const s=document.createElement('script');
+      s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      s.onload=res; s.onerror=rej;
+      document.head.appendChild(s);
+    });
+  }
+  const buf = await file.arrayBuffer();
+  const wb  = XLSX.read(buf, {type:'array', cellDates:true});
+  const ws  = wb.Sheets[wb.SheetNames[0]];
+  const raw = XLSX.utils.sheet_to_json(ws, {defval:''});
+
+  // 列名映射（兼容飞书导出格式）
+  const COL = {
+    person:   ['负责人','负责人员','责任人'],
+    project:  ['群组','所属项目','项目'],
+    task:     ['任务内容','任务名称','任务'],
+    date:     ['日期','任务日期','完成日期'],
+    hours:    ['工时','工时（小时）','实际工时','实际工时（员工填写）','计划工时','计划工时（主管填写）'],
+    revision: ['修改次数','修改次数（次）'],
+    status:   ['任务进度','状态','进度'],
+  };
+
+  function findCol(row, candidates){
+    const keys = Object.keys(row);
+    // 先精确匹配
+    for(const c of candidates){ if(c in row) return c; }
+    // 再模糊匹配：候选名是列名的前缀，或列名包含候选名
+    for(const c of candidates){
+      const found = keys.find(k => k.startsWith(c) || k.includes(c));
+      if(found) return found;
+    }
+    return null;
+  }
+
+  // 取已完成和未完成的行（未完成工时仍需记录成本）
+  const DONE_KEYWORDS = ['已完成','完成','done','Done','DONE'];
+  const UNDONE_KEYWORDS = ['未完成','进行中','处理中','待完成','返工'];
+  importRows = [];
+  const warns = [];
+  let skipped = 0;
+
+  for(const row of raw){
+    const statusKey = findCol(row, COL.status);
+    const statusVal = statusKey ? String(row[statusKey]).trim() : '';
+    const isDone = DONE_KEYWORDS.includes(statusVal);
+    const isUndone = UNDONE_KEYWORDS.includes(statusVal);
+    if(!isDone && !isUndone){ skipped++; continue; }
+
+    const personKey   = findCol(row, COL.person);
+    const projectKey  = findCol(row, COL.project);
+    const taskKey     = findCol(row, COL.task);
+    const dateKey     = findCol(row, COL.date);
+    const hoursKey    = findCol(row, COL.hours);
+    const revKey      = findCol(row, COL.revision);
+
+    const person  = personKey  ? String(row[personKey]).trim()  : '';
+    const project = projectKey ? String(row[projectKey]).trim() : '';
+    const task    = taskKey    ? String(row[taskKey]).trim()    : '';
+    const hours   = hoursKey   ? parseFloat(row[hoursKey]) || 0 : 0;
+    const rev     = revKey     ? parseInt(row[revKey])   || 0   : 0;
+
+    // 日期处理
+    let dateStr = '';
+    if(dateKey && row[dateKey]){
+      const d = row[dateKey];
+      if(d instanceof Date){
+        dateStr = d.toISOString().split('T')[0];
+      } else {
+        dateStr = String(d).slice(0,10);
+      }
+    }
+    if(!dateStr) dateStr = new Date().toISOString().split('T')[0];
+
+    if(!person)  { warns.push('有行缺少「负责人」，已跳过'); continue; }
+    if(!project) { warns.push(`「${person}」的记录缺少「群组」，已跳过`); continue; }
+    // 飞书未填工时时，默认计入1小时并给出提示
+    const finalHours = hours > 0 ? hours : 1;
+    if(hours <= 0) { warns.push(`「${person} / ${task.slice(0,10)}」未填工时，已按1小时计入`); }
+
+    importRows.push({ person, project, task, date:dateStr, hours:finalHours, revision:rev, status:statusVal, undone:isUndone });
+  }
+
+  // 找出未匹配项目的行，收集唯一群组名
+  const unmatchedGroups = {}; // groupName -> [rows]
+  for(const row of importRows){
+    const proj = allProjects.find(p=>
+      p.name===row.project || p.name.includes(row.project) || row.project.includes(p.name)
+    );
+    if(!proj){
+      if(!unmatchedGroups[row.project]) unmatchedGroups[row.project] = [];
+      unmatchedGroups[row.project].push(row);
+    }
+  }
+
+  // 渲染预览
+  const tbody = document.getElementById('importPreviewBody');
+  tbody.innerHTML = importRows.map(r=>{
+    const matched = allProjects.find(p=>
+      p.name===r.project || p.name.includes(r.project) || r.project.includes(p.name)
+    );
+    const rowStyle = matched ? '' : 'background:#fff8e1';
+    return `<tr style="${rowStyle}">
+      <td>${r.person}</td>
+      <td style="color:${matched?'inherit':'#e65100'}">${r.project}${matched?'':' ⚠'}</td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.task}</td>
+      <td>${r.date}</td>
+      <td>${r.hours}h</td>
+      <td>${r.revision}次</td>
+      <td>${r.undone?'<span style="color:var(--accent);font-weight:600">未完成</span>':'<span style="color:var(--green);font-weight:600">已完成</span>'}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('importSummary').textContent =
+    `共 ${importRows.length} 条，其中 ${Object.keys(unmatchedGroups).length} 个群组未匹配项目`;
+
+  const warnBox = document.getElementById('importWarnBox');
+  warnBox.innerHTML = warns.length
+    ? `<div style="background:#fff8e1;border-radius:8px;padding:8px 12px;font-size:11px;color:#7a5800">`
+      + [...new Set(warns)].map(w=>`⚠️ ${w}`).join('<br>') + '</div>'
+    : '';
+
+  // 渲染未匹配区块
+  const unmatchedWrap = document.getElementById('unmatchedWrap');
+  const unmatchedList = document.getElementById('unmatchedList');
+  const groupNames = Object.keys(unmatchedGroups);
+  if(groupNames.length){
+    unmatchedWrap.style.display = 'block';
+    unmatchedList.innerHTML = groupNames.map(gName=>{
+      const rows = unmatchedGroups[gName];
+      const totalH = rows.reduce((s,r)=>s+r.hours,0);
+      const persons = [...new Set(rows.map(r=>r.person))].join('、');
+      const projOptions = allProjects.map(p=>
+        `<option value="${p.id}">${p.name}</option>`
+      ).join('');
+      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+        <div style="flex:1;min-width:180px">
+          <div style="font-size:12px;font-weight:600">${gName}</div>
+          <div style="font-size:11px;color:var(--text-sub)">${rows.length}条记录 · ${totalH.toFixed(1)}h · ${persons}</div>
+        </div>
+        <select class="form-select" id="unmatch_${gName.replace(/[^a-zA-Z0-9]/g,'_')}"
+          style="font-size:12px;max-width:200px">
+          <option value="">— 跳过这些记录 —</option>
+          <option value="__new__">＋ 新建项目「${gName}」</option>
+          ${projOptions}
+        </select>
+      </div>`;
+    }).join('');
+  } else {
+    unmatchedWrap.style.display = 'none';
+  }
+
+  document.getElementById('importPreviewWrap').style.display = importRows.length ? 'block' : 'none';
+  if(!importRows.length) toast('没有找到可导入的记录，请检查列名和任务进度字段');
+}
+
+async function doImport(){
+  if(!importRows.length){ toast('没有可导入的数据'); return; }
+  const btn = document.getElementById('doImportBtn');
+  btn.disabled=true; btn.textContent='导入中…';
+
+  // 收集用户对未匹配群组的处理选择
+  const groupMapping = {}; // groupName -> projectId (or null=skip)
+  const groupNames = [...new Set(importRows.map(r=>r.project).filter(g=>{
+    return !allProjects.find(p=>p.name===g||p.name.includes(g)||g.includes(p.name));
+  }))];
+  for(const gName of groupNames){
+    const selId = 'unmatch_' + gName.replace(/[^a-zA-Z0-9]/g,'_');
+    const sel = document.getElementById(selId);
+    const val = sel ? sel.value : '';
+    if(val === '__new__'){
+      // 新建项目
+      const {data:newProj, error} = await sb.from('projects').insert({
+        name: gName, status:'active', created_by: currentUser.id
+      }).select().single();
+      if(!error && newProj){
+        groupMapping[gName] = newProj.id;
+        allProjects.push(newProj);
+        toast(`✓ 已新建项目「${gName.slice(0,12)}」`);
+      }
+    } else if(val){
+      groupMapping[gName] = val;
+    } else {
+      groupMapping[gName] = null; // 跳过
+    }
+  }
+
+  let success=0, fail=0, skippedUnmatched=0;
+
+  for(const row of importRows){
+    // 匹配员工（按姓名，支持去空格模糊匹配）
+    const normPerson = row.person.replace(/\s/g,'');
+    const emp = allEmployees.find(e=>
+      e.name === row.person ||
+      e.name.replace(/\s/g,'') === normPerson
+    );
+    if(!emp){ fail++; console.warn('员工未匹配:', row.person); continue; }
+
+    // 匹配项目：先找系统项目，找不到再查 groupMapping
+    let proj = allProjects.find(p=>
+      p.name===row.project || p.name.includes(row.project) || row.project.includes(p.name)
+    );
+    if(!proj){
+      const mappedId = groupMapping[row.project];
+      if(!mappedId){ skippedUnmatched++; continue; } // 用户选择跳过
+      proj = allProjects.find(p=>p.id===mappedId);
+    }
+    if(!proj){ fail++; continue; }
+
+    // 去重：同员工+项目+日期+任务内容（note包含task即视为同一条）
+    const noteStr = (row.undone
+      ? `【待返工】${row.task}（修改${row.revision}次）`
+      : `${row.task}（修改${row.revision}次）`).slice(0,200);
+    const taskCore = row.task.slice(0,20); // 用任务名前20字做模糊匹配，兼容旧格式
+    const existsList = allLogs.filter(l=>
+      l.employee_id===emp.id &&
+      l.project_id===proj.id &&
+      l.log_date===row.date &&
+      (l.note===noteStr || (l.note||'').includes(taskCore))
+    );
+    // 如果有多条重复（历史遗留），保留最新一条，删除其余
+    if(existsList.length > 1){
+      const sorted = existsList.sort((a,b)=>a.id>b.id?-1:1);
+      const toDelete = sorted.slice(1).map(l=>l.id);
+      await sb.from('time_logs').delete().in('id', toDelete);
+      const keep = sorted[0];
+      if(parseFloat(keep.hours) !== row.hours){
+        await sb.from('time_logs').update({ hours: row.hours, note: noteStr }).eq('id', keep.id);
+      }
+      success++; continue;
+    }
+    if(existsList.length === 1){
+      const exists = existsList[0];
+      // 工时一致且note一致则跳过
+      if(parseFloat(exists.hours) === row.hours && exists.note === noteStr){ fail++; continue; }
+      const {error} = await sb.from('time_logs').update({ hours: row.hours, note: noteStr }).eq('id', exists.id);
+      if(error) fail++; else success++;
+      continue;
+    }
+    // 写入 time_logs
+    const {error} = await sb.from('time_logs').insert({
+      employee_id: emp.id,
+      project_id:  proj.id,
+      stage:       '飞书导入',
+      log_date:    row.date,
+      hours:       row.hours,
+      note:        noteStr,
+      created_by:  currentUser.id,
+    });
+    if(error) fail++; else success++;
+  }
+
+  btn.disabled=false; btn.textContent='✅ 确认导入';
+  const skipMsg = skippedUnmatched > 0 ? `，${skippedUnmatched} 条已跳过（群组未指定）` : '';
+  toast(`导入完成：${success} 条成功，${fail} 条失败${skipMsg}`);
+  if(success>0){
+    await loadAllData();
+    closeModal('importModal');
+    importRows=[];
+    document.getElementById('importPreviewWrap').style.display='none';
+    document.getElementById('importFileInput').value='';
+  }
+}
+
+// 计算工作日（排除周六日）
+function countWorkdays(start, end){
+  let count = 0;
+  const cur = new Date(start);
+  const last = new Date(end);
+  while(cur <= last){
+    const day = cur.getDay();
+    if(day !== 0 && day !== 6) count++;
+    cur.setDate(cur.getDate() + 1);
+  }
+  return count;
+}
+
+function calcBudget(){
+  const start = document.getElementById('npStart').value;
+  const end = document.getElementById('npDeadline').value;
+  const people = parseInt(document.getElementById('npPeople').value) || 1;
+  const hint = document.getElementById('npBudgetHint');
+  if(!start || !end){ 
+    document.getElementById('npBudget').value = '';
+    if(hint) hint.textContent = '';
+    return; 
+  }
+  if(new Date(end) < new Date(start)){
+    if(hint) hint.textContent = '⚠ 截止日期不能早于开始日期';
+    return;
+  }
+  const days = countWorkdays(start, end);
+  const hours = Math.round(days * 6.5 * people);
+  document.getElementById('npBudget').value = hours;
+  if(hint) hint.textContent = `${days} 个工作日 × ${people} 人 × 6.5h = ${hours}h`;
+}
+
+function openEditEmp(id){
+  const e = allEmployees.find(x=>x.id===id);
+  if(!e) return;
+  document.getElementById('editEmpId').value = id;
+  document.getElementById('editEmpName').value = e.name||'';
+  document.getElementById('editEmpTitle').value = e.job_title||'';
+  autoFillCost('editEmpTitle','editEmpCost');
+  document.getElementById('editEmpRole').value = e.role||'employee';
+  document.getElementById('editEmpActive').value = e.is_active===false ? 'false' : 'true';
+  openModal('editEmpModal');
+}
+
+async function saveEditEmp(){
+  const id = document.getElementById('editEmpId').value;
+  const name = document.getElementById('editEmpName').value.trim();
+  if(!name){toast('请填写姓名');return}
+  const btn = document.getElementById('editEmpBtn');
+  btn.disabled=true; btn.textContent='保存中…';
+  const {error} = await sb.from('users').update({
+    name,
+    job_title: document.getElementById('editEmpTitle').value,
+    role: document.getElementById('editEmpRole').value,
+    hourly_cost: ((parseFloat(document.getElementById('editEmpCost').value)||0) / 130),
+    monthly_salary: parseFloat(document.getElementById('editEmpCost').value)||0,
+    is_active: document.getElementById('editEmpActive').value === 'true',
+  }).eq('id', id);
+  btn.disabled=false; btn.textContent='保存修改';
+  if(error){toast('保存失败：'+error.message);return}
+  closeModal('editEmpModal');
+  toast('✓ 员工信息已更新');
+  await loadEmployees();
+  renderAll();
+}
+
+async function inviteEmployee(){
+  const name=document.getElementById('inviteName').value.trim();
+  if(!name){toast('请填写姓名');return}
+  const btn=document.getElementById('inviteBtn');
+  btn.disabled=true; btn.textContent='添加中…';
+  const {error}=await sb.from('users').insert({
+    name,
+    email: name + '_' + Date.now() + '@internal.local',
+    job_title:document.getElementById('inviteTitle').value,
+    role:document.getElementById('inviteRole').value,
+    hourly_cost:((parseFloat(document.getElementById('inviteCost').value)||0) / 130),
+    monthly_salary:parseFloat(document.getElementById('inviteCost').value)||0,
+    is_active:true
+  });
+  btn.disabled=false; btn.textContent='添加员工';
+  if(error){toast('失败：'+error.message);return}
+  closeModal('inviteModal');
+  document.getElementById('inviteName').value='';
+  document.getElementById('inviteTitle').value='';
+  document.getElementById('inviteCost').value='';
+  toast('✓ 员工已添加');
+  await loadEmployees();
+  renderAll();
+}
+
+async function deleteProject(id, name){
+  if(!isAdmin){toast('仅管理者可删除项目');return}
+  if(!confirm(`确认删除项目「${name}」？
+
+此操作不可恢复，该项目下的工时记录也将一并删除。`))return;
+  const secondConfirm = prompt(`请输入项目名称「${name}」确认删除：`);
+  if(secondConfirm !== name){toast('名称不匹配，已取消');return}
+  const {error} = await sb.from('projects').delete().eq('id',id);
+  if(error){toast('删除失败：'+error.message);return}
+  toast('✓ 项目已删除');
+  await loadProjects();
+  renderAll();
+}
+
+async function deleteLog(id){
+  if(!isAdmin)return;
+  if(!confirm('确认删除此条工时记录？'))return;
+  await sb.from('time_logs').delete().eq('id',id);
+  toast('已删除');
+  await loadLogs();
+  renderAll();
+}
+
+// ── 编辑工时 ──────────────────────────────────────────────────
+function editLog(id){
+  const l = allLogs.find(x=>x.id===id);
+  if(!l) return;
+  document.getElementById('editLogId').value = id;
+  document.getElementById('editLogDate').value = l.log_date||'';
+  document.getElementById('editLogHours').value = l.hours||'';
+  document.getElementById('editLogStage').value = l.stage||'';
+  document.getElementById('editLogNote').value = l.note||'';
+  const empSel = document.getElementById('editLogEmp');
+  empSel.innerHTML = allEmployees.map(e=>`<option value="${e.id}" ${e.id===l.employee_id?'selected':''}>${e.name}</option>`).join('');
+  const projSel = document.getElementById('editLogProj');
+  projSel.innerHTML = allProjects.map(p=>`<option value="${p.id}" ${p.id===l.project_id?'selected':''}>${p.name}</option>`).join('');
+  openModal('editLogModal');
+}
+
+async function saveEditLog(){
+  const id = document.getElementById('editLogId').value;
+  const btn = document.getElementById('editLogBtn');
+  btn.disabled=true; btn.textContent='保存中…';
+  const {error} = await sb.from('time_logs').update({
+    employee_id: document.getElementById('editLogEmp').value,
+    project_id: document.getElementById('editLogProj').value,
+    log_date: document.getElementById('editLogDate').value,
+    hours: parseFloat(document.getElementById('editLogHours').value)||0,
+    stage: document.getElementById('editLogStage').value,
+    note: document.getElementById('editLogNote').value,
+  }).eq('id', id);
+  btn.disabled=false; btn.textContent='保存修改';
+  if(error){toast('保存失败：'+error.message);return}
+  closeModal('editLogModal');
+  toast('✓ 工时记录已更新');
+  await loadLogs();
+  renderAll();
+}
+
+// ── 编辑/删除回款 ─────────────────────────────────────────────
+function editPayment(id){
+  const p = allPayments.find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('editPayId').value = id;
+  document.getElementById('editPayAmt').value = p.amount||'';
+  document.getElementById('editPayDate').value = p.payment_date||'';
+  document.getElementById('editPayNote').value = p.note||'';
+  document.getElementById('editPayType').value = p.type||'';
+  const sel = document.getElementById('editPayProj');
+  sel.innerHTML = allProjects.map(pr=>`<option value="${pr.id}" ${pr.id===p.project_id?'selected':''}>${pr.name}</option>`).join('');
+  openModal('editPayModal');
+}
+
+async function saveEditPayment(){
+  const id = document.getElementById('editPayId').value;
+  const btn = document.getElementById('editPayBtn');
+  btn.disabled=true; btn.textContent='保存中…';
+  const {error} = await sb.from('payments').update({
+    project_id: document.getElementById('editPayProj').value,
+    type: document.getElementById('editPayType').value,
+    amount: parseFloat(document.getElementById('editPayAmt').value)||0,
+    payment_date: document.getElementById('editPayDate').value,
+    note: document.getElementById('editPayNote').value,
+  }).eq('id', id);
+  btn.disabled=false; btn.textContent='保存修改';
+  if(error){toast('保存失败：'+error.message);return}
+  closeModal('editPayModal');
+  toast('✓ 回款记录已更新');
+  await loadPayments();
+  renderAll();
+}
+
+async function deletePayment(id){
+  if(!confirm('确认删除此条回款记录？'))return;
+  const {error} = await sb.from('payments').delete().eq('id',id);
+  if(error){toast('删除失败：'+error.message);return}
+  toast('✓ 已删除');
+  await loadPayments();
+  renderAll();
+}
+
+// ══════════════════════════════════════════════════════════════
+// 渲染函数
+// ══════════════════════════════════════════════════════════════
+
+
+
+// ── 项目弹窗内联成员管理 ──────────────────────────────────────
+function renderInlineMembers(projId){
+  const list = document.getElementById('npMembersList');
+  if(!list) return;
+  const proj    = allProjects.find(p=>p.id===projId);
+  const members = allMembers.filter(m=>m.project_id===projId);
+  const areaM2  = parseFloat(proj?.area)||0;
+  const isChain = proj?.is_chain||false;
+
+  if(!members.length){
+    list.innerHTML = '<div style="font-size:12px;color:var(--text-sub);padding:4px 0 8px">暂无成员，点击右上角添加</div>';
+    return;
+  }
+
+  list.innerHTML = members.map(m=>{
+    const emp   = allEmployees.find(e=>e.id===m.employee_id);
+    const bonus = getBonusAmount(m.job_role, areaM2, isChain);
+    const score = allScores.find(s=>s.project_id===projId&&s.employee_id===m.employee_id&&s.score_type==='project');
+    const scoreVal = score ? parseFloat(score.score) : null;
+    const payable  = scoreVal!=null ? Math.round(bonus*(0.5+0.4*scoreVal)) : null;
+    return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--cream);border-radius:8px;margin-bottom:6px">
+      <div style="width:30px;height:30px;border-radius:50%;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">
+        ${emp?.name?.slice(0,1)||'?'}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600">${emp?.name||'—'}</div>
+        <div style="font-size:11px;color:var(--text-sub)">${m.job_role}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:12px;font-weight:600;color:var(--green)">¥${bonus.toLocaleString()}</div>
+        <div style="font-size:10px;color:var(--text-sub)">${scoreVal!=null?'实发¥'+payable.toLocaleString():'待打分'}</div>
+      </div>
+      <button onclick="delInlineMember('${m.id}','${projId}')" style="background:none;border:none;color:var(--text-sub);cursor:pointer;font-size:16px;padding:0 4px;flex-shrink:0">×</button>
+    </div>`;
+  }).join('');
+}
+
+function openInlineAddMember(){
+  const projId = document.getElementById('npEditId').value;
+  if(!projId){ toast('请先保存项目'); return; }
+  // 显示全部在职员工（同一人可以不同岗位多次添加）
+  const sel = document.getElementById('inlineAddEmp');
+  sel.innerHTML = allEmployees
+    .filter(e=>e.is_active!==false)
+    .map(e=>`<option value="${e.id}">${e.name}（${e.job_title||'员工'}）</option>`)
+    .join('');
+  if(!sel.options.length){ toast('暂无在职员工'); return; }
+  document.getElementById('npAddMemberRow').style.display='block';
+}
+
+async function doInlineAddMember(){
+  const projId = document.getElementById('npEditId').value;
+  const empId  = document.getElementById('inlineAddEmp').value;
+  const role   = document.getElementById('inlineAddRole').value;
+  if(!projId||!empId){ toast('请选择员工'); return; }
+  // 同员工+同岗位才算重复
+  const dupCheck = allMembers.find(m=>m.project_id===projId&&m.employee_id===empId&&m.job_role===role);
+  if(dupCheck){ toast('该员工已以此岗位加入，可换其他岗位添加'); return; }
+  const {error} = await sb.from('project_members').insert({
+    project_id: projId, employee_id: empId, job_role: role
+  });
+  if(error){ toast('添加失败：'+error.message); return; }
+  toast('✓ 已添加');
+  document.getElementById('npAddMemberRow').style.display='none';
+  await loadMembersAndScores();
+  renderInlineMembers(projId);
+  renderBonus();
+}
+
+async function delInlineMember(memberId, projId){
+  if(!confirm('确认移除该成员？')) return;
+  const {error} = await sb.from('project_members').delete().eq('id', memberId);
+  if(error){ toast('删除失败'); return; }
+  toast('已移除');
+  await loadMembersAndScores();
+  renderInlineMembers(projId);
+  renderBonus();
+}
+
+// ══════════════════════════════════════════════════════════════
+// 项目成本分析模块
+// ══════════════════════════════════════════════════════════════
+function initCostAnalysisSel(){
+  const sel = document.getElementById('costAnalysisProjSel');
+  if(!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">请选择项目</option>' +
+    allProjects.map(p=>`<option value="${p.id}" ${p.id===cur?'selected':''}>${p.name}</option>`).join('');
+}
+
+function renderCostAnalysis(){
+  const projId = document.getElementById('costAnalysisProjSel')?.value;
+  const area = document.getElementById('costAnalysisArea');
+  if(!area) return;
+  if(!projId){ area.innerHTML = ''; return; }
+
+  const proj     = allProjects.find(p=>p.id===projId);
+  if(!proj){ area.innerHTML='<div class="empty">项目未找到</div>'; return; }
+
+  const contract = parseFloat(proj.contract_amount)||0;  // 万元
+  const contractYuan = contract * 10000;
+  const areaM2   = parseFloat(proj.area)||0;
+  const isChain  = proj.is_chain||false;
+  const members  = allMembers.filter(m=>m.project_id===projId);
+  const projLogs = allLogs.filter(l=>l.project_id===projId);
+
+  // 计算每个项目成员的成本
+  let rows = [];
+  let totalBonus = 0, totalSalary = 0;
+
+  members.forEach(m=>{
+    const emp    = allEmployees.find(e=>e.id===m.employee_id);
+    if(!emp) return;
+    const bonus  = getBonusAmount(m.job_role, areaM2, isChain);
+
+    // 底薪摊入：该员工在此项目的工时 / 同期总工时 × 月薪
+    // 取该员工所有工时，计算项目工时占比
+    const projHours = projLogs
+      .filter(l=>l.employee_id===emp.id)
+      .reduce((s,l)=>s+parseFloat(l.hours||0),0);
+    const totalHours = allLogs
+      .filter(l=>l.employee_id===emp.id)
+      .reduce((s,l)=>s+parseFloat(l.hours||0),0);
+    const monthlySalary = getEmpMonthlySalary(emp);
+    // 估算参与月数（按工时推算，每月按130h）
+    const monthsWorked = projHours / 130;
+    const salaryAlloc  = totalHours > 0
+      ? monthlySalary * monthsWorked * (projHours / totalHours)
+      : 0;
+
+    totalBonus  += bonus;
+    totalSalary += salaryAlloc;
+
+    rows.push({ emp, role: m.job_role, bonus, projHours, monthlySalary, salaryAlloc });
+  });
+
+  const totalCost     = totalBonus + totalSalary;
+  const costRate      = contractYuan > 0 ? totalCost / contractYuan * 100 : 0;
+  const target        = contractYuan * 0.4;
+  const remaining     = target - totalCost;
+  const isOver        = costRate > 40;
+  const rateColor     = isOver ? 'var(--accent)' : costRate > 35 ? 'var(--gold)' : 'var(--green)';
+
+  // 汇总卡片
+  let html = `<div class="stat-grid" style="margin-bottom:16px">
+    <div class="stat-card"><div class="s-label">合同额</div>
+      <div class="s-val">${contract}<span class="s-unit">万</span></div></div>
+    <div class="stat-card"><div class="s-label">40%上限</div>
+      <div class="s-val">¥${Math.round(target/10000*100)/100}<span class="s-unit">万</span></div></div>
+    <div class="stat-card ${isOver?'red':'green'}"><div class="s-label">预估人力成本</div>
+      <div class="s-val" style="color:${rateColor}">¥${Math.round(totalCost).toLocaleString()}<span class="s-unit">元</span></div>
+      <div class="s-change ${isOver?'dn':'up'}">${costRate.toFixed(1)}% / 目标≤40%</div></div>
+    <div class="stat-card ${remaining<0?'red':''}"><div class="s-label">${remaining>=0?'剩余空间':'超出预算'}</div>
+      <div class="s-val" style="color:${remaining>=0?'var(--green)':'var(--accent)'}">
+        ¥${Math.abs(Math.round(remaining)).toLocaleString()}<span class="s-unit">元</span></div></div>
+  </div>`;
+
+  // 进度条
+  const barPct = Math.min(costRate/40*100, 100);
+  html += `<div style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-sub);margin-bottom:4px">
+      <span>人力成本占比</span><span style="color:${rateColor};font-weight:600">${costRate.toFixed(1)}%</span>
+    </div>
+    <div style="height:10px;background:var(--cream);border-radius:5px;overflow:hidden">
+      <div style="width:${barPct}%;height:100%;background:${rateColor};border-radius:5px;transition:width 0.4s"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-sub);margin-top:3px">
+      <span>0%</span><span style="color:var(--green)">健康≤35%</span><span style="color:var(--gold)">注意≤40%</span><span style="color:var(--accent)">超标>40%</span>
+    </div>
+  </div>`;
+
+  // 明细表
+  if(rows.length){
+    html += `<div class="card"><div style="overflow-x:auto"><table class="data-table">
+      <thead><tr>
+        <th>员工</th><th>岗位</th><th>项目工时</th><th>月薪</th>
+        <th>摊入底薪</th><th>项目奖金</th><th>合计人力成本</th>
+      </tr></thead><tbody>`;
+    rows.forEach(r=>{
+      const total = r.bonus + r.salaryAlloc;
+      html += `<tr>
+        <td>${r.emp.name}</td>
+        <td style="font-size:11px">${r.role}</td>
+        <td class="mono">${r.projHours.toFixed(1)}h</td>
+        <td class="mono">¥${r.monthlySalary.toLocaleString()}</td>
+        <td class="mono">¥${Math.round(r.salaryAlloc).toLocaleString()}
+          <span style="font-size:10px;color:var(--text-sub)">（${r.projHours>0?(r.projHours/130*100).toFixed(0):'0'}%月薪）</span>
+        </td>
+        <td class="mono">¥${r.bonus.toLocaleString()}</td>
+        <td class="mono fw6">¥${Math.round(total).toLocaleString()}</td>
+      </tr>`;
+    });
+    // 合计行
+    html += `<tr style="background:var(--cream);font-weight:600">
+      <td colspan="4">合计</td>
+      <td class="mono">¥${Math.round(totalSalary).toLocaleString()}</td>
+      <td class="mono">¥${Math.round(totalBonus).toLocaleString()}</td>
+      <td class="mono" style="color:${rateColor}">¥${Math.round(totalCost).toLocaleString()}</td>
+    </tr>`;
+    html += '</tbody></table></div></div>';
+  } else {
+    html += `<div class="notice">⚠ 该项目尚未在「绩效管理」中配置成员，无法计算人力成本。</div>`;
+  }
+
+  // 如果没有工时记录，加提示
+  if(members.length && projLogs.length===0){
+    html += `<div class="notice" style="margin-top:8px">💡 该项目暂无工时记录，底薪摊入按0计算。录入工时后数据将自动更新。</div>`;
+  }
+
+  area.innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════════════
+// 绩效管理模块
+// ══════════════════════════════════════════════════════════════
+
+// ── 奖金档位表 ─────────────────────────────────────────────────
+// 单店项目：按面积 0-399 / 400-799 / 800-1500
+const BONUS_SINGLE = {
+  '设计总监':       [10000, 15000, 20000],
+  '设计主管':       [3000,  5000,  7000],
+  '主案设计师':     [8000,  11000, 14000],
+  '执行设计师':     [6000,  8000,  10000],
+  '高级深化设计师': [4000,  6000,  8000],
+  '深化设计师':     [4000,  6000,  8000],
+  '助理设计师':     [2000,  3000,  4000],
+};
+// 复制店项目：按面积 0-100 / 100-399 / 400-799 / 800-1500
+const BONUS_CHAIN = {
+  '设计总监':       [null,  7000,  10500, 14000],
+  '设计主管':       [300,   2100,  3500,  4900],
+  '主案设计师':     [600,   5600,  7700,  9800],
+  '执行设计师':     [600,   4200,  5600,  7000],
+  '高级深化设计师': [600,   2800,  4200,  5600],
+  '深化设计师':     [600,   2800,  4200,  5600],
+  '助理设计师':     [600,   1400,  2100,  2800],
+};
+
+function getBonusAmount(role, area, isChain){
+  const table = isChain ? BONUS_CHAIN : BONUS_SINGLE;
+  const tiers  = table[role];
+  if(!tiers) return 0;
+  if(isChain){
+    if(area <= 100)  return tiers[0]||0;
+    if(area <= 399)  return tiers[1]||0;
+    if(area <= 799)  return tiers[2]||0;
+    return tiers[3]||0;
+  } else {
+    if(area <= 399)  return tiers[0]||0;
+    if(area <= 799)  return tiers[1]||0;
+    return tiers[2]||0;
+  }
+}
+
+// 实际发放金额 = 总额 × (50% + 40% × 打分)
+// 尾款10%部分单独计入年终奖
+function calcPayable(total, score){
+  if(score == null) return { drawings: total*0.5, performance: 0, annual: total*0.1, unpaid: total*0.4 };
+  const payable = total * (0.5 + 0.4 * score);
+  return {
+    drawings:    total * 0.5,           // 图纸交付后发
+    performance: total * 0.4 * score,   // 落地+打分后发
+    annual:      total * 0.1,           // 年终奖
+    total_payable: payable,
+  };
+}
+
+// ── 标签页切换 ─────────────────────────────────────────────────
+let currentBonusTab = 1;
+function switchBonusTab(n){
+  currentBonusTab = n;
+  [1,2,3,4].forEach(i=>{
+    document.getElementById('bonusPanel'+i).style.display = i===n?'':'none';
+    const btn = document.getElementById('bonusTab'+i);
+    if(i===n){
+      btn.style.background='var(--ink)'; btn.style.color='var(--paper)'; btn.style.border='none';
+    } else {
+      btn.style.background='var(--paper)'; btn.style.color='var(--ink)'; btn.style.border='1px solid var(--border)';
+    }
+  });
+  if(n===1) renderMemberConfig();
+  if(n===2) renderScorePanel();
+  if(n===3) renderBonusSummary();
+  if(n===4) renderAnnualBonus();
+}
+
+function renderBonus(){
+  if(!isAdmin) return;
+  // 填充项目下拉
+  const projs = allProjects.filter(p=>p.status!=='done'||true); // 含已完结
+  ['memberProjSel','scoreProjSel','bonusSumProjSel'].forEach(selId=>{
+    const sel = document.getElementById(selId);
+    if(!sel) return;
+    const cur = sel.value;
+    const extra = selId==='bonusSumProjSel' ? '<option value="">全部项目</option>' : '<option value="">请选择项目</option>';
+    sel.innerHTML = extra + projs.map(p=>`<option value="${p.id}" ${p.id===cur?'selected':''}>${p.name}</option>`).join('');
+  });
+  // 员工下拉
+  const empSel = document.getElementById('bonusSumEmpSel');
+  if(empSel){
+    const cur = empSel.value;
+    empSel.innerHTML = '<option value="">全部员工</option>' +
+      allEmployees.map(e=>`<option value="${e.id}" ${e.id===cur?'selected':''}>${e.name}</option>`).join('');
+  }
+  const addEmpSel = document.getElementById('addMemberEmp');
+  if(addEmpSel){
+    addEmpSel.innerHTML = allEmployees.map(e=>`<option value="${e.id}">${e.name}（${e.job_title||'员工'}）</option>`).join('');
+  }
+  if(currentBonusTab===1) renderMemberConfig();
+  if(currentBonusTab===2) renderScorePanel();
+  if(currentBonusTab===3) renderBonusSummary();
+  if(currentBonusTab===4) renderAnnualBonus();
+}
+
+// ── Tab1: 项目成员配置 ─────────────────────────────────────────
+let _memberProjId = '';
+function renderMemberConfig(){
+  const sel = document.getElementById('memberProjSel');
+  const projId = sel?.value;
+  _memberProjId = projId;
+  const area = document.getElementById('memberConfigArea');
+  if(!area) return;
+  if(!projId){ area.innerHTML='<div class="empty">请先选择项目</div>'; return; }
+  const proj = allProjects.find(p=>p.id===projId);
+  const members = allMembers.filter(m=>m.project_id===projId);
+  const areaM2 = proj?.area||0;
+  const isChain = proj?.is_chain||false;
+
+  let html = `<div class="card"><div style="padding:12px 16px 4px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-size:13px;color:var(--text-sub)">
+        面积：<strong>${areaM2}㎡</strong>　类型：<strong>${isChain?'复制店':'单店'}</strong>
+      </div>
+      <button class="btn-sm" style="background:var(--ink);color:var(--paper)" onclick="openAddMember('${projId}')">＋ 添加成员</button>
+    </div>`;
+
+  if(!members.length){
+    html += '<div class="empty" style="padding:20px 0">暂无成员，点击右上角添加</div>';
+  } else {
+    html += `<table class="data-table"><thead><tr>
+      <th>员工</th><th>参与岗位</th><th>奖金档位</th><th>操作</th>
+    </tr></thead><tbody>`;
+    members.forEach(m=>{
+      const emp = allEmployees.find(e=>e.id===m.employee_id);
+      const bonus = getBonusAmount(m.job_role, areaM2, isChain);
+      html += `<tr>
+        <td>${emp?.name||'—'}</td>
+        <td>${m.job_role}</td>
+        <td class="mono">¥${bonus.toLocaleString()}</td>
+        <td><button class="btn-sm" style="color:var(--accent)" onclick="delMember('${m.id}')">删除</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div></div>';
+  area.innerHTML = html;
+}
+
+function openAddMember(projId){
+  _memberProjId = projId;
+  openModal('addMemberModal');
+}
+
+async function doAddMember(){
+  const empId = document.getElementById('addMemberEmp').value;
+  const role  = document.getElementById('addMemberRole').value;
+  if(!_memberProjId||!empId){ toast('请选择员工'); return; }
+  // 同员工+同岗位才算重复，允许同一人担任不同岗位
+  const exists = allMembers.find(m=>m.project_id===_memberProjId&&m.employee_id===empId&&m.job_role===role);
+  if(exists){ toast('该员工已以此岗位加入项目'); return; }
+  const {error} = await sb.from('project_members').insert({
+    project_id: _memberProjId, employee_id: empId, job_role: role
+  });
+  if(error){ toast('添加失败：'+error.message); return; }
+  toast('✓ 成员已添加');
+  closeModal('addMemberModal');
+  await loadMembersAndScores();
+  renderMemberConfig();
+}
+
+async function delMember(id){
+  if(!confirm('确认移除该成员？')) return;
+  const {error} = await sb.from('project_members').delete().eq('id',id);
+  if(error){ toast('删除失败'); return; }
+  toast('已移除');
+  await loadMembersAndScores();
+  renderMemberConfig();
+}
+
+// ── Tab2: 绩效打分 ─────────────────────────────────────────────
+function renderScorePanel(){
+  const projId = document.getElementById('scoreProjSel')?.value;
+  const area = document.getElementById('scoreArea');
+  if(!area) return;
+  if(!projId){ area.innerHTML='<div class="empty">请先选择项目</div>'; return; }
+  const proj = allProjects.find(p=>p.id===projId);
+  const members = allMembers.filter(m=>m.project_id===projId);
+  if(!members.length){ area.innerHTML='<div class="empty">该项目暂无成员，请先在「项目成员配置」中添加</div>'; return; }
+
+  const areaM2 = proj?.area||0;
+  const isChain = proj?.is_chain||false;
+  let html = `<div class="card"><table class="data-table"><thead><tr>
+    <th>员工</th><th>岗位</th><th>奖金总额</th><th>绩效打分</th><th>图纸发放(50%)</th><th>落地发放(40%×分)</th><th>年终计入(10%)</th><th>操作</th>
+  </tr></thead><tbody>`;
+
+  members.forEach(m=>{
+    const emp  = allEmployees.find(e=>e.id===m.employee_id);
+    const bonus= getBonusAmount(m.job_role, areaM2, isChain);
+    const scoreRec = allScores.find(s=>s.project_id===projId&&s.employee_id===m.employee_id&&s.score_type==='project');
+    const score= scoreRec?.score;
+    const calc = calcPayable(bonus, score!=null?parseFloat(score):null);
+    const scoreDisp = score!=null ? parseFloat(score).toFixed(2) : '—';
+    const drawDisp  = score!=null ? `¥${Math.round(calc.drawings).toLocaleString()}` : `¥${Math.round(bonus*0.5).toLocaleString()}`;
+    const perfDisp  = score!=null ? `¥${Math.round(calc.performance).toLocaleString()}` : '待打分';
+    const annDisp   = `¥${Math.round(bonus*0.1).toLocaleString()}`;
+    html += `<tr>
+      <td>${emp?.name||'—'}</td>
+      <td style="font-size:11px">${m.job_role}</td>
+      <td class="mono">¥${bonus.toLocaleString()}</td>
+      <td class="mono" style="color:${score!=null?'var(--green)':'var(--text-sub)'}">${scoreDisp}</td>
+      <td class="mono">${drawDisp}</td>
+      <td class="mono" style="color:var(--green)">${perfDisp}</td>
+      <td class="mono" style="color:var(--gold)">${annDisp}</td>
+      <td><button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="openScore('${projId}','${m.employee_id}','${emp?.name||''}')">
+        ${score!=null?'修改':'打分'}
+      </button></td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+  area.innerHTML = html;
+}
+
+function openScore(projId, empId, empName){
+  document.getElementById('scoreProjSel').value = projId;
+  const scoreRec = allScores.find(s=>s.project_id===projId&&s.employee_id===empId&&s.score_type==='project');
+  document.getElementById('scoreMemberId').value = `${projId}|${empId}`;
+  document.getElementById('scoreEmpName').value  = empName;
+  document.getElementById('scoreValue').value    = scoreRec ? parseFloat(scoreRec.score).toFixed(2) : '0.80';
+  document.getElementById('scoreNote').value     = scoreRec?.note||'';
+  openModal('scoreModal');
+}
+
+async function doSaveScore(){
+  const [projId, empId] = document.getElementById('scoreMemberId').value.split('|');
+  const score = parseFloat(document.getElementById('scoreValue').value);
+  const note  = document.getElementById('scoreNote').value;
+  if(isNaN(score)||score<0||score>1){ toast('打分需在 0～1 之间'); return; }
+  const exists = allScores.find(s=>s.project_id===projId&&s.employee_id===empId&&s.score_type==='project');
+  let error;
+  if(exists){
+    ({error} = await sb.from('project_scores').update({score, note, scored_at: new Date().toISOString().split('T')[0]}).eq('id',exists.id));
+  } else {
+    ({error} = await sb.from('project_scores').insert({project_id:projId, employee_id:empId, score, note, score_type:'project', created_by:currentUser.id}));
+  }
+  if(error){ toast('保存失败：'+error.message); return; }
+  toast('✓ 打分已保存');
+  closeModal('scoreModal');
+  await loadMembersAndScores();
+  renderScorePanel();
+}
+
+// ── Tab3: 奖金核算汇总 ────────────────────────────────────────
+function renderBonusSummary(){
+  const filterProj = document.getElementById('bonusSumProjSel')?.value;
+  const filterEmp  = document.getElementById('bonusSumEmpSel')?.value;
+  const area = document.getElementById('bonusSummaryArea');
+  if(!area) return;
+
+  // 汇总每个员工×项目的奖金
+  let rows = [];
+  allMembers.forEach(m=>{
+    if(filterProj && m.project_id!==filterProj) return;
+    if(filterEmp  && m.employee_id!==filterEmp)  return;
+    const proj  = allProjects.find(p=>p.id===m.project_id);
+    const emp   = allEmployees.find(e=>e.id===m.employee_id);
+    const bonus = getBonusAmount(m.job_role, proj?.area||0, proj?.is_chain||false);
+    const scoreRec = allScores.find(s=>s.project_id===m.project_id&&s.employee_id===m.employee_id&&s.score_type==='project');
+    const score = scoreRec ? parseFloat(scoreRec.score) : null;
+    const calc  = calcPayable(bonus, score);
+    const drawingsDone = !!(proj?.drawings_delivered_at);
+    const constructionDone = !!(proj?.construction_done_at);
+    rows.push({proj, emp, m, bonus, score, calc, drawingsDone, constructionDone});
+  });
+
+  if(!rows.length){ area.innerHTML='<div class="empty">暂无数据</div>'; return; }
+
+  // 汇总卡片
+  const totalBonus    = rows.reduce((s,r)=>s+r.bonus,0);
+  const totalDrawings = rows.reduce((s,r)=>s+r.calc.drawings,0);
+  const totalPerf     = rows.reduce((s,r)=>s+Math.round(r.score!=null?r.calc.performance:0),0);
+  const totalAnnual   = rows.reduce((s,r)=>s+r.bonus*0.1,0);
+
+  let html = `<div class="stat-grid" style="margin-bottom:16px">
+    <div class="stat-card"><div class="s-label">奖金总池</div><div class="s-val">¥${totalBonus.toLocaleString()}<span class="s-unit">元</span></div></div>
+    <div class="stat-card green"><div class="s-label">图纸发放(50%)</div><div class="s-val">¥${totalDrawings.toLocaleString()}<span class="s-unit">元</span></div></div>
+    <div class="stat-card blue"><div class="s-label">落地发放(40%×分)</div><div class="s-val">¥${totalPerf.toLocaleString()}<span class="s-unit">元</span></div></div>
+    <div class="stat-card gold"><div class="s-label">年终计入(10%)</div><div class="s-val">¥${totalAnnual.toLocaleString()}<span class="s-unit">元</span></div></div>
+  </div>`;
+
+  html += `<div class="card"><table class="data-table"><thead><tr>
+    <th>员工</th><th>项目</th><th>岗位</th><th>奖金总额</th><th>打分</th>
+    <th>图纸发放</th><th>落地发放</th><th>年终计入</th><th>图纸状态</th><th>落地状态</th>
+  </tr></thead><tbody>`;
+  rows.forEach(r=>{
+    const perfAmt = r.score!=null ? Math.round(r.calc.performance) : 0;
+    html += `<tr>
+      <td>${r.emp?.name||'—'}</td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.proj?.name||'—'}</td>
+      <td style="font-size:11px">${r.m.job_role}</td>
+      <td class="mono">¥${r.bonus.toLocaleString()}</td>
+      <td class="mono" style="color:${r.score!=null?'var(--green)':'var(--text-sub)'}">
+        ${r.score!=null?parseFloat(r.score).toFixed(2):'待打分'}
+      </td>
+      <td class="mono">¥${Math.round(r.calc.drawings).toLocaleString()}</td>
+      <td class="mono" style="color:var(--green)">¥${perfAmt.toLocaleString()}</td>
+      <td class="mono" style="color:var(--gold)">¥${Math.round(r.bonus*0.1).toLocaleString()}</td>
+      <td><span class="badge ${r.drawingsDone?'badge-active':'badge-warn'}">${r.drawingsDone?'✓ 已交付':'未交付'}</span></td>
+      <td><span class="badge ${r.constructionDone?'badge-active':'badge-warn'}">${r.constructionDone?'✓ 已落地':'未落地'}</span></td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+  area.innerHTML = html;
+}
+
+// ── Tab4: 年终奖预估 ──────────────────────────────────────────
+// 年终奖临时存储（不进 DB，纯前端计算辅助工具）
+let annualScoreCache = {}; // empId -> {score, hireDate, baseBonus}
+
+function renderAnnualBonus(){
+  const area = document.getElementById('annualBonusArea');
+  if(!area) return;
+
+  let html = `<div class="card"><table class="data-table"><thead><tr>
+    <th>员工</th><th>入职日</th><th>工龄(年)</th><th>基础年终奖</th><th>年终绩效比例</th><th>预计年终奖</th><th>项目尾款奖金</th><th>操作</th>
+  </tr></thead><tbody>`;
+
+  allEmployees.forEach(e=>{
+    const cache = annualScoreCache[e.id]||{};
+    const hireDate = cache.hireDate || e.hire_date || '';
+    const score    = cache.score!=null ? cache.score : null;
+    const baseBonus= cache.baseBonus!=null ? cache.baseBonus : (ANNUAL_BASE[e.job_title]||6000);
+
+    let seniority = 0;
+    if(hireDate){
+      const diff = (new Date() - new Date(hireDate)) / (1000*60*60*24*365.25);
+      seniority  = Math.max(0, diff);
+    }
+    // 项目尾款10%奖金汇总（该员工所有项目）
+    const tail10 = allMembers
+      .filter(m=>m.employee_id===e.id)
+      .reduce((s,m)=>{
+        const proj = allProjects.find(p=>p.id===m.project_id);
+        return s + getBonusAmount(m.job_role, proj?.area||0, proj?.is_chain||false)*0.1;
+      }, 0);
+
+    const annualCalc = score!=null
+      ? Math.round(baseBonus + 6000 * seniority * score)
+      : null;
+
+    html += `<tr>
+      <td>${e.name}</td>
+      <td style="font-size:11px">${hireDate||'—'}</td>
+      <td class="mono">${seniority>0?seniority.toFixed(1):'—'}</td>
+      <td class="mono">¥${baseBonus.toLocaleString()}</td>
+      <td class="mono" style="color:${score!=null?'var(--green)':'var(--text-sub)'}">
+        ${score!=null?parseFloat(score).toFixed(2):'未录入'}
+      </td>
+      <td class="mono" style="color:var(--green);font-weight:600">
+        ${annualCalc!=null?'¥'+annualCalc.toLocaleString():'—'}
+      </td>
+      <td class="mono" style="color:var(--gold)">¥${Math.round(tail10).toLocaleString()}</td>
+      <td><button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="openAnnualScore('${e.id}','${e.name}','${hireDate}',${baseBonus},${score!=null?score:'null'})">录入</button></td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+  html += '<div class="notice" style="margin-top:12px">💡 年终奖 = 基础年终奖 + 6000元 × 工龄(年) × 年终绩效分数比例。项目尾款奖金需尾款实际到账后单独发放。</div>';
+  area.innerHTML = html;
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// 职位月薪对照表（底薪 + 岗位工资，2025年标准）
+// ══════════════════════════════════════════════════════════════
+const MONTHLY_SALARY = {
+  '设计总监':       10000,
+  '设计主管':       8000,
+  '主案设计师':     8000,
+  '执行设计师':     8000,
+  '高级深化设计师': 8000,
+  '深化设计师':     6500,
+  '助理设计师':     6000,
+};
+
+// 选职位时自动填入月薪（只读）
+function autoFillCost(titleId, costId){
+  const title = document.getElementById(titleId)?.value;
+  const costEl = document.getElementById(costId);
+  if(!costEl) return;
+  const salary = MONTHLY_SALARY[title];
+  if(salary){
+    costEl.value = salary;
+  } else {
+    costEl.value = '';
+  }
+}
+
+// 获取员工月薪（优先用DB记录，fallback用职位对照表）
+function getEmpMonthlySalary(emp){
+  if(!emp) return 0;
+  if(emp.monthly_salary && emp.monthly_salary > 0) return emp.monthly_salary;
+  return MONTHLY_SALARY[emp.job_title] || 0;
+}
+
+function getEmpHourlyRate(emp){
+  const monthlySalary = getEmpMonthlySalary(emp);
+  return monthlySalary > 0 ? monthlySalary / 130 : 120;
+}
+
+// 各岗位基础年终奖参考（元）
+const ANNUAL_BASE = {
+  '设计总监': 10000,
+  '设计主管': 8000,
+  '主案设计师': 8000,
+  '执行设计师': 8000,
+  '高级深化设计师': 8000,
+  '深化设计师': 6500,
+  '助理设计师': 6000,
+};
+
+function openAnnualScore(empId, empName, hireDate, baseBonus, score){
+  document.getElementById('annualScoreEmpId').value    = empId;
+  document.getElementById('annualScoreEmpName').value  = empName;
+  document.getElementById('annualScoreHireDate').value = hireDate||'';
+  document.getElementById('annualScoreBase').value     = baseBonus||'';
+  document.getElementById('annualScoreValue').value    = score!=null&&score!=='null' ? parseFloat(score).toFixed(2) : '0.80';
+  openModal('annualScoreModal');
+}
+
+function doSaveAnnualScore(){
+  const empId    = document.getElementById('annualScoreEmpId').value;
+  const hireDate = document.getElementById('annualScoreHireDate').value;
+  const base     = parseFloat(document.getElementById('annualScoreBase').value)||6000;
+  const score    = parseFloat(document.getElementById('annualScoreValue').value);
+  if(isNaN(score)||score<0||score>1){ toast('比例需在 0～1 之间'); return; }
+  annualScoreCache[empId] = { score, hireDate, baseBonus: base };
+  toast('✓ 已更新年终奖数据');
+  closeModal('annualScoreModal');
+  renderAnnualBonus();
+}
+
+function renderAll(){
+  renderTimePage();
+  renderProjectPage();
+  renderDashboard();
+  renderQuote();
+  renderProfile();
+  renderTeam();
+  renderBonus();
+  initCostAnalysisSel();
+}
+
+// ── 工时页 ────────────────────────────────────────────────────
+function renderTimePage(){
+  if(isAdmin) renderAdminTime();
+  else renderEmpTime();
+}
+
+function renderEmpTime(){
+  const myLogs = allLogs.filter(l=>l.employee_id===userProfile?.id);
+  const monthLogs = myLogs.filter(l=>l.log_date?.startsWith(new Date().toISOString().slice(0,7)));
+  const totalH = monthLogs.reduce((s,l)=>s+parseFloat(l.hours||0),0);
+  const proj = new Set(monthLogs.map(l=>l.project_id)).size;
+  const grid = document.getElementById('myStatsGrid');
+  if(grid) grid.innerHTML=`
+    <div class="stat-card green"><div class="s-label">本月累计工时</div>
+      <div class="s-val">${totalH.toFixed(1)}<span class="s-unit">h</span></div>
+      <div class="s-change neutral">主管核定</div></div>
+    <div class="stat-card gold"><div class="s-label">参与项目数</div>
+      <div class="s-val">${proj}<span class="s-unit">个</span></div></div>`;
+  const el=document.getElementById('myTimeTable');
+  if(!el)return;
+  if(!myLogs.length){el.innerHTML='<div class="empty">暂无工时记录</div>';return}
+  el.innerHTML=`<table class="data-table"><thead><tr>
+    <th>日期</th><th>项目</th><th>阶段</th><th>工时</th>
+  </tr></thead><tbody>${myLogs.slice(0,30).map(l=>`<tr>
+    <td>${l.log_date}</td>
+    <td class="fw6">${l.project?.name?.slice(0,14)||'—'}</td>
+    <td>${l.stage}</td>
+    <td class="mono">${l.hours}h</td>
+  </tr>`).join('')}</tbody></table>`;
+}
+
+function renderAdminTime(){
+  // 统计卡
+  const todayStr=new Date().toISOString().split('T')[0];
+  const todayLogs=allLogs.filter(l=>l.log_date===todayStr);
+  const weekH=allLogs.filter(l=>isThisWeek(l.log_date)).reduce((s,l)=>s+parseFloat(l.hours||0),0);
+  const el=document.getElementById('adminTimeStats');
+  if(el) el.innerHTML=`
+    <div class="stat-card"><div class="s-label">今日分派条数</div><div class="s-val">${todayLogs.length}</div></div>
+    <div class="stat-card blue"><div class="s-label">本周总工时</div><div class="s-val">${weekH.toFixed(1)}<span class="s-unit">h</span></div></div>
+    <div class="stat-card gold"><div class="s-label">员工人数</div><div class="s-val">${allEmployees.length}<span class="s-unit">人</span></div></div>
+    <div class="stat-card green"><div class="s-label">进行中项目</div><div class="s-val">${allProjects.filter(p=>p.status==='active').length}<span class="s-unit">个</span></div></div>`;
+  // 负荷条
+  renderEmpLoadBars();
+  // 分派记录表
+  const tbl=document.getElementById('assignTable');
+  if(!tbl)return;
+  if(!allLogs.length){tbl.innerHTML='<div class="empty">暂无记录，点击「分派工时」开始录入</div>';return}
+  tbl.innerHTML=`<table class="data-table"><thead><tr>
+    <th>员工</th><th>项目</th><th>阶段</th><th>工时</th><th>日期</th><th>操作</th>
+  </tr></thead><tbody>${allLogs.slice(0,50).map(l=>`<tr>
+    <td><div style="display:flex;align-items:center;gap:8px">
+      <div class="emp-av" style="background:${l.employee?.avatar_color||'#888'};width:26px;height:26px;font-size:11px">${(l.employee?.name||'?')[0]}</div>
+      ${l.employee?.name||'—'}</div></td>
+    <td class="fw6">${l.project?.name?.slice(0,14)||'—'}</td>
+    <td>${l.stage}</td>
+    <td class="mono">${l.hours}h</td>
+    <td>${l.log_date}</td>
+    <td style="display:flex;gap:4px">
+      <button class="btn-sm btn-blue" onclick="editLog('${l.id}')">编辑</button>
+      <button class="btn-sm btn-red" onclick="deleteLog('${l.id}')">删除</button>
+    </td>
+  </tr>`).join('')}</tbody></table>`;
+}
+
+function renderEmpLoadBars(){
+  const el=document.getElementById('empLoadBars');
+  if(!el)return;
+  const monthStr=new Date().toISOString().slice(0,7);
+  el.innerHTML=allEmployees.map(e=>{
+    const h=allLogs.filter(l=>l.employee_id===e.id&&l.log_date?.startsWith(monthStr))
+      .reduce((s,l)=>s+parseFloat(l.hours||0),0);
+    const pct=Math.round(h/MONTHLY_CAP*100);
+    const cls=pct>90?'pf-red':pct>70?'pf-gold':'pf-green';
+    return `<div class="prog-wrap">
+      <div class="prog-hd">
+        <span style="display:flex;align-items:center;gap:8px">
+          <div class="emp-av" style="background:${e.avatar_color||'#888'};width:24px;height:24px;font-size:10px">${(e.name||'?')[0]}</div>
+          ${e.name} <span style="font-size:11px;color:var(--text-sub)">${e.job_title||''}</span>
+        </span>
+        <span class="mono">${h.toFixed(0)}h / ${getMonthlyCapForMonth(new Date().toISOString().slice(0,7)).toFixed(0)}h &nbsp;<strong>${pct}%</strong></span>
+      </div>
+      <div class="prog-track"><div class="prog-fill ${cls}" style="width:${Math.min(pct,100)}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ── 项目页 ────────────────────────────────────────────────────
+let projFilter='all';
+function filterProj(s,el){
+  document.querySelectorAll('#projFilter .chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active'); projFilter=s; renderProjectPage();
+}
+
+function renderProjectPage(){
+  if(!isAdmin){renderEmpProjTable();return}
+  const list=projFilter==='all'?allProjects:allProjects.filter(p=>p.status===projFilter);
+  // 风险预警
+  const ra=document.getElementById('riskAlerts');
+  if(ra){
+    const risky=allProjects.filter(p=>{
+      if(p.status==='done' || p.status==='paused') return false;
+      const hb = parseFloat(p.hours_budget)||0;
+      const hu = parseFloat(p.hours_used)||0;
+      const ca = parseFloat(p.contract_amount)||0;
+      const lc = parseFloat(p.labor_cost)||0;
+      return (hb>0 && hu/hb>0.85) || (ca>0 && lc/ca>0.7);
+    });
+    ra.innerHTML=risky.map(p=>{
+      const hb = parseFloat(p.hours_budget)||0;
+      const hu = parseFloat(p.hours_used)||0;
+      const ca = parseFloat(p.contract_amount)||0;
+      const lc = parseFloat(p.labor_cost)||0;
+      const hoursPct = hb>0 ? Math.round(calcAdjustedHours(hu)/hb*100) : 0;
+      const costPct = ca>0 ? Math.round(lc/ca*100) : 0;
+      return `<div class="notice red">⚠ <strong>${p.name?.slice(0,16)}</strong> — 工时消耗 ${hoursPct}%${ca>0?`，人力成本占合同 ${costPct}%`:'，合同额未填写'}</div>`;
+    }).join('');
+  }
+  const el=document.getElementById('projTable');
+  if(!el)return;
+  if(!list.length){el.innerHTML='<div class="empty">暂无项目</div>';return}
+  el.innerHTML=`<div class="card" style="margin-bottom:16px"><div style="overflow-x:auto"><table class="data-table">
+    <thead><tr><th>项目名称</th><th>合同额</th><th>已回款</th><th>人力成本</th><th>利润率</th><th>工时进度 <span title="实际工时含主管10%+总监10%管理折算" style="cursor:help;color:var(--gold)">ⓘ</span></th><th>状态</th><th>操作</th></tr></thead>
+    <tbody>${list.map(p=>{
+      const margin=p.contract_amount>0?Math.round((p.contract_amount-p.labor_cost)/p.contract_amount*100):0;
+      const adjHours = calcAdjustedHours(p.hours_used||0);
+      const pct=p.hours_budget>0?Math.round(adjHours/p.hours_budget*100):0;
+      return `<tr>
+        <td class="fw6" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          ${p.name}
+          ${p.director_id?`<div style="font-size:10px;color:var(--text-sub)">${allEmployees.find(e=>e.id===p.director_id)?.name||''}总监</div>`:''}
+        </td>
+        <td class="mono">¥${p.contract_amount}万</td>
+        <td class="mono">¥${(p.paid_amount||0).toFixed(1)}万</td>
+        <td class="mono">¥${(p.labor_cost||0).toFixed(1)}万</td>
+        <td class="mono ${margin<20?'dn':margin>=38?'up':''}">${margin}%</td>
+        <td><div style="display:flex;align-items:center;gap:6px">
+          <div style="width:60px;height:5px;background:var(--cream);border-radius:3px;overflow:hidden">
+            <div style="width:${Math.min(pct,100)}%;height:100%;border-radius:3px;background:${pct>90?'var(--accent)':pct>70?'var(--gold)':'var(--green)'}"></div>
+          </div><span class="mono" style="font-size:11px">${pct}% <span style="font-size:9px;color:var(--text-sub)" title="实际录入${Math.round(p.hours_used||0)}h × 1.2管理折算 = ${Math.round(adjHours)}h">ⓘ</span></span>
+        </div></td>
+        <td>
+          <span class="badge badge-${p.status}">${p.status==='active'?'进行中':p.status==='construction'?'🏗施工跟踪':p.status==='paused'?'⏸暂停':p.status==='risk'?'⚠预警':'已完结'}</span>
+          ${p.deadline&&p.status==='active'&&new Date(p.deadline)<new Date()?'<div style="font-size:10px;color:var(--accent);margin-top:2px">⚠施工图已超期</div>':''}
+          ${p.status==='construction'&&p.completion_date?`<div style="font-size:10px;color:var(--text-sub);margin-top:2px">预计竣工：${p.completion_date}</div>`:''}
+        </td>
+        <td style="display:flex;gap:4px">
+          <button class="btn-sm btn-blue" onclick="quickPayment('${p.id}')">回款</button>
+          <button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="editProject('${p.id}')">编辑</button>
+          <button class="btn-sm btn-red" onclick="deleteProject('${p.id}','${p.name?.replace(/'/g,'')}')">删除</button>
+        </td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div></div>`;
+  // 回款记录
+  const pt=document.getElementById('paymentTable');
+  if(pt){
+    if(!allPayments.length){pt.innerHTML='<div class="empty">暂无回款记录</div>';return}
+    pt.innerHTML=`<table class="data-table"><thead><tr><th>日期</th><th>项目</th><th>类型</th><th>金额</th><th>备注</th></tr></thead>
+    <tbody>${allPayments.map(p=>`<tr>
+      <td>${p.payment_date}</td>
+      <td>${p.project?.name?.slice(0,14)||'—'}</td>
+      <td><span class="badge ${p.type.includes('回款')||p.type.includes('款')?'badge-active':'badge-warn'}">${p.type}</span></td>
+      <td class="mono fw6">¥${p.amount}万</td>
+      <td style="color:var(--text-sub)">${p.note||'—'}</td>
+      <td style="display:flex;gap:4px">
+        <button class="btn-sm btn-blue" onclick="editPayment('${p.id}')">编辑</button>
+        <button class="btn-sm btn-red" onclick="deletePayment('${p.id}')">删除</button>
+      </td>
+    </tr>`).join('')}</tbody></table>`;
+  }
+  // 横向对比
+  const cb=document.getElementById('compareBody');
+  if(cb) cb.innerHTML=allProjects.map(p=>{
+    const margin=p.contract_amount>0?Math.round((p.contract_amount-p.labor_cost)/p.contract_amount*100):0;
+    const pct=p.hours_budget>0?Math.round(p.hours_used/p.hours_budget*100):0;
+    const hourly=p.hours_used>0?Math.round(p.contract_amount*10000/p.hours_used):0;
+    return `<tr>
+      <td class="fw6">${p.name?.slice(0,14)}</td>
+      <td class="mono">¥${p.contract_amount}万</td>
+      <td class="mono ${margin<20?'dn':margin>=38?'up':''}">${margin}%</td>
+      <td class="mono">${Math.round(p.hours_used||0)}h</td>
+      <td><div style="display:flex;align-items:center;gap:6px">
+        <div style="width:50px;height:5px;background:var(--cream);border-radius:3px;overflow:hidden">
+          <div style="width:${Math.min(pct,100)}%;height:100%;background:${pct>90?'var(--accent)':'var(--green)'};border-radius:3px"></div>
+        </div><span style="font-size:11px">${pct}%</span></div></td>
+      <td class="mono">¥${hourly}/h</td>
+      <td><span class="badge badge-${p.status}">${p.status==='active'?'进行中':p.status==='construction'?'🏗施工跟踪':p.status==='paused'?'⏸暂停':p.status==='risk'?'⚠预警':'已完结'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderEmpProjTable(){
+  const el=document.getElementById('empProjTable');
+  if(!el)return;
+  const myProjIds=[...new Set(allLogs.map(l=>l.project_id))];
+  const myProjs=allProjects.filter(p=>myProjIds.includes(p.id));
+  if(!myProjs.length){el.innerHTML='<div class="empty">暂无参与项目</div>';return}
+  el.innerHTML=`<table class="data-table"><thead><tr><th>项目名称</th><th>客户</th><th>状态</th></tr></thead>
+  <tbody>${myProjs.map(p=>`<tr>
+    <td class="fw6">${p.name}</td>
+    <td>${p.client||'—'}</td>
+    <td><span class="badge badge-${p.status}">${p.status==='active'?'进行中':p.status==='construction'?'🏗施工跟踪':p.status==='paused'?'⏸暂停':p.status==='risk'?'⚠预警':'已完结'}</span></td>
+  </tr>`).join('')}</tbody></table>`;
+}
+
+function quickPayment(projId){
+  const el=document.getElementById('payProj');
+  if(el) el.value=projId;
+  openModal('paymentModal');
+}
+
+// ── 经营看板 ──────────────────────────────────────────────────
+function initDashMonthPicker(){
+  const sel = document.getElementById('dashMonth');
+  if(!sel) return;
+  // 生成最近12个月选项
+  const months = [];
+  const now = new Date();
+  for(let i=0;i<12;i++){
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    const val = d.toISOString().slice(0,7);
+    const label = `${d.getFullYear()}年${d.getMonth()+1}月`;
+    months.push({val,label});
+  }
+  sel.innerHTML = months.map((m,i)=>`<option value="${m.val}"${i===0?' selected':''}>${m.label}</option>`).join('');
+}
+
+function getDashMonth(){
+  const sel = document.getElementById('dashMonth');
+  return sel ? sel.value : new Date().toISOString().slice(0,7);
+}
+
+// 工时折算：实际录入工时 × 1.2（含主管10%+总监10%管理折算）
+function calcAdjustedHours(rawHours){
+  return rawHours * 1.2;
+}
+
+function renderDashboard(){
+  if(!isAdmin)return;
+  initDashMonthPicker();
+  const monthStr = getDashMonth();
+  const monthLogs = allLogs.filter(l=>l.log_date?.startsWith(monthStr));
+  const rawMonthH = monthLogs.reduce((s,l)=>s+parseFloat(l.hours||0),0);
+  const adjMonthH = calcAdjustedHours(rawMonthH);
+  const monthCost = allEmployees.reduce((s,e)=>{
+    const h = monthLogs.filter(l=>l.employee_id===e.id).reduce((a,l)=>a+parseFloat(l.hours||0),0);
+    return s + calcAdjustedHours(h) * getEmpHourlyRate(e) / 10000;
+  },0);
+  const totalContract=allProjects.reduce((s,p)=>s+(p.contract_amount||0),0);
+  const totalPaid=allProjects.reduce((s,p)=>s+(p.paid_amount||0),0);
+  const totalCost=allProjects.reduce((s,p)=>s+(p.labor_cost||0),0);
+  const avgMargin=totalContract>0?Math.round((totalContract-totalCost)/totalContract*100):0;
+  const riskyProjects = allProjects.filter(p=>{
+    if(p.status==='done' || p.status==='paused') return false;
+    const hb = parseFloat(p.hours_budget)||0;
+    const hu = parseFloat(p.hours_used)||0;
+    const ca = parseFloat(p.contract_amount)||0;
+    const lc = parseFloat(p.labor_cost)||0;
+    return (hb>0 && hu/hb>0.85) || (ca>0 && lc/ca>0.4);
+  });
+  const hint = document.getElementById('dashMonthHint');
+  if(hint) hint.textContent = `本月录入 ${rawMonthH.toFixed(0)}h，含管理折算 ${adjMonthH.toFixed(0)}h，人力成本 ¥${monthCost.toFixed(2)}万`;
+  const ds=document.getElementById('dashStats');
+  if(ds) ds.innerHTML=`
+    <div class="stat-card green"><div class="s-label">合同总额</div><div class="s-val">${totalContract.toFixed(1)}<span class="s-unit">万</span></div></div>
+    <div class="stat-card gold"><div class="s-label">综合利润率</div><div class="s-val">${avgMargin}<span class="s-unit">%</span></div></div>
+    <div class="stat-card red"><div class="s-label">未回款</div><div class="s-val">${(totalContract-totalPaid).toFixed(1)}<span class="s-unit">万</span></div><div class="s-change dn">需跟进</div></div>
+    <div class="stat-card blue"><div class="s-label">风险项目</div><div class="s-val">${riskyProjects.length}<span class="s-unit">个</span></div><div class="s-change neutral">接近上限 / 成本偏高</div></div>`;
+  renderBusinessSummary(monthStr, { rawMonthH, adjMonthH, monthCost, totalContract, totalPaid, totalCost, avgMargin, riskyProjects });
+  renderTodayTodoList(monthStr);
+  renderTeamAlerts(monthStr);
+  renderEmpRank();
+  renderIntelligence();
+}
+
+function renderBusinessSummary(monthStr, metrics){
+  const el=document.getElementById('dashSummary');
+  if(!el)return;
+  const today=new Date();
+  const overdue = allProjects.filter(p=>p.status==='active' && p.deadline && new Date(p.deadline) < today);
+  const lowPaid = allProjects.filter(p=>p.status!=='done' && p.contract_amount>0 && ((p.paid_amount||0) / p.contract_amount) < 0.4);
+  const cap = getMonthlyCapForMonth(monthStr);
+  const overloaded = allEmployees.filter(e=>{
+    const h = allLogs.filter(l=>l.employee_id===e.id && l.log_date?.startsWith(monthStr)).reduce((s,l)=>s+parseFloat(l.hours||0),0);
+    return h > cap;
+  });
+
+  let tone = 'green';
+  let headline = '当前经营整体稳定，可以按原计划推进。';
+  const actions = [];
+
+  if(overdue.length || overloaded.length || metrics.avgMargin < 20){
+    tone = 'red';
+    headline = `当前经营偏紧，建议今天先处理风险项目，再安排新增任务。`;
+  } else if(lowPaid.length || metrics.riskyProjects.length || metrics.avgMargin < 30){
+    tone = 'gold';
+    headline = '当前经营基本可控，但回款和排期需要优先跟进。';
+  }
+
+  if(overdue.length) actions.push(`先催 ${overdue.slice(0,3).map(p=>p.name?.slice(0,10)).join('、')} 的施工图节点，避免继续超期。`);
+  if(lowPaid.length) actions.push(`跟进 ${lowPaid.slice(0,3).map(p=>p.name?.slice(0,10)).join('、')} 的首付款/中期款，优先把回款率拉到 40% 以上。`);
+  if(overloaded.length) actions.push(`给 ${overloaded.slice(0,3).map(e=>e.name).join('、')} 减负，避免继续挤压交付时间。`);
+  if(!actions.length) actions.push('本周重点盯回款、截止日和人员负荷，保持节奏即可。');
+
+  el.innerHTML = `
+    <div class="notice ${tone==='red'?'red':tone==='green'?'green':''}" style="margin-bottom:12px">
+      <strong>一句话经营状态：</strong>${headline}
+    </div>
+    <div class="card" style="margin-bottom:8px">
+      <div class="card-body">
+        <div style="font-size:11px;color:var(--text-sub);margin-bottom:8px">直接行动建议</div>
+        ${actions.map(t=>`<div style="font-size:13px;line-height:1.7;padding:4px 0">• ${t}</div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function renderTodayTodoList(monthStr){
+  const el=document.getElementById('todayTodoList');
+  if(!el)return;
+  const today=new Date();
+  const todayStr=today.toISOString().slice(0,10);
+  const in7Days=new Date(today);
+  in7Days.setDate(in7Days.getDate()+7);
+
+  const items=[];
+  allProjects.filter(p=>p.status==='active' && p.deadline && new Date(p.deadline) < today).forEach(p=>{
+    items.push({name:`${p.name} 已超施工图交付日`,meta:`截止 ${p.deadline} · 建议今天确认实际交付时间`,badge:'立即处理',cls:'badge-risk'});
+  });
+  allProjects.filter(p=>p.status==='active' && p.deadline && new Date(p.deadline) >= today && new Date(p.deadline) <= in7Days).forEach(p=>{
+    const diff=Math.ceil((new Date(p.deadline)-today)/86400000);
+    items.push({name:`${p.name} 即将到期`,meta:`剩余 ${diff} 天 · 建议今天确认图纸完成度`,badge:'本周跟进',cls:'badge-warn'});
+  });
+  allProjects.filter(p=>p.status!=='done' && p.contract_amount>0 && ((p.paid_amount||0) / p.contract_amount) < 0.4).forEach(p=>{
+    const paidPct=Math.round(((p.paid_amount||0) / p.contract_amount) * 100);
+    items.push({name:`${p.name} 回款偏低`,meta:`当前回款 ${paidPct}% · 建议今天催款`,badge:'催回款',cls:'badge-warn'});
+  });
+  const noLogEmployees = allEmployees.filter(e=>{
+    if(e.is_active===false) return false;
+    const h = allLogs.filter(l=>l.employee_id===e.id && l.log_date===todayStr).reduce((s,l)=>s+parseFloat(l.hours||0),0);
+    return h===0;
+  });
+  if(noLogEmployees.length){
+    items.push({name:`${noLogEmployees.length} 名员工今天暂未录入/分派工时`,meta:`建议核对是否未分派或未开始任务`,badge:'核对分工',cls:'badge-active'});
+  }
+
+  if(!items.length){
+    el.innerHTML='<div class="list-item"><div style="font-size:20px">✅</div><div class="li-info"><div class="li-name">今天没有紧急待办</div><div class="li-meta">按原计划推进即可</div></div></div>';
+    return;
+  }
+
+  el.innerHTML = items.slice(0,6).map(item=>`<div class="list-item">
+    <div class="li-info">
+      <div class="li-name">${item.name}</div>
+      <div class="li-meta">${item.meta}</div>
+    </div>
+    <span class="badge ${item.cls}">${item.badge}</span>
+  </div>`).join('');
+}
+
+function renderTeamAlerts(monthStr){
+  const el=document.getElementById('teamAlertsList');
+  if(!el)return;
+  const cap = getMonthlyCapForMonth(monthStr);
+  const rows = allEmployees.filter(e=>e.is_active!==false).map(e=>{
+    const rawH = allLogs.filter(l=>l.employee_id===e.id && l.log_date?.startsWith(monthStr)).reduce((s,l)=>s+parseFloat(l.hours||0),0);
+    const pct = rawH / cap;
+    return { ...e, rawH, pct };
+  });
+
+  const items = [];
+  rows.filter(r=>r.pct>1).forEach(r=>{
+    items.push({name:`${r.name} 已超负荷`,meta:`本月 ${r.rawH.toFixed(0)}h / ${cap.toFixed(0)}h · 建议立即拆分任务`,badge:'超载',cls:'badge-risk'});
+  });
+  rows.filter(r=>r.pct<0.35).forEach(r=>{
+    items.push({name:`${r.name} 当前负荷偏低`,meta:`本月 ${r.rawH.toFixed(0)}h · 可承接新任务或返工任务`,badge:'可补位',cls:'badge-warn'});
+  });
+
+  const multiProj = rows.map(r=>{
+    const projCount = new Set(allLogs.filter(l=>l.employee_id===r.id && l.log_date?.startsWith(monthStr)).map(l=>l.project_id)).size;
+    return { ...r, projCount };
+  }).filter(r=>r.projCount>=4 && r.pct>0.8);
+  multiProj.forEach(r=>{
+    items.push({name:`${r.name} 同时跟进项目过多`,meta:`本月参与 ${r.projCount} 个项目 · 建议减少切换成本`,badge:'需协调',cls:'badge-active'});
+  });
+
+  if(!items.length){
+    el.innerHTML='<div class="list-item"><div style="font-size:20px">🌿</div><div class="li-info"><div class="li-name">当前团队状态正常</div><div class="li-meta">没有明显超载或空转人员</div></div></div>';
+    return;
+  }
+
+  el.innerHTML = items.slice(0,6).map(item=>`<div class="list-item">
+    <div class="li-info">
+      <div class="li-name">${item.name}</div>
+      <div class="li-meta">${item.meta}</div>
+    </div>
+    <span class="badge ${item.cls}">${item.badge}</span>
+  </div>`).join('');
+}
+
+function renderOwnerEquity(contract,cost,paid){
+  const el=document.getElementById('ownerEquity');
+  if(!el)return;
+  const equity=paid-cost;
+  el.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div><div style="font-size:10px;color:var(--text-sub);margin-bottom:4px">合同总额</div><div style="font-family:'DM Mono',monospace;font-size:18px">¥${contract.toFixed(1)}万</div></div>
+    <div><div style="font-size:10px;color:var(--text-sub);margin-bottom:4px">已发生成本</div><div style="font-family:'DM Mono',monospace;font-size:18px">¥${cost.toFixed(1)}万</div></div>
+    <div><div style="font-size:10px;color:var(--text-sub);margin-bottom:4px">已回款</div><div style="font-family:'DM Mono',monospace;font-size:18px;color:var(--green)">¥${paid.toFixed(1)}万</div></div>
+    <div><div style="font-size:10px;color:var(--text-sub);margin-bottom:4px">净所有者权益</div><div style="font-family:'DM Mono',monospace;font-size:18px;color:${equity>=0?'var(--green)':'var(--accent)'}">¥${equity.toFixed(1)}万</div></div>
+  </div>`;
+}
+
+function renderActionAdvice(){
+  const el=document.getElementById('actionAdvice');
+  if(!el)return;
+  const advices=[];
+  const overHours=allProjects.filter(p=>p.status!=='done'&&p.hours_budget>0&&p.hours_used/p.hours_budget>0.85);
+  if(overHours.length) advices.push({type:'red',text:`⚠ ${overHours.map(p=>p.name?.slice(0,10)).join('、')} 工时消耗超 85%，评估是否追加费用。`});
+  const unpaid=allProjects.filter(p=>p.status!=='done'&&p.contract_amount>0&&(p.paid_amount||0)/p.contract_amount<0.4);
+  if(unpaid.length) advices.push({type:'gold',text:`💰 ${unpaid.map(p=>p.name?.slice(0,10)).join('、')} 回款率不足 40%，建议跟进付款。`});
+  if(!advices.length) advices.push({type:'green',text:`✅ 当前无紧急预警事项，保持现有运营节奏。`});
+  el.innerHTML=advices.map(a=>`<div class="notice ${a.type==='red'?'red':a.type==='green'?'green':''}" style="margin-bottom:10px">${a.text}</div>`).join('');
+}
+
+function renderEmpRank(){
+  const el=document.getElementById('empRankBody');
+  if(!el)return;
+  const monthStr=getDashMonth();
+  const cap = getMonthlyCapForMonth(monthStr);
+  const ranked=allEmployees.map(e=>{
+    const rawH=allLogs.filter(l=>l.employee_id===e.id&&l.log_date?.startsWith(monthStr))
+      .reduce((s,l)=>s+parseFloat(l.hours||0),0);
+    const output=calcAdjustedHours(rawH)*getEmpHourlyRate(e)/10000;
+    const load=Math.round(rawH/cap*100);
+    const advice = load>100 ? '先减负' : load<35 ? '可补位' : load>85 ? '重点盯交付' : '正常推进';
+    return {...e,rawH,output,load,advice};
+  }).sort((a,b)=>b.rawH-a.rawH);
+  el.innerHTML=ranked.map((e,i)=>`<tr>
+    <td style="color:var(--text-sub);font-size:12px">${i+1}</td>
+    <td><div style="display:flex;align-items:center;gap:8px">
+      <div class="emp-av" style="background:${e.avatar_color||'#888'}">${(e.name||'?')[0]}</div>
+      <div><div class="fw6">${e.name}</div><div style="font-size:11px;color:var(--text-sub)">${e.job_title||''}</div></div></div></td>
+    <td class="mono">${e.rawH.toFixed(0)}h</td>
+    <td class="mono">¥${e.output.toFixed(2)}万</td>
+    <td><div style="display:flex;align-items:center;gap:6px">
+      <div style="width:50px;height:5px;background:var(--cream);border-radius:3px;overflow:hidden">
+        <div style="width:${Math.min(e.load,100)}%;height:100%;background:${e.load>100?'var(--accent)':e.load>80?'var(--gold)':'var(--green)'};border-radius:3px"></div>
+      </div><span style="font-size:11px">${e.load}%</span></div></td>
+    <td><span class="badge ${e.load>100?'badge-risk':e.load<35?'badge-warn':'badge-active'}">${e.advice}</span></td>
+  </tr>`).join('');
+}
+
+// ── 团队管理 ──────────────────────────────────────────────────
+// ── 团队管理 ──────────────────────────────────────────────────
+function renderTeam(){
+  if(!isAdmin)return;
+  const el=document.getElementById('teamBody');
+  if(!el)return;
+  el.innerHTML=allEmployees.map(e=>{
+    const salary = MONTHLY_SALARY[e.job_title] || e.monthly_salary || 0;
+    const isActive = e.is_active !== false;
+    return `<tr style="${isActive?'':'opacity:0.5'}">
+      <td><div style="display:flex;align-items:center;gap:8px">
+        <div class="emp-av" style="background:${e.avatar_color||'#888'};width:28px;height:28px;font-size:11px">${(e.name||'?')[0]}</div>
+        ${e.name}${isActive?'':'<span style="font-size:10px;color:var(--text-sub);margin-left:4px">已离职</span>'}
+      </div></td>
+      <td>${e.job_title||'—'}</td>
+      <td><span class="badge ${e.role==='admin'?'badge-risk':'badge-active'}">${e.role==='admin'?'管理者':'员工'}</span></td>
+      <td class="mono">¥${salary.toLocaleString()}/月</td>
+      <td><span class="badge ${isActive?'badge-active':'badge-warn'}">${isActive?'在职':'离职'}</span></td>
+      <td><button class="btn-sm btn-blue" onclick="openEditEmp('${e.id}')">编辑</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── 报价测算 ──────────────────────────────────────────────────
+function renderQuote(){
+  calcQuote();
+  const el=document.getElementById('historyBody');
+  if(!el)return;
+  const done=allProjects.filter(p=>p.status==='done');
+  if(!done.length){el.innerHTML='<tr><td colspan="6" class="empty">暂无完结项目数据</td></tr>';return}
+  el.innerHTML=done.map(p=>{
+    const margin=p.contract_amount>0?Math.round((p.contract_amount-p.labor_cost)/p.contract_amount*100):0;
+    return `<tr>
+      <td class="fw6">${p.name?.slice(0,12)}</td>
+      <td>—</td>
+      <td class="mono">${p.area||'—'}㎡</td>
+      <td class="mono">¥${p.contract_amount}万</td>
+      <td class="mono ${margin>=38?'up':''}">${margin}%</td>
+      <td class="mono">${Math.round(p.hours_used||0)}h</td>
+    </tr>`;
+  }).join('');
+}
+
+function calcQuote(){
+  const type=(document.getElementById('qType')||{}).value||'residential';
+  const area=parseFloat((document.getElementById('qArea')||{}).value)||0;
+  const level=(document.getElementById('qLevel')||{}).value||'standard';
+  const margin=parseFloat((document.getElementById('qMargin')||{}).value)||0.38;
+  const avgCost=allEmployees.length>0
+    ?allEmployees.reduce((s,e)=>s+getEmpHourlyRate(e),0)/allEmployees.length
+    :120;
+  const hrs=area*TYPE_H[type]*LVL_M[level];
+  const cost=hrs*avgCost;
+  const price=cost/(1-margin);
+  const qCost=document.getElementById('qCost');
+  const qPrice=document.getElementById('qPrice');
+  const qHours=document.getElementById('qHours');
+  const qPct=document.getElementById('qPct');
+  if(qCost) qCost.textContent=`¥${(cost/10000).toFixed(1)}万`;
+  if(qPrice) qPrice.textContent=`¥${(price/10000).toFixed(1)}~${(price*1.15/10000).toFixed(1)}万`;
+  if(qHours) qHours.textContent=`${Math.round(hrs)}h`;
+  if(qPct) qPct.textContent=`${Math.round(margin*100)}~${Math.round(margin*100+5)}%`;
+}
+
+// ── 我的档案 ──────────────────────────────────────────────────
+function renderProfile(){
+  const pc=document.getElementById('profileCard');
+  if(pc) pc.innerHTML=`
+    <div style="font-size:11px;color:var(--warm-mid);letter-spacing:0.08em;margin-bottom:8px">个人档案</div>
+    <div style="font-family:'Noto Serif SC',serif;font-size:24px;font-weight:700;margin-bottom:4px">${userProfile?.name||'—'}</div>
+    <div style="font-size:12px;color:var(--warm-mid)">${userProfile?.job_title||'—'} · ${userProfile?.email||''}</div>`;
+  const monthStr=new Date().toISOString().slice(0,7);
+  const myMonthLogs=allLogs.filter(l=>l.employee_id===userProfile?.id&&l.log_date?.startsWith(monthStr));
+  const totalH=myMonthLogs.reduce((s,l)=>s+parseFloat(l.hours||0),0);
+  const ps=document.getElementById('profileStats');
+  if(ps) ps.innerHTML=`
+    <div class="stat-card green"><div class="s-label">本月工时</div><div class="s-val">${totalH.toFixed(0)}<span class="s-unit">h</span></div></div>
+    <div class="stat-card blue"><div class="s-label">参与项目</div><div class="s-val">${new Set(myMonthLogs.map(l=>l.project_id)).size}<span class="s-unit">个</span></div></div>
+    <div class="stat-card gold"><div class="s-label">负荷率</div><div class="s-val">${Math.round(totalH/MONTHLY_CAP*100)}<span class="s-unit">%</span></div></div>
+    <div class="stat-card"><div class="s-label">本月产值</div><div class="s-val">${(totalH*getEmpHourlyRate(userProfile)/10000).toFixed(2)}<span class="s-unit">万</span></div></div>`;
+  // 阶段分布
+  const td=document.getElementById('timeDistribution');
+  if(td){
+    const stageMap={};
+    myMonthLogs.forEach(l=>{stageMap[l.stage]=(stageMap[l.stage]||0)+parseFloat(l.hours||0)});
+    const sorted=Object.entries(stageMap).sort((a,b)=>b[1]-a[1]);
+    const cls=['pf-blue','pf-green','pf-gold','pf-red','pf-blue'];
+    td.innerHTML=sorted.map(([stage,h],i)=>`<div class="prog-wrap">
+      <div class="prog-hd"><span>${stage}</span><span class="mono">${h.toFixed(1)}h</span></div>
+      <div class="prog-track"><div class="prog-fill ${cls[i%5]}" style="width:${totalH>0?h/totalH*100:0}%"></div></div>
+    </div>`).join('')||'<div class="empty">暂无数据</div>';
+  }
+  const pt=document.getElementById('personalTrend');
+  if(pt) pt.innerHTML='<div style="color:var(--text-sub);font-size:12px;padding:8px 0">数据积累中，至少需要2个月记录才能显示趋势</div>';
+}
+
+// ══════════════════════════════════════════════════════════════
+// 🧠 智能分析引擎（基于真实数据）
+// ══════════════════════════════════════════════════════════════
+function renderIntelligence(){
+  renderEWMA();
+  renderAnomalyDetection();
+  renderEVM();
+  renderLoadBalance();
+  renderGantt();
+}
+
+// ① EWMA
+function computeEWMA(series,alpha=0.3){
+  if(!series.length)return[];
+  const ewma=[series[0]];
+  for(let i=1;i<series.length;i++) ewma.push(alpha*series[i]+(1-alpha)*ewma[i-1]);
+  return ewma;
+}
+
+function renderEWMA(){
+  const el=document.getElementById('ewmaChart');
+  const ins=document.getElementById('ewmaInsight');
+  if(!el)return;
+  // 按周聚合真实工时
+  const weeklyMap={};
+  allLogs.forEach(l=>{
+    const d=new Date(l.log_date);
+    const week=`${d.getFullYear()}-W${String(Math.ceil((d.getDate())/7)).padStart(2,'0')}`;
+    weeklyMap[week]=(weeklyMap[week]||0)+parseFloat(l.hours||0);
+  });
+  const weeks=Object.keys(weeklyMap).sort().slice(-10);
+  const series=weeks.map(w=>weeklyMap[w]);
+  if(series.length<2){
+    el.innerHTML='<div style="color:var(--text-sub);font-size:12px">数据积累中，至少需要2周记录</div>';
+    if(ins)ins.textContent='';
+    return;
+  }
+  const ewma=computeEWMA(series,0.3);
+  const last=ewma[ewma.length-1];
+  const slope=ewma.length>1?(ewma[ewma.length-1]-ewma[0])/(ewma.length-1):0;
+  const forecast=[1,2,3,4].map(i=>Math.max(0,Math.round(last+slope*i)));
+  const allV=[...series,...forecast];
+  const maxV=Math.max(...allV,1);
+  el.innerHTML=`<div style="display:flex;align-items:flex-end;gap:3px;height:90px;width:100%">
+    ${series.map((v,i)=>`<div style="flex:1;height:${Math.round(v/maxV*80)}px;
+      background:${v>ewma[i-1]?'var(--blue)':'var(--gold)'};
+      border-radius:3px 3px 0 0;min-height:3px"></div>`).join('')}
+    ${forecast.map(v=>`<div style="flex:1;height:${Math.round(v/maxV*80)}px;
+      background:var(--green);opacity:0.5;border-radius:3px 3px 0 0;
+      min-height:3px;border:1px dashed var(--green)"></div>`).join('')}
+  </div>
+  <div style="display:flex;gap:3px;margin-top:4px">
+    ${series.map((_,i)=>`<div style="flex:1;text-align:center;font-size:8px;color:var(--text-sub)">W${i+1}</div>`).join('')}
+    ${forecast.map((_,i)=>`<div style="flex:1;text-align:center;font-size:8px;color:var(--green)">F${i+1}</div>`).join('')}
+  </div>`;
+  if(ins) ins.textContent=`趋势 ${slope>1?'↑上升':slope<-1?'↓下降':'→平稳'} · 预计下周团队工时约 ${forecast[0]}h`;
+}
+
+// ② MAD异常检测
+function modifiedZScore(values){
+  if(values.length<2)return values.map(()=>0);
+  const s=[...values].sort((a,b)=>a-b);
+  const n=s.length;
+  const median=n%2===0?(s[n/2-1]+s[n/2])/2:s[Math.floor(n/2)];
+  const diffs=values.map(v=>Math.abs(v-median));
+  const ds=[...diffs].sort((a,b)=>a-b);
+  const mad=n%2===0?(ds[n/2-1]+ds[n/2])/2:ds[Math.floor(n/2)];
+  if(mad===0)return values.map(()=>0);
+  return values.map(v=>0.6745*(v-median)/mad);
+}
+
+function renderAnomalyDetection(){
+  const el=document.getElementById('anomalyList');
+  if(!el)return;
+  if(allProjects.length<2){
+    el.innerHTML='<div class="empty">至少需要2个项目数据才能进行异常检测</div>';return;
+  }
+  const ratios=allProjects.map(p=>p.contract_amount>0?(p.labor_cost||0)/p.contract_amount*100:0);
+  const zs=modifiedZScore(ratios);
+  el.innerHTML=allProjects.map((p,i)=>{
+    const z=zs[i];
+    const anom=Math.abs(z)>2.5;
+    const color=anom?(z>0?'var(--accent)':'var(--blue)'):'var(--green)';
+    const icon=anom?(z>0?'⚠':'↓'):'✓';
+    const label=anom?(z>0?'成本偏高':'成本偏低'):'正常';
+    return `<div class="list-item">
+      <div style="width:28px;height:28px;border-radius:50%;background:${color}20;
+        display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">${icon}</div>
+      <div class="li-info">
+        <div class="li-name">${p.name?.slice(0,16)}</div>
+        <div class="li-meta">成本占比 ${ratios[i].toFixed(1)}% · Z=${z.toFixed(2)}</div>
+      </div>
+      <div class="li-right" style="font-size:11px;font-weight:600;color:${color}">${label}</div>
+    </div>`;
+  }).join('');
+}
+
+// ③ EVM
+function renderEVM(){
+  const el=document.getElementById('evmTable');
+  if(!el)return;
+  const active=allProjects.filter(p=>p.status!=='done');
+  if(!active.length){el.innerHTML='<div class="empty">暂无进行中项目</div>';return}
+  el.innerHTML=`<table class="data-table" style="font-size:12px">
+    <thead><tr>
+      <th>项目</th>
+      <th>CPI <span style="cursor:help;color:var(--gold);font-weight:400" title="成本绩效指数（Cost Performance Index）：CPI=挣值/实际成本。>1说明成本低于预算，<1说明超支。">ⓘ</span></th>
+      <th>EAC预测 <span style="cursor:help;color:var(--gold);font-weight:400" title="完工估算（Estimate At Completion）：按当前成本效率预测项目最终总成本。EAC越接近合同额，利润空间越小。">ⓘ</span></th>
+      <th>预测利润率 <span style="cursor:help;color:var(--gold);font-weight:400" title="按当前CPI推算，项目完成时的预期利润率 = (合同额-EAC)/合同额。低于20%需关注。">ⓘ</span></th>
+      <th>预警 <span style="cursor:help;color:var(--gold);font-weight:400" title="✓健康：CPI≥1且利润率>35%；关注：利润率偏低；注意：CPI<1成本偏高；⚠成本失控：CPI<0.8严重超支。">ⓘ</span></th>
+    </tr></thead>
+    <tbody>${active.map(p=>{
+      const BAC=p.contract_amount||0;
+      const AC=p.labor_cost||0;
+      const pct=p.hours_budget>0?Math.min(p.hours_used/p.hours_budget,1):0;
+      const EV=BAC*pct;
+      const CPI=EV>0?EV/AC:1;
+      const EAC=AC>0?AC+(BAC-EV)/CPI:BAC;
+      const fm=BAC>0?(BAC-EAC)/BAC*100:0;
+      const warn=CPI<0.8?'⚠成本失控':CPI<1?'注意':fm>35?'✓健康':'关注';
+      const wc=CPI<0.8?'var(--accent)':CPI<1?'var(--gold)':'var(--green)';
+      return `<tr>
+        <td class="fw6" style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name?.slice(0,12)}</td>
+        <td class="mono" style="color:${CPI>=1?'var(--green)':CPI>=0.8?'var(--gold)':'var(--accent)'};font-weight:600">${CPI.toFixed(2)}</td>
+        <td class="mono">¥${EAC.toFixed(1)}万</td>
+        <td class="mono" style="color:${fm>30?'var(--green)':fm>10?'var(--gold)':'var(--accent)'}">${fm.toFixed(1)}%</td>
+        <td style="color:${wc};font-size:11px;font-weight:600">${warn}</td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+// ④ 负载平衡
+function renderLoadBalance(){
+  const el=document.getElementById('loadBalanceResult');
+  if(!el)return;
+  const monthStr=new Date().toISOString().slice(0,7);
+  const empLoad=allEmployees.map(e=>{
+    const h=allLogs.filter(l=>l.employee_id===e.id&&l.log_date?.startsWith(monthStr))
+      .reduce((s,l)=>s+parseFloat(l.hours||0),0);
+    return {...e,h,pct:h/MONTHLY_CAP};
+  });
+  const overloaded=empLoad.filter(e=>e.pct>1.0);
+  const underloaded=empLoad.filter(e=>e.pct<0.5);
+  if(!overloaded.length&&!underloaded.length){
+    el.innerHTML='<div class="list-item"><div style="font-size:20px">✅</div><div class="li-info"><div class="li-name">负载均衡</div><div class="li-meta">全员负荷在合理区间</div></div></div>';
+    return;
+  }
+  let html=[...overloaded,...underloaded].map(e=>`<div class="list-item">
+    <div style="width:8px;height:8px;border-radius:50%;background:${e.pct>1?'var(--accent)':'var(--gold)'};flex-shrink:0"></div>
+    <div class="li-info"><div class="li-name">${e.name}</div>
+      <div class="li-meta">${e.pct>1?`超载 +${Math.round((e.pct-1)*MONTHLY_CAP)}h`:`空余 ${Math.round((1-e.pct)*MONTHLY_CAP)}h`}</div></div>
+    <span class="badge ${e.pct>1?'badge-risk':'badge-warn'}">${e.pct>1?'超载':'空余'}</span>
+  </div>`).join('');
+  // 贪心建议
+  const suggestions=[];
+  let remaining=[...overloaded.map(e=>({...e,overflow:Math.round((e.pct-1)*MONTHLY_CAP)}))];
+  let spare=[...underloaded.map(e=>({...e,space:Math.round((1-e.pct)*MONTHLY_CAP)}))];
+  remaining.forEach(o=>{
+    spare.forEach(u=>{
+      if(o.overflow>0&&u.space>0){
+        const t=Math.min(o.overflow,u.space,20);
+        if(t>0){suggestions.push({from:o.name,to:u.name,h:t});o.overflow-=t;u.space-=t;}
+      }
+    });
+  });
+  if(suggestions.length) html+=`<div style="padding:10px 18px;background:var(--green-soft);border-top:1px solid var(--cream)">
+    <div style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:6px">💡 重排建议</div>
+    ${suggestions.map(s=>`<div style="font-size:12px;padding:2px 0">将 <strong>${s.from}</strong> 的 ${s.h}h 转给 <strong>${s.to}</strong></div>`).join('')}
+  </div>`;
+  el.innerHTML=html;
+}
+function runLoadBalance(){renderLoadBalance();toast('✓ 负载分析完成');}
+
+// ⑤ EDD甘特
+function renderGantt(){
+  const el=document.getElementById('ganttView');
+  if(!el)return;
+  // 进行中项目按施工图截止日排序；施工跟踪按竣工日；排除已暂停/已完结
+  const designProjs = allProjects.filter(p=>p.status==='active'&&p.deadline)
+    .sort((a,b)=>new Date(a.deadline)-new Date(b.deadline));
+  const constructionProjs = allProjects.filter(p=>p.status==='construction');
+  const active = [...designProjs, ...constructionProjs];
+  if(!active.length){el.innerHTML='<div style="color:var(--text-sub);font-size:12px">请在项目中设置截止日期以启用甘特排期</div>';return}
+  const today=new Date();
+  el.innerHTML=active.map((p,i)=>{
+    const isConstruction = p.status==='construction';
+    // 施工跟踪用竣工日，设计阶段用施工图截止日
+    const dateStr = isConstruction ? p.completion_date : p.deadline;
+    const label = isConstruction ? '预计竣工' : '施工图截止';
+    const tag = isConstruction ? '<span style="font-size:9px;background:#e8f4fd;color:#2980b9;padding:1px 5px;border-radius:3px;margin-left:4px">施工跟踪</span>' : '';
+    if(!dateStr){
+      return `<div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px">
+          <span class="fw6">${i+1}. ${p.name?.slice(0,14)}${tag}</span>
+          <span style="color:var(--text-sub);font-size:11px">未设置竣工日</span>
+        </div>
+      </div>`;
+    }
+    const dl=new Date(dateStr);
+    const days=Math.ceil((dl-today)/(864e5));
+    const color=isConstruction?'#2980b9':days<14?'var(--accent)':days<30?'var(--gold)':'var(--green)';
+    const w=Math.max(5,Math.min(100,100-days/180*100));
+    return `<div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:12px">
+        <span class="fw6">${i+1}. ${p.name?.slice(0,14)}${tag}</span>
+        <span style="color:${color};font-size:11px">${days>0?`剩余${days}天`:isConstruction?`已过预计竣工`:'已超期'}</span>
+      </div>
+      <div style="height:18px;background:var(--cream);border-radius:4px;overflow:hidden">
+        <div style="height:100%;width:${w}%;background:${color};opacity:0.75;border-radius:4px;
+          display:flex;align-items:center;padding-left:8px">
+          <span style="font-size:10px;color:white;font-weight:600;white-space:nowrap">
+            ${label} ${dateStr}
+          </span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// UI工具函数
+// ══════════════════════════════════════════════════════════════
+const pageInfo={
+  timelog:{title:'工时记录',sub:'主管分派制 · 工时由主管核定'},
+  project:{title:'项目管理',sub:'项目经营数据与风险评估'},
+  dashboard:{title:'经营看板',sub:'今日待办 · 一句话经营状态 · 团队异常'},
+  quote:{title:'报价测算',sub:'基于历史数据的报价参考'},
+  team:{title:'团队管理',sub:'员工账号与权限管理'},
+  bonus:{title:'绩效管理',sub:'项目成员配置 · 绩效打分 · 奖金核算'},
+  profile:{title:'我的档案',sub:'个人工时与效率数据'},
+};
+
+function nav(page,el,type='sidebar'){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  if(type==='sidebar'){
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+    el.classList.add('active');
+  } else {
+    document.querySelectorAll('.bnav-btn').forEach(b=>b.classList.remove('active'));
+    el.classList.add('active');
+  }
+  const info=pageInfo[page]||{};
+  const t=document.getElementById('pageTitle');
+  const s=document.getElementById('pageSubtitle');
+  if(t)t.textContent=info.title||'';
+  if(s)s.textContent=info.sub||'';
+  closeSidebar();
+}
+
+function gotoPage(page){
+  const btn = document.querySelector(`.nav-btn[onclick*="nav('${page}'"]`) || document.querySelector(`.bnav-btn[onclick*="nav('${page}'"]`);
+  if(!btn){ return; }
+  nav(page, btn, btn.classList.contains('bnav-btn') ? 'bnav' : 'sidebar');
+}
+
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+}
+function openModal(id){
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeModal(id){
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow='';
+}
+function closeModalOutside(e,id){if(e.target===document.getElementById(id))closeModal(id);}
+function changeH(d){
+  currentH=Math.max(0.5,Math.min(14,currentH+d));
+  document.getElementById('hVal').textContent=currentH.toFixed(1);
+}
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2400);
+}
+function isThisWeek(dateStr){
+  if(!dateStr)return false;
+  const d=new Date(dateStr);
+  const now=new Date();
+  const startOfWeek=new Date(now);
+  startOfWeek.setDate(now.getDate()-now.getDay());
+  startOfWeek.setHours(0,0,0,0);
+  return d>=startOfWeek;
+}
+
+// admin-only 由 CSS .admin-mode 控制，不用 inline style 覆盖
+</script>
+</body>
+</html>
