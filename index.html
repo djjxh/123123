@@ -288,6 +288,124 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
   border-radius:10px;letter-spacing:0.06em;vertical-align:middle;margin-left:6px}
 .intel-badge.live{background:var(--green-soft);color:var(--green)}
 .intel-badge.est{background:var(--gold-soft);color:var(--gold)}
+
+
+/* ── VISUAL UPGRADE 2026-04 ── */
+:root{
+  --shadow:0 10px 30px rgba(31,35,41,0.08);
+  --radius:18px;
+  --shadow-soft:0 4px 14px rgba(31,35,41,0.06);
+  --surface:#fbfcfd;
+}
+body{background:linear-gradient(180deg,#f7f8fa 0%,#f3f5f7 100%);color:var(--ink)}
+.logo-title{font-size:20px}
+.logo-sub{font-size:11px}
+.su-name{font-size:15px}
+.su-role{font-size:12px}
+.nav-group{font-size:11px;padding:16px 10px 8px}
+.nav-btn{font-size:14px;padding:11px 12px;border-radius:10px}
+.sidebar-footer,.logout-btn{font-size:12px}
+.topbar{padding:22px 40px;background:rgba(255,255,255,0.94);backdrop-filter:blur(10px)}
+.topbar-title{font-size:28px;letter-spacing:0.02em}
+.topbar-sub{font-size:14px;margin-top:4px}
+.content{padding:32px 40px 44px;max-width:1360px}
+.section-hd{margin-bottom:18px;margin-top:34px}
+.section-title{font-size:20px;letter-spacing:0.02em}
+.card{border-radius:18px;box-shadow:var(--shadow);border-color:#e7ebf0;background:rgba(255,255,255,0.94)}
+.card-hd{padding:18px 22px 14px}
+.card-title{font-size:15px}
+.card-body{padding:22px 24px}
+.stat-grid{gap:16px;margin-bottom:24px}
+.stat-card{padding:22px;border-radius:18px;box-shadow:var(--shadow-soft)}
+.s-label{font-size:12px;margin-bottom:8px;letter-spacing:0.08em}
+.s-val{font-size:34px}
+.s-unit{font-size:14px}
+.s-change{font-size:12px;margin-top:8px}
+.data-table{font-size:14px}
+.data-table th{font-size:11px;padding:13px 20px}
+.data-table td{padding:15px 20px}
+.badge{font-size:11px;padding:4px 12px}
+.form-label{font-size:12px;margin-bottom:7px}
+.form-select,.form-input{padding:12px 14px;border-radius:12px;font-size:14px}
+.action-bar{gap:12px;margin-bottom:18px}
+.action-btn{padding:10px 18px;border-radius:12px;font-size:13px}
+.btn-sm{padding:8px 14px;border-radius:10px;font-size:12px}
+.notice{padding:15px 16px;border-radius:12px;font-size:13px;line-height:1.8}
+.chip-row{gap:10px;margin-bottom:18px}
+.chip{padding:8px 16px;border-radius:999px;font-size:13px}
+.quick-link{padding:8px 12px;border-radius:10px;font-size:12px}
+.list-item{padding:16px 20px}
+.li-name{font-size:14px;font-weight:600}
+.li-meta{font-size:12px;line-height:1.7;margin-top:4px}
+.table-mini{font-size:12px;line-height:1.6}
+.two-col{gap:24px}
+.intel-badge{font-size:10px;padding:3px 8px}
+
+.dashboard-hero{margin-bottom:16px}
+.hero-shell{display:flex;flex-direction:column;gap:18px}
+.hero-head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap}
+.hero-kicker{font-size:11px;color:var(--text-sub);letter-spacing:0.12em;font-weight:700;text-transform:uppercase;margin-bottom:8px}
+.hero-title{font-family:'Noto Serif SC',serif;font-size:34px;line-height:1.25;font-weight:700;letter-spacing:0.01em;color:var(--ink)}
+.hero-desc{font-size:14px;color:var(--text-sub);margin-top:8px;line-height:1.8;max-width:760px}
+.hero-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 14px}
+.hero-summary{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(320px,0.9fr);gap:16px;margin-top:4px}
+.hero-summary-card{border:1px solid var(--border);border-radius:18px;padding:22px;background:var(--surface)}
+.hero-summary-card.tone-red{background:linear-gradient(180deg,#fff2f1 0%,#ffffff 100%);border-color:#f1c4bf}
+.hero-summary-card.tone-gold{background:linear-gradient(180deg,#fff8ea 0%,#ffffff 100%);border-color:#ecd5a0}
+.hero-summary-card.tone-green{background:linear-gradient(180deg,#eefaf1 0%,#ffffff 100%);border-color:#b6ddc1}
+.hero-summary-main{font-family:'Noto Serif SC',serif;font-size:26px;line-height:1.45;font-weight:700}
+.hero-summary-sub{font-size:13px;color:var(--text-sub);line-height:1.8;margin-top:10px}
+.hero-actions-list{display:flex;flex-direction:column;gap:12px}
+.hero-action-item{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border:1px solid var(--border);border-radius:14px;background:#fff}
+.hero-action-index{width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px}
+.hero-action-copy{font-size:14px;line-height:1.8}
+.boss-grid{gap:16px;margin:18px 0 26px}
+.boss-card{padding:22px;border-radius:18px;box-shadow:var(--shadow-soft);background:linear-gradient(180deg,#ffffff 0%,#fbfcfd 100%)}
+.boss-kicker{font-size:11px;margin-bottom:10px}
+.boss-main{font-size:24px;line-height:1.35}
+.boss-sub{font-size:13px;line-height:1.8;margin-top:8px}
+.dashboard-main-grid{display:grid;grid-template-columns:1.05fr 0.95fr;gap:24px;margin-top:4px}
+.stack-col{display:flex;flex-direction:column;gap:22px}
+.card-title-lg{font-family:'Noto Serif SC',serif;font-size:22px;font-weight:700;line-height:1.3}
+.card-subtitle{font-size:13px;color:var(--text-sub);line-height:1.8;margin-top:6px}
+.metric-caption{font-size:12px;color:var(--text-sub);margin-top:8px}
+
+.project-toolbar{margin-bottom:18px}
+.project-toolbar-grid{display:grid;grid-template-columns:minmax(280px,1.5fr) minmax(180px,0.8fr) minmax(180px,0.8fr);gap:14px;align-items:end}
+.control-group{display:flex;flex-direction:column;gap:0}
+.filter-result-hint{margin-top:12px;font-size:13px;color:var(--text-sub);line-height:1.7}
+.project-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:18px}
+.project-summary-card{background:rgba(255,255,255,0.94);border:1px solid var(--border);border-radius:18px;padding:18px 20px;box-shadow:var(--shadow-soft)}
+.project-summary-label{font-size:11px;color:var(--text-sub);letter-spacing:0.08em;font-weight:700;margin-bottom:8px}
+.project-summary-main{font-family:'DM Mono',monospace;font-size:28px;font-weight:500;line-height:1.1}
+.project-summary-note{font-size:12px;color:var(--text-sub);line-height:1.7;margin-top:8px}
+.project-risk-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.project-risk-card{border:1px solid var(--border);border-radius:16px;padding:18px 18px;background:rgba(255,255,255,0.94);box-shadow:var(--shadow-soft)}
+.project-risk-card.red{background:linear-gradient(180deg,#fff2f1 0%,#ffffff 100%);border-color:#f1c4bf}
+.project-risk-title{font-size:16px;font-weight:700;line-height:1.5}
+.project-risk-meta{font-size:13px;color:var(--text-sub);line-height:1.8;margin-top:6px}
+.project-table-wrap{overflow-x:auto}
+.project-actions{display:flex;gap:6px;flex-wrap:wrap}
+.result-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--border);font-size:12px;color:var(--text-sub)}
+.details-summary{padding:18px 22px;cursor:pointer;font-weight:600;color:var(--ink);font-size:15px}
+
+@media(max-width:1100px){
+  .content{padding:28px 26px 40px}
+  .dashboard-main-grid,.hero-summary{grid-template-columns:1fr}
+  .project-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .project-toolbar-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:768px){
+  .content{padding:18px}
+  .hero-title{font-size:28px}
+  .hero-summary-main{font-size:22px}
+  .topbar-title{font-size:24px}
+  .project-risk-grid,.project-summary-grid,.project-toolbar-grid{grid-template-columns:1fr}
+  .stat-grid{grid-template-columns:1fr}
+  .card-body{padding:18px}
+  .data-table th,.data-table td{padding:12px 14px}
+}
+
 </style>
 </head>
 <body>
@@ -431,15 +549,44 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
       <div class="chip" onclick="filterProj('paused',this)">⏸ 已暂停</div>
       <div class="chip" onclick="filterProj('done',this)">已完结</div>
     </div>
+    <div class="card project-toolbar">
+      <div class="card-body">
+        <div class="project-toolbar-grid">
+          <div class="control-group">
+            <label class="form-label">搜索项目</label>
+            <input type="text" class="form-input" id="projSearchInput" placeholder="项目名 / 客户 / 总监" oninput="setProjectSearch(this.value)">
+          </div>
+          <div class="control-group">
+            <label class="form-label">排序方式</label>
+            <select class="form-select" id="projSortSel" onchange="setProjectSort(this.value)">
+              <option value="risk_desc">风险优先</option>
+              <option value="deadline_asc">截止日最近</option>
+              <option value="cost_desc">成本占比最高</option>
+              <option value="paid_asc">回款率最低</option>
+              <option value="contract_desc">合同额最高</option>
+              <option value="profit_asc">利润率最低</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label class="form-label">总监筛选</label>
+            <select class="form-select" id="projDirectorFilter" onchange="setProjectDirectorFilter(this.value)">
+              <option value="">全部总监</option>
+            </select>
+          </div>
+        </div>
+        <div class="filter-result-hint" id="projectResultHint">当前显示全部项目</div>
+      </div>
+    </div>
     <div class="action-bar">
       <button class="action-btn secondary" onclick="openModal('compareModal')">📊 横向对比</button>
       <button class="action-btn" onclick="openModal('newProjModal')">＋ 新建项目</button>
     </div>
     <div id="riskAlerts"></div>
+    <div id="projectSummaryBar" class="project-summary-grid"></div>
     <div id="projTable"><div class="loading"><span class="spinner"></span>加载中…</div></div>
     <div class="section-hd">
       <div class="section-title">回款 & 报销记录</div>
-      <button class="action-btn" onclick="openModal('paymentModal')" style="padding:7px 14px;font-size:12px">＋ 录入回款</button>
+      <button class="action-btn" onclick="openModal('paymentModal')" style="padding:9px 16px;font-size:13px">＋ 录入回款</button>
     </div>
     <div class="card">
       <div id="paymentTable"><div class="loading"><span class="spinner"></span>加载中…</div></div>
@@ -466,50 +613,67 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
     <div style="font-size:15px;font-weight:600">经营数据仅管理者可见</div>
   </div>
   <div class="admin-only">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-      <div style="font-size:13px;color:var(--text-sub)">统计月份：</div>
-      <select class="form-select" id="dashMonth" style="width:140px;font-size:13px" onchange="renderDashboard()"></select>
-      <div style="font-size:11px;color:var(--text-sub)" id="dashMonthHint"></div>
+    <div class="card dashboard-hero">
+      <div class="card-body hero-shell">
+        <div class="hero-head">
+          <div>
+            <div class="hero-kicker">管理驾驶舱</div>
+            <div class="hero-title">先看结论，再处理问题</div>
+            <div class="hero-desc">把今天最需要处理的项目风险、回款压力和人员异常放在首屏，避免信息很多但抓不住重点。</div>
+          </div>
+          <div class="hero-controls">
+            <div style="font-size:13px;color:var(--text-sub)">统计月份：</div>
+            <select class="form-select" id="dashMonth" style="width:150px;font-size:14px" onchange="renderDashboard()"></select>
+            <div style="font-size:12px;color:var(--text-sub)" id="dashMonthHint"></div>
+          </div>
+        </div>
+        <div id="dashSummary"></div>
+      </div>
     </div>
 
-    <div id="dashSummary"></div>
     <div id="bossModeBar"></div>
     <div id="dashStats" class="stat-grid"></div>
 
-    <div class="two-col">
-      <div>
-        <div class="section-hd"><div class="section-title">今日待办</div></div>
-        <div class="card"><div id="todayTodoList" style="padding:4px 0 8px"></div></div>
+    <div class="dashboard-main-grid">
+      <div class="stack-col">
+        <div>
+          <div class="section-hd"><div class="section-title">今日待办</div></div>
+          <div class="card"><div id="todayTodoList" style="padding:4px 0 8px"></div></div>
+        </div>
+        <div>
+          <div class="section-hd"><div class="section-title">快捷操作</div></div>
+          <div class="card">
+            <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn-sm" style="background:var(--ink);color:var(--paper)" onclick="openModal('assignModal')">＋ 分派工时</button>
+              <button class="btn-sm btn-blue" onclick="openModal('newProjModal')">＋ 新建项目</button>
+              <button class="btn-sm btn-green" onclick="openModal('paymentModal')">＋ 录入回款</button>
+              <button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="gotoPage('project')">查看项目</button>
+              <button class="btn-sm" style="background:#f3f0ff;color:#6c5ce7" onclick="gotoPage('team')">查看团队</button>
+            </div>
+          </div>
+        </div>
       </div>
-      <div>
-        <div class="section-hd"><div class="section-title">团队异常</div></div>
-        <div class="card"><div id="teamAlertsList" style="padding:4px 0 8px"></div></div>
+      <div class="stack-col">
+        <div>
+          <div class="section-hd"><div class="section-title">团队异常</div></div>
+          <div class="card"><div id="teamAlertsList" style="padding:4px 0 8px"></div></div>
+        </div>
+        <div>
+          <div class="section-hd"><div class="section-title">本月团队负荷</div></div>
+          <div class="card">
+            <table class="data-table">
+              <thead><tr><th>#</th><th>员工</th><th>实际工时</th><th>估算产值</th><th>负荷率</th><th>建议</th></tr></thead>
+              <tbody id="empRankBody"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="section-hd"><div class="section-title">快捷操作</div></div>
-    <div class="card">
-      <div class="card-body" style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn-sm" style="background:var(--ink);color:var(--paper)" onclick="openModal('assignModal')">＋ 分派工时</button>
-        <button class="btn-sm btn-blue" onclick="openModal('newProjModal')">＋ 新建项目</button>
-        <button class="btn-sm btn-green" onclick="openModal('paymentModal')">＋ 录入回款</button>
-        <button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="gotoPage('project')">查看项目</button>
-        <button class="btn-sm" style="background:#f3f0ff;color:#6c5ce7" onclick="gotoPage('team')">查看团队</button>
-      </div>
-    </div>
-
-    <div class="section-hd"><div class="section-title">本月团队负荷</div></div>
-    <div class="card">
-      <table class="data-table">
-        <thead><tr><th>#</th><th>员工</th><th>实际工时</th><th>估算产值</th><th>负荷率</th><th>建议</th></tr></thead>
-        <tbody id="empRankBody"></tbody>
-      </table>
-    </div>
-
-    <div class="section-hd" style="margin-top:32px"><div class="section-title">分析详情（供主管复核）</div></div>
+    <div class="section-hd" style="margin-top:34px"><div class="section-title">分析详情（供主管复核）</div></div>
     <details class="card">
-      <summary style="padding:16px 18px;cursor:pointer;font-weight:600;color:var(--ink)">展开趋势、异常、利润预测与排期</summary>
-      <div style="padding:0 18px 18px">
+      <summary class="details-summary">展开趋势、异常、利润预测与排期</summary>
+      <div style="padding:0 22px 22px">
         <div class="two-col">
           <div>
             <div class="section-hd"><div class="section-title">工时趋势预测 <span class="intel-badge est">EWMA</span></div></div>
@@ -2838,111 +3002,241 @@ function renderEmpLoadBars(){
 
 // ── 项目页 ────────────────────────────────────────────────────
 let projFilter='all';
+let projSearchKeyword='';
+let projSort='risk_desc';
+let projDirectorFilter='';
+
 function filterProj(s,el){
   document.querySelectorAll('#projFilter .chip').forEach(c=>c.classList.remove('active'));
-  el.classList.add('active'); projFilter=s; renderProjectPage();
+  el.classList.add('active');
+  projFilter=s;
+  renderProjectPage();
+}
+
+function setProjectSearch(value){
+  projSearchKeyword = String(value||'').trim().toLowerCase();
+  renderProjectPage();
+}
+
+function setProjectSort(value){
+  projSort = value || 'risk_desc';
+  renderProjectPage();
+}
+
+function setProjectDirectorFilter(value){
+  projDirectorFilter = value || '';
+  renderProjectPage();
+}
+
+function getProjectDirectorName(p){
+  return allEmployees.find(e=>e.id===p?.director_id)?.name || '';
+}
+
+function populateProjectToolbarFilters(){
+  const directorSel = document.getElementById('projDirectorFilter');
+  if(directorSel){
+    const current = projDirectorFilter || directorSel.value || '';
+    const directorMap = new Map();
+    allProjects.forEach(p=>{
+      if(!p?.director_id) return;
+      const name = getProjectDirectorName(p);
+      if(name) directorMap.set(p.director_id, name);
+    });
+    directorSel.innerHTML = `<option value="">全部总监</option>${[...directorMap.entries()].map(([id,name])=>`<option value="${id}">${escapeHtml(name)}</option>`).join('')}`;
+    directorSel.value = directorMap.has(current) ? current : '';
+  }
+  const searchInput = document.getElementById('projSearchInput');
+  if(searchInput && searchInput.value !== projSearchKeyword) searchInput.value = projSearchKeyword;
+  const sortSel = document.getElementById('projSortSel');
+  if(sortSel) sortSel.value = projSort;
+}
+
+function getProjectNumericMetrics(p){
+  const contract = parseFloat(p?.contract_amount)||0;
+  const labor = parseFloat(p?.labor_cost)||0;
+  const paid = parseFloat(p?.paid_amount)||0;
+  const hoursUsed = parseFloat(p?.hours_used)||0;
+  const health = getProjectHealth(p);
+  const margin = contract>0 ? ((contract-labor)/contract) : 0;
+  const paidRatio = contract>0 ? paid/contract : 1;
+  const deadlineTs = p?.deadline ? new Date(p.deadline).getTime() : new Date('2999-12-31').getTime();
+  return { contract, labor, paid, hoursUsed, margin, paidRatio, deadlineTs, health };
+}
+
+function sortProjectList(list){
+  return [...list].sort((a,b)=>{
+    const A = getProjectNumericMetrics(a);
+    const B = getProjectNumericMetrics(b);
+    switch(projSort){
+      case 'deadline_asc':
+        return A.deadlineTs - B.deadlineTs || B.health.score - A.health.score || B.health.costRatio - A.health.costRatio;
+      case 'cost_desc':
+        return B.health.costRatio - A.health.costRatio || B.health.score - A.health.score || A.deadlineTs - B.deadlineTs;
+      case 'paid_asc':
+        return A.paidRatio - B.paidRatio || B.health.score - A.health.score || A.deadlineTs - B.deadlineTs;
+      case 'contract_desc':
+        return B.contract - A.contract || B.health.score - A.health.score;
+      case 'profit_asc':
+        return A.margin - B.margin || B.health.score - A.health.score || A.deadlineTs - B.deadlineTs;
+      case 'risk_desc':
+      default:
+        return B.health.score - A.health.score || Number(B.health.overdue) - Number(A.health.overdue) || B.health.costRatio - A.health.costRatio || A.deadlineTs - B.deadlineTs;
+    }
+  });
+}
+
+function renderProjectSummaryBar(list){
+  const el = document.getElementById('projectSummaryBar');
+  if(!el) return;
+  if(!list.length){ el.innerHTML = ''; return; }
+  const risky = list.filter(p=>['danger','caution'].includes(getProjectHealth(p).level));
+  const overdue = list.filter(p=>getProjectHealth(p).overdue);
+  const avgCostRatio = list.reduce((s,p)=>s+(getProjectHealth(p).costRatio||0),0)/list.length;
+  const avgPaidRatio = list.reduce((s,p)=>s+(getProjectHealth(p).paidRatio||0),0)/list.length;
+  el.innerHTML = `
+    <div class="project-summary-card">
+      <div class="project-summary-label">当前结果</div>
+      <div class="project-summary-main">${list.length}</div>
+      <div class="project-summary-note">符合筛选条件的项目数，方便你先缩小范围再处理。</div>
+    </div>
+    <div class="project-summary-card">
+      <div class="project-summary-label">风险项目</div>
+      <div class="project-summary-main">${risky.length}</div>
+      <div class="project-summary-note">危险 + 警戒项目合计，优先看成本占比和是否超期。</div>
+    </div>
+    <div class="project-summary-card">
+      <div class="project-summary-label">平均成本占比</div>
+      <div class="project-summary-main">${Math.round(avgCostRatio*100)}%</div>
+      <div class="project-summary-note">人力成本最好控制在 40% 内，越接近越要慎投。</div>
+    </div>
+    <div class="project-summary-card">
+      <div class="project-summary-label">平均回款率 / 超期</div>
+      <div class="project-summary-main">${Math.round(avgPaidRatio*100)}% / ${overdue.length}</div>
+      <div class="project-summary-note">先盯回款率偏低项目，再处理已超施工图交付日的项目。</div>
+    </div>`;
 }
 
 function renderProjectPage(){
   if(!isAdmin){renderEmpProjTable();return}
+  populateProjectToolbarFilters();
+
+  const totalCount = allProjects.length;
   let list = allProjects.filter(p=>{
     if(projFilter==='all') return true;
     if(projFilter==='risk') return ['danger','caution'].includes(getProjectHealth(p).level);
     return p.status===projFilter;
-  }).sort((a,b)=>getProjectHealth(b).score - getProjectHealth(a).score || (new Date(a.deadline||'2999-12-31') - new Date(b.deadline||'2999-12-31')));
+  }).filter(p=>{
+    if(!projDirectorFilter) return true;
+    return p.director_id === projDirectorFilter;
+  }).filter(p=>{
+    if(!projSearchKeyword) return true;
+    const searchBase = `${p.name||''} ${p.client||''} ${getProjectDirectorName(p)||''}`.toLowerCase();
+    return searchBase.includes(projSearchKeyword);
+  });
+
+  list = sortProjectList(list);
+
+  const hintEl = document.getElementById('projectResultHint');
+  if(hintEl){
+    const riskyCount = list.filter(p=>['danger','caution'].includes(getProjectHealth(p).level)).length;
+    const directorText = projDirectorFilter ? ` · 总监：${escapeHtml(getProjectDirectorName({director_id:projDirectorFilter}) || '已筛选')}` : '';
+    hintEl.innerHTML = `当前显示 <strong>${list.length}</strong> / ${totalCount} 个项目${directorText} · 风险项目 <strong>${riskyCount}</strong> 个`;
+  }
+
+  renderProjectSummaryBar(list);
 
   const ra=document.getElementById('riskAlerts');
   if(ra){
-    const risky=allProjects.filter(p=>['danger','caution'].includes(getProjectHealth(p).level)).sort((a,b)=>getProjectHealth(b).score-getProjectHealth(a).score);
-    ra.innerHTML = risky.length ? risky.slice(0,4).map(p=>{
+    const risky=list.filter(p=>['danger','caution'].includes(getProjectHealth(p).level)).slice(0,4);
+    ra.innerHTML = risky.length ? `<div class="project-risk-grid">${risky.map(p=>{
       const h = getProjectHealth(p);
       const hoursPct = Math.round((h.hoursRatio||0)*100);
       const costPct = Math.round((h.costRatio||0)*100);
-      return `<div class="notice ${h.level==='danger'?'red':''}" style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
-        <div>
-          <strong>${escapeHtml(p.name?.slice(0,18)||'未命名项目')}</strong> · ${h.label}<br>
-          <span style="font-size:12px">工时 ${hoursPct}% / 成本 ${costPct}% / 建议：${escapeHtml(h.action)}</span>
-        </div>
-        <div class="action-stack" style="margin-top:0">
+      return `<div class="project-risk-card ${h.level==='danger'?'red':''}">
+        <div class="project-risk-title">${escapeHtml(p.name?.slice(0,24)||'未命名项目')} · ${h.label}</div>
+        <div class="project-risk-meta">工时 ${hoursPct}% · 成本 ${costPct}% · 建议：${escapeHtml(h.action)}</div>
+        <div class="action-stack">
           <button class="quick-link warn" onclick="openProjectEditor('${p.id}')">编辑项目</button>
           <button class="quick-link light" onclick="openPaymentForProject('${p.id}')">处理回款</button>
         </div>
       </div>`;
-    }).join('') : '';
+    }).join('')}</div>` : '';
   }
 
   const el=document.getElementById('projTable');
   if(!el)return;
-  if(!list.length){el.innerHTML='<div class="empty">暂无项目</div>';return}
-  el.innerHTML=`<div class="card" style="margin-bottom:16px"><div style="overflow-x:auto"><table class="data-table">
+  if(!list.length){el.innerHTML='<div class="empty">没有符合条件的项目，换个筛选试试</div>';return}
+  el.innerHTML=`<div class="card" style="margin-bottom:16px"><div class="project-table-wrap"><table class="data-table">
     <thead><tr><th>项目名称</th><th>合同额</th><th>已回款</th><th>人力成本</th><th>成本占比</th><th>工时进度</th><th>危险等级</th><th>状态</th><th>操作</th></tr></thead>
     <tbody>${list.map(p=>{
       const health = getProjectHealth(p);
-      const margin=(parseFloat(p.contract_amount)||0)>0?Math.round(((parseFloat(p.contract_amount)||0)-(parseFloat(p.labor_cost)||0))/(parseFloat(p.contract_amount)||1)*100):0;
+      const metrics = getProjectNumericMetrics(p);
+      const margin=Math.round(metrics.margin*100);
       const pct=Math.round((health.hoursRatio||0)*100);
       const costPct=Math.round((health.costRatio||0)*100);
       return `<tr>
-        <td class="fw6" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+        <td class="fw6" style="min-width:200px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
           ${escapeHtml(p.name||'')}
-          ${p.director_id?`<div class="table-mini">${escapeHtml(allEmployees.find(e=>e.id===p.director_id)?.name||'')}总监</div>`:''}
+          <div class="table-mini">${escapeHtml(p.client||'未填写客户')} · ${escapeHtml(getProjectDirectorName(p)||'未分配总监')}</div>
         </td>
         <td class="mono">${fmtWan(p.contract_amount)}</td>
         <td class="mono">${fmtWan(p.paid_amount||0)}</td>
         <td class="mono">${fmtWan(p.labor_cost||0)}</td>
         <td><div class="mono ${costPct>=40?'dn':costPct>=35?'neutral':'up'}">${costPct}%</div><div class="table-mini">利润率 ${margin}%</div></td>
-        <td><div style="display:flex;align-items:center;gap:6px">
-          <div style="width:60px;height:5px;background:var(--cream);border-radius:3px;overflow:hidden">
-            <div style="width:${Math.min(pct,100)}%;height:100%;border-radius:3px;background:${pct>=95?'var(--accent)':pct>=85?'var(--gold)':'var(--green)'}"></div>
-          </div><span class="mono" style="font-size:11px">${pct}%</span>
+        <td><div style="display:flex;align-items:center;gap:8px">
+          <div style="width:72px;height:6px;background:var(--cream);border-radius:999px;overflow:hidden">
+            <div style="width:${Math.min(pct,100)}%;height:100%;border-radius:999px;background:${pct>=95?'var(--accent)':pct>=85?'var(--gold)':'var(--green)'}"></div>
+          </div><span class="mono" style="font-size:12px">${pct}%</span>
         </div></td>
         <td><span class="badge ${health.badgeClass}">${health.label}</span><div class="table-mini">${escapeHtml(health.action)}</div></td>
         <td>
           ${getProjectStatusBadge(p.status)}
-          ${health.overdue?'<div class="table-mini" style="color:var(--accent);margin-top:2px">已超施工图交付日</div>':''}
+          ${health.overdue?'<div class="table-mini" style="color:var(--accent);margin-top:4px">已超施工图交付日</div>':''}
           ${p.status==='construction'&&p.completion_date?`<div class="table-mini">预计竣工：${escapeHtml(p.completion_date)}</div>`:''}
         </td>
-        <td style="display:flex;gap:4px;flex-wrap:wrap">
+        <td><div class="project-actions">
           <button class="btn-sm btn-blue" onclick="openAssignForProject('${p.id}')">分派</button>
           <button class="btn-sm btn-green" onclick="openPaymentForProject('${p.id}')">回款</button>
           <button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="openProjectEditor('${p.id}')">编辑</button>
           <button class="btn-sm btn-red" onclick="deleteProject('${p.id}','${(p.name||'').replace(/'/g,'')}')">删除</button>
-        </td>
+        </div></td>
       </tr>`;
     }).join('')}</tbody>
   </table></div></div>`;
 
   const pt=document.getElementById('paymentTable');
   if(pt){
-    if(!allPayments.length){pt.innerHTML='<div class="empty">暂无回款记录</div>';}
+    if(!allPayments.length){pt.innerHTML='<div class="empty">暂无回款记录</div>';} 
     else pt.innerHTML=`<table class="data-table"><thead><tr><th>日期</th><th>项目</th><th>类型</th><th>金额</th><th>备注</th><th>操作</th></tr></thead>
     <tbody>${allPayments.map(p=>`<tr>
       <td>${escapeHtml(p.payment_date||'')}</td>
-      <td>${escapeHtml(p.project?.name?.slice(0,14)||'—')}</td>
+      <td>${escapeHtml(p.project?.name?.slice(0,18)||'—')}</td>
       <td><span class="badge ${p.type.includes('回款')||p.type.includes('款')?'badge-active':'badge-warn'}">${escapeHtml(p.type||'')}</span></td>
       <td class="mono fw6">${fmtWan(p.amount||0)}</td>
       <td style="color:var(--text-sub)">${escapeHtml(p.note||'—')}</td>
-      <td style="display:flex;gap:4px">
+      <td><div class="project-actions">
         <button class="btn-sm btn-blue" onclick="editPayment('${p.id}')">编辑</button>
         <button class="btn-sm btn-red" onclick="deletePayment('${p.id}')">删除</button>
-      </td>
+      </div></td>
     </tr>`).join('')}</tbody></table>`;
   }
 
   const cb=document.getElementById('compareBody');
-  if(cb) cb.innerHTML=allProjects.map(p=>{
-    const margin=(parseFloat(p.contract_amount)||0)>0?Math.round(((parseFloat(p.contract_amount)||0)-(parseFloat(p.labor_cost)||0))/(parseFloat(p.contract_amount)||1)*100):0;
+  if(cb) cb.innerHTML=sortProjectList(allProjects).map(p=>{
+    const metrics = getProjectNumericMetrics(p);
+    const margin=Math.round(metrics.margin*100);
     const health = getProjectHealth(p);
     const pct=Math.round((health.hoursRatio||0)*100);
     const hourly=(parseFloat(p.hours_used)||0)>0?Math.round((parseFloat(p.contract_amount)||0)*10000/(parseFloat(p.hours_used)||1)):0;
     return `<tr>
-      <td class="fw6">${escapeHtml(p.name?.slice(0,14)||'')}</td>
+      <td class="fw6">${escapeHtml(p.name?.slice(0,16)||'')}</td>
       <td class="mono">${fmtWan(p.contract_amount)}</td>
       <td class="mono ${margin<20?'dn':margin>=38?'up':''}">${margin}%</td>
       <td class="mono">${Math.round(parseFloat(p.hours_used)||0)}h</td>
-      <td><div style="display:flex;align-items:center;gap:6px">
-        <div style="width:50px;height:5px;background:var(--cream);border-radius:3px;overflow:hidden">
-          <div style="width:${Math.min(pct,100)}%;height:100%;background:${pct>=95?'var(--accent)':pct>=85?'var(--gold)':'var(--green)'};border-radius:3px"></div>
-        </div><span style="font-size:11px">${pct}%</span></div></td>
+      <td><div style="display:flex;align-items:center;gap:8px">
+        <div style="width:56px;height:6px;background:var(--cream);border-radius:999px;overflow:hidden">
+          <div style="width:${Math.min(pct,100)}%;height:100%;background:${pct>=95?'var(--accent)':pct>=85?'var(--gold)':'var(--green)'};border-radius:999px"></div>
+        </div><span style="font-size:12px">${pct}%</span></div></td>
       <td class="mono">¥${hourly}/h</td>
       <td><span class="badge ${health.badgeClass}">${health.label}</span></td>
     </tr>`;
@@ -2973,7 +3267,7 @@ function quickPayment(projId){
 function initDashMonthPicker(){
   const sel = document.getElementById('dashMonth');
   if(!sel) return;
-  // 生成最近12个月选项
+  const currentValue = sel.value;
   const months = [];
   const now = new Date();
   for(let i=0;i<12;i++){
@@ -2982,8 +3276,10 @@ function initDashMonthPicker(){
     const label = `${d.getFullYear()}年${d.getMonth()+1}月`;
     months.push({val,label});
   }
-  sel.innerHTML = months.map((m,i)=>`<option value="${m.val}"${i===0?' selected':''}>${m.label}</option>`).join('');
+  const target = months.some(m=>m.val===currentValue) ? currentValue : months[0]?.val;
+  sel.innerHTML = months.map(m=>`<option value="${m.val}"${m.val===target?' selected':''}>${m.label}</option>`).join('');
 }
+
 
 function getDashMonth(){
   const sel = document.getElementById('dashMonth');
@@ -3090,7 +3386,7 @@ function renderBossMode(monthStr, metrics){
       <div class="boss-card">
         <div class="boss-kicker">老板模式 / 赚钱情况</div>
         <div class="boss-main">${profitText}</div>
-        <div class="boss-sub">当前综合利润率 ${metrics.avgMargin}%，建议把人力成本占合同额控制在 40% 内。</div>
+        <div class="boss-sub">当前综合利润率 ${metrics.avgMargin}%，建议把人力成本占合同额控制在 40% 内，不要在低回款项目上继续加码。</div>
       </div>
       <div class="boss-card">
         <div class="boss-kicker">老板模式 / 项目风险</div>
@@ -3168,13 +3464,19 @@ function renderBusinessSummary(monthStr, metrics){
   if(!actions.length) actions.push('本周重点盯回款、截止日和人员负荷，按原计划推进即可。');
 
   el.innerHTML = `
-    <div class="notice ${tone==='red'?'red':tone==='green'?'green':''}" style="margin-bottom:12px">
-      <strong>一句话经营状态：</strong>${headline}
-    </div>
-    <div class="card" style="margin-bottom:8px">
-      <div class="card-body">
-        <div style="font-size:11px;color:var(--text-sub);margin-bottom:8px">今天先做这几件事</div>
-        ${actions.map(t=>`<div style="font-size:13px;line-height:1.8;padding:4px 0">• ${escapeHtml(t)}</div>`).join('')}
+    <div class="hero-summary">
+      <div class="hero-summary-card tone-${tone}">
+        <div class="hero-kicker">一句话经营状态</div>
+        <div class="hero-summary-main">${headline}</div>
+        <div class="hero-summary-sub">本页优先顺序：先处理高风险项目，再看回款，再调团队负荷。让看板直接告诉你该先做什么。</div>
+        <div class="action-stack">
+          <button class="quick-link ${tone==='red'?'danger':'warn'}" onclick="setProjectFilter('risk')">查看风险项目</button>
+          <button class="quick-link warn" onclick="gotoPage('project')">查看项目总表</button>
+          <button class="quick-link light" onclick="gotoPage('team')">查看团队负荷</button>
+        </div>
+      </div>
+      <div class="hero-actions-list">
+        ${actions.slice(0,4).map((t,i)=>`<div class="hero-action-item"><div class="hero-action-index">${String(i+1).padStart(2,'0')}</div><div class="hero-action-copy">${escapeHtml(t)}</div></div>`).join('')}
       </div>
     </div>`;
 }
