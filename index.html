@@ -816,15 +816,16 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
         ondrop="handleImportDrop(event)">
         <div style="font-size:36px;margin-bottom:8px">📂</div>
         <div style="font-size:14px;font-weight:600;margin-bottom:4px">点击选择 或 拖入 Excel 文件</div>
-        <div style="font-size:12px;color:var(--text-sub)">飞书导出的 .xlsx 文件</div>
-        <input type="file" id="importFileInput" accept=".xlsx,.xls" style="display:none" onchange="handleImportSelect(event)">
+        <div style="font-size:12px;color:var(--text-sub)">支持一次选择或拖入多个 .xlsx / .xls 文件，系统会合并预览后统一导入</div>
+        <input type="file" id="importFileInput" accept=".xlsx,.xls" multiple style="display:none" onchange="handleImportSelect(event)">
       </div>
 
       <div id="importPreviewWrap" style="display:none;margin-top:16px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:12px;flex-wrap:wrap">
           <div style="font-size:13px;font-weight:600">导入预览</div>
           <div id="importSummary" style="font-size:12px;color:var(--text-sub)"></div>
         </div>
+        <div id="importFileStats" style="display:none;margin-bottom:10px"></div>
         <div style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
           <table class="data-table" style="font-size:12px">
             <thead><tr><th>负责人</th><th>项目</th><th>任务摘要</th><th>日期</th><th>工时</th><th>修改次数</th><th>状态</th></tr></thead>
@@ -1586,21 +1587,268 @@ async function submitPayment(){
 // ══════════════════════════════════════════════════════════════
 // 飞书 Excel 导入模块
 // ══════════════════════════════════════════════════════════════
+
 let importRows = [];   // 解析后待导入的行
+let importSourceFiles = []; // 本次导入来源文件摘要
+
+function resetImportPreview(){
+  importRows = [];
+  importSourceFiles = [];
+  const tbody = document.getElementById('importPreviewBody');
+  if(tbody) tbody.innerHTML = '';
+  const summary = document.getElementById('importSummary');
+  if(summary) summary.textContent = '';
+  const fileStats = document.getElementById('importFileStats');
+  if(fileStats){ fileStats.style.display = 'none'; fileStats.innerHTML = ''; }
+  const warnBox = document.getElementById('importWarnBox');
+  if(warnBox) warnBox.innerHTML = '';
+  const unmatchedWrap = document.getElementById('unmatchedWrap');
+  if(unmatchedWrap) unmatchedWrap.style.display = 'none';
+  const unmatchedList = document.getElementById('unmatchedList');
+  if(unmatchedList) unmatchedList.innerHTML = '';
+  const wrap = document.getElementById('importPreviewWrap');
+  if(wrap) wrap.style.display = 'none';
+}
 
 function handleImportDrop(e){
   e.preventDefault();
   const dz = document.getElementById('importDropZone');
   dz.style.borderColor=''; dz.style.background='';
-  const file = e.dataTransfer.files[0];
-  if(file) parseImportFile(file);
+  const files = [...(e.dataTransfer.files || [])].filter(f=>/\.(xlsx|xls)$/i.test(f.name));
+  if(files.length) parseImportFiles(files);
+  else toast('请拖入 Excel 文件（.xlsx / .xls）');
 }
 function handleImportSelect(e){
-  const file = e.target.files[0];
-  if(file) parseImportFile(file);
+  const files = [...(e.target.files || [])].filter(f=>/\.(xlsx|xls)$/i.test(f.name));
+  if(files.length) parseImportFiles(files);
+  else toast('请选择 Excel 文件（.xlsx / .xls）');
 }
 
+function excelDateToISO(v){
+  if(v instanceof Date && !isNaN(v)) return v.toISOString().split('T')[0];
+  if(typeof v === 'number' && window.XLSX && XLSX.SSF){
+    const parsed = XLSX.SSF.parse_date_code(v);
+    if(parsed){
+      const m = String(parsed.m).padStart(2,'0');
+      const d = String(parsed.d).padStart(2,'0');
+      return `${parsed.y}-${m}-${d}`;
+    }
+  }
+  const s = String(v || '').trim();
+  if(!s) return '';
+  const normalized = s.replace(/[年/.]/g,'-').replace(/月/g,'-').replace(/日/g,'').replace(/\//g,'-');
+  const m = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m){
+    return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+  }
+  const dt = new Date(s);
+  if(!isNaN(dt)) return dt.toISOString().split('T')[0];
+  return '';
+}
 
+function getImportColMap(row){
+  const COL = {
+    person:   ['负责人','负责人员','责任人'],
+    project:  ['群组','所属项目','项目'],
+    task:     ['任务内容','任务名称','任务'],
+    date:     ['日期','任务日期','完成日期'],
+    hours:    ['工时','工时（小时）','实际工时','实际工时（员工填写）','计划工时','计划工时（主管填写）'],
+    revision: ['修改次数','修改次数（次）'],
+    status:   ['任务进度','状态','进度'],
+  };
+  const keys = Object.keys(row || {});
+  function findCol(candidates){
+    for(const c of candidates){ if(c in row) return c; }
+    for(const c of candidates){
+      const found = keys.find(k => k.startsWith(c) || k.includes(c));
+      if(found) return found;
+    }
+    return null;
+  }
+  return {
+    personKey: findCol(COL.person),
+    projectKey: findCol(COL.project),
+    taskKey: findCol(COL.task),
+    dateKey: findCol(COL.date),
+    hoursKey: findCol(COL.hours),
+    revKey: findCol(COL.revision),
+    statusKey: findCol(COL.status),
+  };
+}
+
+async function ensureXLSXLoaded(){
+  if(window.XLSX) return;
+  await new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload=res; s.onerror=rej;
+    document.head.appendChild(s);
+  });
+}
+
+async function parseImportFiles(files){
+  const btn = document.getElementById('doImportBtn');
+  btn.disabled = true;
+  btn.textContent = '解析中…';
+  resetImportPreview();
+  try{
+    await ensureXLSXLoaded();
+    const allWarns = [];
+    const allRows = [];
+    const fileStats = [];
+    for(const file of files){
+      const result = await parseSingleImportFile(file);
+      fileStats.push({
+        name: file.name,
+        rows: result.rows.length,
+        skipped: result.skipped,
+        warns: result.warns.length,
+      });
+      allWarns.push(...result.warns.map(w=>`[${file.name}] ${w}`));
+      allRows.push(...result.rows);
+    }
+
+    const mergedMap = new Map();
+    for(const row of allRows){
+      const key = [row.person.replace(/\s/g,''), row.project, row.date, row.task, row.undone ? 'U' : 'D'].join('||');
+      mergedMap.set(key, row);
+    }
+    importRows = [...mergedMap.values()];
+    importSourceFiles = fileStats;
+    renderImportPreview(importRows, allWarns, fileStats);
+    if(!importRows.length) toast('没有找到可导入的记录，请检查列名和任务进度字段');
+  }catch(err){
+    console.error(err);
+    toast('解析文件失败，请确认文件格式为飞书导出的 Excel');
+    resetImportPreview();
+  }finally{
+    btn.disabled = false;
+    btn.textContent = '✅ 确认导入';
+  }
+}
+
+async function parseSingleImportFile(file){
+  const buf = await file.arrayBuffer();
+  const wb  = XLSX.read(buf, {type:'array', cellDates:true});
+  const ws  = wb.Sheets[wb.SheetNames[0]];
+  const raw = XLSX.utils.sheet_to_json(ws, {defval:''});
+  const DONE_KEYWORDS = ['已完成','完成','done','Done','DONE'];
+  const UNDONE_KEYWORDS = ['未完成','进行中','处理中','待完成','返工'];
+
+  const rows = [];
+  const warns = [];
+  let skipped = 0;
+
+  for(const row of raw){
+    const { personKey, projectKey, taskKey, dateKey, hoursKey, revKey, statusKey } = getImportColMap(row);
+    const statusVal = statusKey ? String(row[statusKey]).trim() : '';
+    const isDone = DONE_KEYWORDS.includes(statusVal);
+    const isUndone = UNDONE_KEYWORDS.includes(statusVal);
+    if(!isDone && !isUndone){ skipped++; continue; }
+
+    const person  = personKey  ? String(row[personKey]).trim()  : '';
+    const project = projectKey ? String(row[projectKey]).trim() : '';
+    const task    = taskKey    ? String(row[taskKey]).trim()    : '';
+    const hours   = hoursKey   ? parseFloat(row[hoursKey]) || 0 : 0;
+    const rev     = revKey     ? parseInt(row[revKey])   || 0   : 0;
+
+    let dateStr = '';
+    if(dateKey && row[dateKey]) dateStr = excelDateToISO(row[dateKey]);
+    if(!dateStr) dateStr = new Date().toISOString().split('T')[0];
+
+    if(!person)  { warns.push('有行缺少「负责人」，已跳过'); continue; }
+    if(!project) { warns.push(`「${person}」的记录缺少「群组」，已跳过`); continue; }
+
+    const finalHours = hours > 0 ? hours : 1;
+    if(hours <= 0) warns.push(`「${person} / ${(task||'未命名任务').slice(0,10)}」未填工时，已按1小时计入`);
+
+    rows.push({
+      person, project, task, date:dateStr, hours:finalHours, revision:rev,
+      status:statusVal, undone:isUndone, sourceFile:file.name
+    });
+  }
+  return { rows, warns, skipped };
+}
+
+function renderImportPreview(rows, warns, fileStats){
+  const unmatchedGroups = {};
+  for(const row of rows){
+    const proj = allProjects.find(p=>
+      p.name===row.project || p.name.includes(row.project) || row.project.includes(p.name)
+    );
+    if(!proj){
+      if(!unmatchedGroups[row.project]) unmatchedGroups[row.project] = [];
+      unmatchedGroups[row.project].push(row);
+    }
+  }
+
+  const tbody = document.getElementById('importPreviewBody');
+  tbody.innerHTML = rows.map(r=>{
+    const matched = allProjects.find(p=>
+      p.name===r.project || p.name.includes(r.project) || r.project.includes(p.name)
+    );
+    const rowStyle = matched ? '' : 'background:#fff8e1';
+    const safeTask = String(r.task || '—').replace(/"/g,'&quot;');
+    return `<tr style="${rowStyle}">
+      <td>${r.person}</td>
+      <td style="color:${matched?'inherit':'#e65100'}">${r.project}${matched?'':' ⚠'}</td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${safeTask}">${r.task||'—'}</td>
+      <td>${r.date}</td>
+      <td>${r.hours}h</td>
+      <td>${r.revision}次</td>
+      <td>${r.undone?'<span style="color:var(--accent);font-weight:600">未完成</span>':'<span style="color:var(--green);font-weight:600">已完成</span>'}</td>
+    </tr>`;
+  }).join('');
+
+  const summary = document.getElementById('importSummary');
+  summary.textContent = `共 ${rows.length} 条，来自 ${fileStats.length} 个文件，其中 ${Object.keys(unmatchedGroups).length} 个群组未匹配项目`;
+
+  const fileStatsBox = document.getElementById('importFileStats');
+  fileStatsBox.style.display = fileStats.length ? 'block' : 'none';
+  fileStatsBox.innerHTML = fileStats.length ? `
+    <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--text-sub)">
+      <div style="font-weight:600;color:var(--ink);margin-bottom:6px">文件解析结果</div>
+      ${fileStats.map(f=>`<div style="display:flex;justify-content:space-between;gap:8px;margin-bottom:4px">
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:65%">${f.name}</span>
+        <span>${f.rows} 条${f.skipped?`，忽略 ${f.skipped} 条`:''}${f.warns?`，警告 ${f.warns} 条`:''}</span>
+      </div>`).join('')}
+    </div>` : '';
+
+  const warnBox = document.getElementById('importWarnBox');
+  const uniqWarns = [...new Set(warns)];
+  warnBox.innerHTML = uniqWarns.length
+    ? `<div style="background:#fff8e1;border-radius:8px;padding:8px 12px;font-size:11px;color:#7a5800;max-height:140px;overflow:auto">`
+      + uniqWarns.map(w=>`⚠️ ${w}`).join('<br>') + '</div>'
+    : '';
+
+  const unmatchedWrap = document.getElementById('unmatchedWrap');
+  const unmatchedList = document.getElementById('unmatchedList');
+  const groupNames = Object.keys(unmatchedGroups);
+  if(groupNames.length){
+    unmatchedWrap.style.display = 'block';
+    unmatchedList.innerHTML = groupNames.map(gName=>{
+      const rows = unmatchedGroups[gName];
+      const totalH = rows.reduce((s,r)=>s+r.hours,0);
+      const persons = [...new Set(rows.map(r=>r.person))].join('、');
+      const projOptions = allProjects.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+        <div style="flex:1;min-width:180px">
+          <div style="font-size:12px;font-weight:600">${gName}</div>
+          <div style="font-size:11px;color:var(--text-sub)">${rows.length}条记录 · ${totalH.toFixed(1)}h · ${persons}</div>
+        </div>
+        <select class="form-select" id="unmatch_${gName.replace(/[^a-zA-Z0-9]/g,'_')}" style="font-size:12px;max-width:220px">
+          <option value="">— 跳过这些记录 —</option>
+          <option value="__new__">＋ 新建项目「${gName}」</option>
+          ${projOptions}
+        </select>
+      </div>`;
+    }).join('');
+  } else {
+    unmatchedWrap.style.display = 'none';
+  }
+
+  document.getElementById('importPreviewWrap').style.display = rows.length ? 'block' : 'none';
+}
 // ══════════════════════════════════════════════════════════════
 // 金额单位修正工具（元 → 万元，÷10000）
 // ══════════════════════════════════════════════════════════════
@@ -1842,7 +2090,7 @@ async function doImport(){
     }
   }
 
-  let success=0, fail=0, skippedUnmatched=0;
+  let success=0, fail=0, skippedUnmatched=0, duplicated=0, updated=0, inserted=0;
 
   for(const row of importRows){
     // 匹配员工（按姓名，支持去空格模糊匹配）
@@ -1884,14 +2132,14 @@ async function doImport(){
       if(parseFloat(keep.hours) !== row.hours){
         await sb.from('time_logs').update({ hours: row.hours, note: noteStr }).eq('id', keep.id);
       }
-      success++; continue;
+      success++; updated++; duplicated++; continue;
     }
     if(existsList.length === 1){
       const exists = existsList[0];
-      // 工时一致且note一致则跳过
-      if(parseFloat(exists.hours) === row.hours && exists.note === noteStr){ fail++; continue; }
+      // 工时一致且note一致则视为重复，跳过
+      if(parseFloat(exists.hours) === row.hours && exists.note === noteStr){ duplicated++; continue; }
       const {error} = await sb.from('time_logs').update({ hours: row.hours, note: noteStr }).eq('id', exists.id);
-      if(error) fail++; else success++;
+      if(error) fail++; else { success++; updated++; }
       continue;
     }
     // 写入 time_logs
@@ -1904,17 +2152,19 @@ async function doImport(){
       note:        noteStr,
       created_by:  currentUser.id,
     });
-    if(error) fail++; else success++;
+    if(error) fail++; else { success++; inserted++; }
   }
 
   btn.disabled=false; btn.textContent='✅ 确认导入';
-  const skipMsg = skippedUnmatched > 0 ? `，${skippedUnmatched} 条已跳过（群组未指定）` : '';
-  toast(`导入完成：${success} 条成功，${fail} 条失败${skipMsg}`);
-  if(success>0){
+  const parts = [`新增 ${inserted} 条`, `更新 ${updated} 条`];
+  if(duplicated > 0) parts.push(`跳过重复 ${duplicated} 条`);
+  if(skippedUnmatched > 0) parts.push(`未匹配项目跳过 ${skippedUnmatched} 条`);
+  if(fail > 0) parts.push(`失败 ${fail} 条`);
+  toast(`导入完成：${parts.join('，')}`);
+  if(success>0 || duplicated>0 || skippedUnmatched>0){
     await loadAllData();
     closeModal('importModal');
-    importRows=[];
-    document.getElementById('importPreviewWrap').style.display='none';
+    resetImportPreview();
     document.getElementById('importFileInput').value='';
   }
 }
