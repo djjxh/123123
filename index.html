@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>工时管家 · 室内设计工作室</title>
+<link rel="icon" href="data:,">
 <!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -282,7 +283,7 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
     <div class="login-sub">INTERIOR DESIGN STUDIO · 内部管理系统</div>
 
     <!-- 邮箱+密码登录 -->
-    <div class="login-step active" id="loginStep1">
+    <form class="login-step active" id="loginStep1" onsubmit="event.preventDefault(); loginWithPassword()">
       <div class="form-group">
         <label class="form-label">邮箱</label>
         <input type="email" class="form-input" id="loginEmail"
@@ -292,14 +293,13 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
       <div class="form-group" style="margin-top:12px">
         <label class="form-label">密码</label>
         <input type="password" class="form-input" id="loginPassword"
-          placeholder="请输入密码" style="font-size:15px"
-          onkeydown="if(event.key==='Enter')loginWithPassword()">
+          placeholder="请输入密码" style="font-size:15px">
       </div>
-      <button class="btn-primary" id="loginBtn" onclick="loginWithPassword()" style="margin-top:16px">登录</button>
+      <button type="submit" class="btn-primary" id="loginBtn" style="margin-top:16px">登录</button>
       <div style="margin-top:14px;font-size:11px;color:var(--text-sub);text-align:center">
         账号由管理员创建，如需帮助请联系主管
       </div>
-    </div>
+    </form>
 
     <!-- Error -->
     <div id="loginError" style="display:none;margin-top:12px;font-size:12px;
@@ -1192,11 +1192,24 @@ let allPayments = [];
 let allMembers = [];   // project_members
 let allScores  = [];   // project_scores
 
+// ── 日期工具（使用本地时区，避免 UTC 日期导致统计偏移）────────────────
+function pad2(n){
+  return String(n).padStart(2,'0');
+}
+function formatLocalDate(date=new Date()){
+  const d = date instanceof Date ? date : new Date(date);
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+}
+function formatLocalMonth(date=new Date()){
+  const d = date instanceof Date ? date : new Date(date);
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}`;
+}
+
 // ── 算法常量 ──────────────────────────────────────────────────
 // 动态计算当月工作日（排除周六日）× 6.5小时
 function getMonthlyWorkdays(yearMonth){
   // yearMonth格式: '2026-03'
-  const [y, m] = (yearMonth || new Date().toISOString().slice(0,7)).split('-').map(Number);
+  const [y, m] = (yearMonth || formatLocalMonth()).split('-').map(Number);
   const daysInMonth = new Date(y, m, 0).getDate();
   let workdays = 0;
   for(let d = 1; d <= daysInMonth; d++){
@@ -1209,7 +1222,7 @@ function getMonthlyCapForMonth(yearMonth){
   return getMonthlyWorkdays(yearMonth) * 6.5;
 }
 // 当月工时上限（动态）
-const MONTHLY_CAP = getMonthlyCapForMonth(new Date().toISOString().slice(0,7));
+const MONTHLY_CAP = getMonthlyCapForMonth(formatLocalMonth());
 const TYPE_H = {residential:0.70,commercial:0.90,office:0.85,hotel:1.10};
 const LVL_M  = {standard:1.0,premium:1.35,luxury:1.80};
 
@@ -1308,7 +1321,7 @@ function showApp(){
   document.body.classList.toggle('admin-mode',isAdmin);
   document.getElementById('sidebarName').textContent = userProfile?.name||'—';
   document.getElementById('sidebarRole').textContent = isAdmin?'管理者':'员工';
-  const today = new Date().toISOString().split('T')[0];
+  const today = formatLocalDate();
   const dateInputs=['aDate','payDate'];
   dateInputs.forEach(id=>{const el=document.getElementById(id);if(el)el.value=today});
   loadAllData();
@@ -1590,6 +1603,7 @@ async function submitPayment(){
 
 let importRows = [];   // 解析后待导入的行
 let importSourceFiles = []; // 本次导入来源文件摘要
+let unmatchedGroupSelectIds = new Map();
 
 function resetImportPreview(){
   importRows = [];
@@ -1625,7 +1639,7 @@ function handleImportSelect(e){
 }
 
 function excelDateToISO(v){
-  if(v instanceof Date && !isNaN(v)) return v.toISOString().split('T')[0];
+  if(v instanceof Date && !isNaN(v)) return formatLocalDate(v);
   if(typeof v === 'number' && window.XLSX && XLSX.SSF){
     const parsed = XLSX.SSF.parse_date_code(v);
     if(parsed){
@@ -1642,7 +1656,7 @@ function excelDateToISO(v){
     return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
   }
   const dt = new Date(s);
-  if(!isNaN(dt)) return dt.toISOString().split('T')[0];
+  if(!isNaN(dt)) return formatLocalDate(dt);
   return '';
 }
 
@@ -1754,7 +1768,7 @@ async function parseSingleImportFile(file){
 
     let dateStr = '';
     if(dateKey && row[dateKey]) dateStr = excelDateToISO(row[dateKey]);
-    if(!dateStr) dateStr = new Date().toISOString().split('T')[0];
+    if(!dateStr) dateStr = formatLocalDate();
 
     if(!person)  { warns.push('有行缺少「负责人」，已跳过'); continue; }
     if(!project) { warns.push(`「${person}」的记录缺少「群组」，已跳过`); continue; }
@@ -1824,10 +1838,13 @@ function renderImportPreview(rows, warns, fileStats){
   const unmatchedWrap = document.getElementById('unmatchedWrap');
   const unmatchedList = document.getElementById('unmatchedList');
   const groupNames = Object.keys(unmatchedGroups);
+  unmatchedGroupSelectIds = new Map();
   if(groupNames.length){
     unmatchedWrap.style.display = 'block';
-    unmatchedList.innerHTML = groupNames.map(gName=>{
+    unmatchedList.innerHTML = groupNames.map((gName,index)=>{
       const rows = unmatchedGroups[gName];
+      const selectId = `unmatch_${index}`;
+      unmatchedGroupSelectIds.set(gName, selectId);
       const totalH = rows.reduce((s,r)=>s+r.hours,0);
       const persons = [...new Set(rows.map(r=>r.person))].join('、');
       const projOptions = allProjects.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
@@ -1836,7 +1853,7 @@ function renderImportPreview(rows, warns, fileStats){
           <div style="font-size:12px;font-weight:600">${gName}</div>
           <div style="font-size:11px;color:var(--text-sub)">${rows.length}条记录 · ${totalH.toFixed(1)}h · ${persons}</div>
         </div>
-        <select class="form-select" id="unmatch_${gName.replace(/[^a-zA-Z0-9]/g,'_')}" style="font-size:12px;max-width:220px">
+        <select class="form-select" id="${selectId}" style="font-size:12px;max-width:220px">
           <option value="">— 跳过这些记录 —</option>
           <option value="__new__">＋ 新建项目「${gName}」</option>
           ${projOptions}
@@ -1860,12 +1877,12 @@ async function previewFixAmount(){
   let html = '<div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:8px">';
   html += '<div style="font-weight:600;margin-bottom:6px">合同金额修正预览：</div>';
   (projects||[]).forEach(p=>{
-    if(!p.contract_amount) return;
+    if(!p.contract_amount || p.contract_amount < 10000) return;
     html += `<div>${p.name?.slice(0,16)}：${p.contract_amount} → <strong>${(p.contract_amount/10000).toFixed(4)}</strong> 万</div>`;
   });
   html += '<div style="font-weight:600;margin:8px 0 4px">回款金额修正预览：</div>';
   (payments||[]).forEach(p=>{
-    if(!p.amount) return;
+    if(!p.amount || p.amount < 10000) return;
     html += `<div>${p.type} ${p.pay_date}：${p.amount} → <strong>${(p.amount/10000).toFixed(4)}</strong> 万</div>`;
   });
   html += '</div>';
@@ -1873,7 +1890,7 @@ async function previewFixAmount(){
 }
 
 async function doFixAmount(){
-  if(!confirm('确认将所有合同金额和回款金额 ÷ 10000？此操作不可撤销！')) return;
+  if(!confirm('确认仅将疑似“元”单位的金额（≥10000）÷ 10000？已是“万元”的小额数据会自动跳过。')) return;
   const btn = document.getElementById('doFixAmountBtn');
   btn.disabled = true; btn.textContent = '执行中…';
 
@@ -1882,12 +1899,12 @@ async function doFixAmount(){
 
   let ok=0, err=0;
   for(const p of (projects||[])){
-    if(!p.contract_amount) continue;
+    if(!p.contract_amount || p.contract_amount < 10000) continue;
     const { error } = await sb.from('projects').update({ contract_amount: p.contract_amount/10000 }).eq('id', p.id);
     error ? err++ : ok++;
   }
   for(const p of (payments||[])){
-    if(!p.amount) continue;
+    if(!p.amount || p.amount < 10000) continue;
     const { error } = await sb.from('payments').update({ amount: p.amount/10000 }).eq('id', p.id);
     error ? err++ : ok++;
   }
@@ -1970,12 +1987,12 @@ async function parseImportFile(file){
     if(dateKey && row[dateKey]){
       const d = row[dateKey];
       if(d instanceof Date){
-        dateStr = d.toISOString().split('T')[0];
+        dateStr = formatLocalDate(d);
       } else {
         dateStr = String(d).slice(0,10);
       }
     }
-    if(!dateStr) dateStr = new Date().toISOString().split('T')[0];
+    if(!dateStr) dateStr = formatLocalDate();
 
     if(!person)  { warns.push('有行缺少「负责人」，已跳过'); continue; }
     if(!project) { warns.push(`「${person}」的记录缺少「群组」，已跳过`); continue; }
@@ -2029,10 +2046,13 @@ async function parseImportFile(file){
   const unmatchedWrap = document.getElementById('unmatchedWrap');
   const unmatchedList = document.getElementById('unmatchedList');
   const groupNames = Object.keys(unmatchedGroups);
+  unmatchedGroupSelectIds = new Map();
   if(groupNames.length){
     unmatchedWrap.style.display = 'block';
-    unmatchedList.innerHTML = groupNames.map(gName=>{
+    unmatchedList.innerHTML = groupNames.map((gName,index)=>{
       const rows = unmatchedGroups[gName];
+      const selectId = `unmatch_${index}`;
+      unmatchedGroupSelectIds.set(gName, selectId);
       const totalH = rows.reduce((s,r)=>s+r.hours,0);
       const persons = [...new Set(rows.map(r=>r.person))].join('、');
       const projOptions = allProjects.map(p=>
@@ -2043,7 +2063,7 @@ async function parseImportFile(file){
           <div style="font-size:12px;font-weight:600">${gName}</div>
           <div style="font-size:11px;color:var(--text-sub)">${rows.length}条记录 · ${totalH.toFixed(1)}h · ${persons}</div>
         </div>
-        <select class="form-select" id="unmatch_${gName.replace(/[^a-zA-Z0-9]/g,'_')}"
+        <select class="form-select" id="${selectId}"
           style="font-size:12px;max-width:200px">
           <option value="">— 跳过这些记录 —</option>
           <option value="__new__">＋ 新建项目「${gName}」</option>
@@ -2070,7 +2090,7 @@ async function doImport(){
     return !allProjects.find(p=>p.name===g||p.name.includes(g)||g.includes(p.name));
   }))];
   for(const gName of groupNames){
-    const selId = 'unmatch_' + gName.replace(/[^a-zA-Z0-9]/g,'_');
+    const selId = unmatchedGroupSelectIds.get(gName);
     const sel = document.getElementById(selId);
     const val = sel ? sel.value : '';
     if(val === '__new__'){
@@ -2818,7 +2838,7 @@ async function doSaveScore(){
   const exists = allScores.find(s=>s.project_id===projId&&s.employee_id===empId&&s.score_type==='project');
   let error;
   if(exists){
-    ({error} = await sb.from('project_scores').update({score, note, scored_at: new Date().toISOString().split('T')[0]}).eq('id',exists.id));
+    ({error} = await sb.from('project_scores').update({score, note, scored_at: formatLocalDate()}).eq('id',exists.id));
   } else {
     ({error} = await sb.from('project_scores').insert({project_id:projId, employee_id:empId, score, note, score_type:'project', created_by:currentUser.id}));
   }
@@ -3161,7 +3181,7 @@ function renderEmpTime(){
 function renderAdminTime(){
   const info = getSelectedPeriodInfo();
   const periodLogs = filterLogsForPeriod(allLogs, info);
-  const todayStr=new Date().toISOString().split('T')[0];
+  const todayStr=formatLocalDate();
   const todayLogs=allLogs.filter(l=>l.log_date===todayStr);
   const periodH=periodLogs.reduce((s,l)=>s+safeNum(l.hours),0);
   const visibleEmployees = getWorkloadEmployees();
@@ -3361,7 +3381,7 @@ function getCurrentPeriodKey(granularity){
   const year = now.getFullYear();
   if(granularity === 'year') return String(year);
   if(granularity === 'quarter') return `${year}-Q${Math.floor(now.getMonth()/3)+1}`;
-  return now.toISOString().slice(0,7);
+  return formatLocalMonth(now);
 }
 
 function getPeriodOptions(granularity){
@@ -3386,7 +3406,7 @@ function getPeriodOptions(granularity){
   }
   for(let i=0;i<12;i++){
     const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
-    options.push({ value:d.toISOString().slice(0,7), label:`${d.getFullYear()}年${d.getMonth()+1}月` });
+    options.push({ value:formatLocalMonth(d), label:`${d.getFullYear()}年${d.getMonth()+1}月` });
   }
   return options;
 }
@@ -3527,7 +3547,7 @@ function getDataHealthMetrics(info=getSelectedPeriodInfo()){
   const coverageCount = ops.filter(e=>loggedEmployeeIds.has(e.id)).length;
   const coveragePct = ops.length ? Math.round(coverageCount/ops.length*100) : 100;
   const latestImportDate = getLatestImportedDate();
-  const lagDays = latestImportDate ? daysBetween(new Date().toISOString().slice(0,10), latestImportDate) : null;
+  const lagDays = latestImportDate ? daysBetween(formatLocalDate(), latestImportDate) : null;
   const missingEmployees = ops.filter(e=>!loggedEmployeeIds.has(e.id));
   return {
     ops, periodLogs, totalHours, effectiveHours, reworkHours, coverageCount, coveragePct,
@@ -3677,7 +3697,7 @@ function renderTodayTodoList(info){
   const el=document.getElementById('todayTodoList');
   if(!el)return;
   const today=new Date();
-  const todayStr=today.toISOString().slice(0,10);
+  const todayStr=formatLocalDate(today);
   const in7Days=new Date(today);
   in7Days.setDate(in7Days.getDate()+7);
   const health = getDataHealthMetrics(info);
@@ -3939,7 +3959,7 @@ function renderProfile(){
     <div style="font-size:11px;color:var(--warm-mid);letter-spacing:0.08em;margin-bottom:8px">个人档案</div>
     <div style="font-family:'Noto Serif SC',serif;font-size:24px;font-weight:700;margin-bottom:4px">${userProfile?.name||'—'}</div>
     <div style="font-size:12px;color:var(--warm-mid)">${userProfile?.job_title||'—'} · ${userProfile?.email||''}</div>`;
-  const monthStr=new Date().toISOString().slice(0,7);
+  const monthStr=formatLocalMonth();
   const myMonthLogs=allLogs.filter(l=>l.employee_id===userProfile?.id&&l.log_date?.startsWith(monthStr));
   const totalH=myMonthLogs.reduce((s,l)=>s+parseFloat(l.hours||0),0);
   const ps=document.getElementById('profileStats');
