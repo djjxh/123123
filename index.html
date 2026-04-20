@@ -550,6 +550,9 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
                 <select class="form-select" id="ppReuse"><option value="false">否</option><option value="true">是</option></select>
               </div>
             </div>
+            <div class="form-group"><label class="form-label">推荐负责人</label><select class="form-select" id="ppAssignee"></select></div>
+            <div id="ppRecoBox" style="font-size:12px;color:var(--text-sub);line-height:1.7;margin:-2px 0 12px"></div>
+            <div id="ppCreateHint" style="display:none;font-size:12px;border-radius:10px;padding:10px 12px;margin-bottom:12px"></div>
             <button class="btn-primary" onclick="createPreplan()">加入预排期</button>
           </div>
         </div>
@@ -4365,6 +4368,326 @@ function renderGantt(){
   }).join('');
 }
 
+
+// ── 预排期（本地存储 MVP） ───────────────────────────────
+const PREPLAN_STORAGE_KEY = 'worktime_preplans_v2';
+let preplanItems = [];
+let preplanRecommendations = [];
+
+function loadPreplans(){
+  try{ preplanItems = JSON.parse(localStorage.getItem(PREPLAN_STORAGE_KEY)||'[]') || []; }catch(_){ preplanItems = []; }
+}
+function savePreplans(){
+  localStorage.setItem(PREPLAN_STORAGE_KEY, JSON.stringify(preplanItems));
+}
+function uid(prefix='pp'){ return `${prefix}_${Math.random().toString(36).slice(2,10)}`; }
+function startOfWeek(date){
+  const d = new Date(date);
+  d.setHours(0,0,0,0);
+  const day = d.getDay();
+  const diff = day===0 ? -6 : 1-day;
+  d.setDate(d.getDate()+diff);
+  return d;
+}
+function addDays(date, days){ const d=new Date(date); d.setDate(d.getDate()+days); return d; }
+function toISODate(date){ return formatLocalDate(date); }
+function weekDiff(a,b){ return Math.round((startOfWeek(b)-startOfWeek(a))/86400000/7); }
+function getPreplanWeeks(area, type){
+  const a = safeNum(area);
+  let weeks = 6;
+  if(a<=35) weeks = 0.7;
+  else if(a<=100) weeks = 4;
+  else if(a<=300) weeks = type==='copy' ? 5 : 6;
+  else if(a<=800) weeks = 8;
+  else if(a<=1000) weeks = 10;
+  else weeks = 10;
+  if(type==='copy' && a<=100) weeks = 3.2;
+  if(type==='copy' && a>300 && a<800) weeks = 7.2;
+  return Math.max(1, Math.round(weeks*10)/10);
+}
+function getWorkloadRoleBucket(emp){
+  const t = emp?.job_title || '';
+  if(/深化/.test(t)) return 'draft';
+  if(/主案|方案|执行/.test(t)) return 'concept';
+  if(/助理/.test(t)) return 'assistant';
+  return 'other';
+}
+function getAssignablePeople(){
+  return allEmployees.filter(e=>e.is_active!==false && !/系统管理员/.test(e.name||'') && !['设计主管'].includes(e.job_title||''));
+}
+function getDirectorPeople(){
+  return allEmployees.filter(e=>e.role==='admin' || /设计总监/.test(e.job_title||''));
+}
+function estimateFormalBlocksForEmployee(empId){
+  return allProjects.filter(p=>!['done','paused'].includes(p.status||''))
+    .map(p=>{
+      let assigned = false;
+      if(p.director_id && p.director_id===empId) assigned = true;
+      if(!assigned){
+        assigned = allLogs.some(l=>l.project_id===p.id && l.employee_id===empId);
+      }
+      if(!assigned) return null;
+      const start = p.start_date ? startOfWeek(new Date(p.start_date)) : null;
+      const endStr = p.drawings_delivered_at || p.deadline || p.completion_date || null;
+      const end = endStr ? startOfWeek(new Date(endStr)) : null;
+      if(!start || !end || Number.isNaN(start) || Number.isNaN(end)) return null;
+      const weeks = Math.max(1, weekDiff(start, end)+1);
+      return { id:`formal_${p.id}_${empId}`, employee_id:empId, start_date:toISODate(start), weeks, status:'confirmed', name:p.name||'正式项目', type:p.is_chain?'copy':'innovation', formal:true };
+    }).filter(Boolean);
+}
+function getTimelineStart(){
+  const base = new Date();
+  return startOfWeek(base);
+}
+function getTimelineWeeks(){ return 12; }
+function getPersonBlocks(empId){
+  const formal = estimateFormalBlocksForEmployee(empId);
+  const pre = preplanItems.filter(x=>x.employee_id===empId && x.status!=='cancelled');
+  return [...formal, ...pre];
+}
+function getAvailabilityScore(empId, startDate, weeks){
+  const start = startOfWeek(new Date(startDate));
+  const end = addDays(start, Math.round(weeks*7));
+  const blocks = getPersonBlocks(empId);
+  let overlapWeeks = 0;
+  blocks.forEach(b=>{
+    const bs = startOfWeek(new Date(b.start_date));
+    const be = addDays(bs, Math.round((safeNum(b.weeks)||1)*7));
+    const overlap = Math.max(0, Math.min(end, be)-Math.max(start, bs));
+    overlapWeeks += overlap/86400000/7;
+  });
+  return overlapWeeks;
+}
+function computeRecommendations({area,type,openDate,reuse,directorId}){
+  const weeks = getPreplanWeeks(area, type);
+  const open = openDate ? new Date(openDate) : null;
+  const start = open ? addDays(startOfWeek(open), -Math.round(weeks*7)) : getTimelineStart();
+  const candidates = getAssignablePeople().filter(e=>{
+    if(e.role==='admin') return false;
+    const bucket = getWorkloadRoleBucket(e);
+    if(type==='copy') return bucket==='draft' || bucket==='assistant' || /深化/.test(e.job_title||'');
+    return bucket==='concept' || bucket==='draft' || /主案|执行|深化/.test(e.job_title||'');
+  });
+  const scored = candidates.map(e=>{
+    const availability = getAvailabilityScore(e.id, start, weeks);
+    const bucket = getWorkloadRoleBucket(e);
+    let score = 0;
+    if(type==='copy' && bucket==='draft') score += 20;
+    if(type==='innovation' && bucket==='concept') score += 16;
+    if(/高级/.test(e.job_title||'')) score += 4;
+    if(reuse) score += 2;
+    score -= availability*12;
+    const reasons = [];
+    if(availability<=0) reasons.push('当前时间窗可承接');
+    else if(availability<1) reasons.push('仅有轻微冲突');
+    else reasons.push(`预计冲突 ${availability.toFixed(1)} 周`);
+    if(type==='copy' && bucket==='draft') reasons.push('复制店更适合深化承担');
+    if(type==='innovation' && bucket==='concept') reasons.push('创新店优先方案/执行');
+    if(/高级/.test(e.job_title||'')) reasons.push('资历较高');
+    return { id:e.id, name:e.name, title:e.job_title||'', availability, score, reasons };
+  }).sort((a,b)=>b.score-a.score).slice(0,6);
+  if(directorId){
+    const d = allEmployees.find(e=>e.id===directorId);
+    if(d){
+      scored.unshift({ id:`director:${d.id}`, name:`${d.name}（总监协调）`, title:d.job_title||'设计总监', availability:0, score:999, reasons:['项目已指定总监，允许总监前置参与或协调后续负责人'] });
+    }
+  }
+  return { weeks, startDate:toISODate(start), recommendations:scored };
+}
+function renderPreplanFormHelpers(){
+  const dirSel = document.getElementById('ppDirector');
+  if(dirSel){
+    const current = dirSel.value;
+    const dirs = getDirectorPeople();
+    dirSel.innerHTML = '<option value="">未指定</option>' + dirs.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+    if(current) dirSel.value = current;
+  }
+  const area = safeNum(document.getElementById('ppArea')?.value);
+  const type = document.getElementById('ppType')?.value || 'innovation';
+  const openDate = document.getElementById('ppOpenDate')?.value;
+  const reuse = document.getElementById('ppReuse')?.value === 'true';
+  const directorId = document.getElementById('ppDirector')?.value || '';
+  const assigneeSel = document.getElementById('ppAssignee');
+  const recoBox = document.getElementById('ppRecoBox');
+  if(!assigneeSel || !recoBox) return;
+  const hint = document.getElementById('ppCreateHint');
+  if(!openDate || !area){
+    assigneeSel.innerHTML = '<option value="">请先填写面积和预计开业/接铺时间</option>';
+    recoBox.innerHTML = '填写面积与预计开业/接铺时间后，系统会自动计算周期、倒排开始时间，并给出推荐负责人。';
+    if(hint){ hint.style.display='none'; hint.textContent=''; }
+    return;
+  }
+  const data = computeRecommendations({area,type,openDate,reuse,directorId});
+  preplanRecommendations = data.recommendations;
+  const opts = ['<option value="">请选择负责人</option>']
+    .concat(data.recommendations.map((r,i)=>`<option value="${r.id}">${i<3?'推荐':''}${r.name} · ${r.title||''}${r.availability>0?` · 冲突${r.availability.toFixed(1)}周`:''}</option>`));
+  assigneeSel.innerHTML = opts.join('');
+  recoBox.innerHTML = `系统倒排开始时间：<strong>${data.startDate}</strong>；标准周期约 <strong>${data.weeks} 周</strong>。<br>` +
+    data.recommendations.slice(0,3).map((r,i)=>`推荐 ${i+1}：<strong>${r.name}</strong> · ${r.reasons.join('；')}`).join('<br>');
+  if(hint){
+    hint.style.display='block';
+    hint.style.background = '#eef6ff';
+    hint.style.color = '#225';
+    hint.textContent = '如按钮点击无反应，通常是未选择负责人、时间或项目名称。';
+  }
+}
+function ensurePreplanWiring(){
+  ['ppArea','ppType','ppOpenDate','ppReuse','ppDirector'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el && !el.dataset.ppBound){
+      el.addEventListener('change', renderPreplanFormHelpers);
+      el.addEventListener('input', renderPreplanFormHelpers);
+      el.dataset.ppBound='1';
+    }
+  });
+}
+function normalizePreplanEmployeeId(val){
+  if(!val) return '';
+  if(String(val).startsWith('director:')) return val;
+  return val;
+}
+function createPreplan(){
+  loadPreplans();
+  const name = document.getElementById('ppName')?.value.trim();
+  const area = safeNum(document.getElementById('ppArea')?.value);
+  const type = document.getElementById('ppType')?.value || 'innovation';
+  const openDate = document.getElementById('ppOpenDate')?.value;
+  const status = document.getElementById('ppStatus')?.value || 'pre';
+  const directorId = document.getElementById('ppDirector')?.value || '';
+  const reuse = document.getElementById('ppReuse')?.value === 'true';
+  const assignee = normalizePreplanEmployeeId(document.getElementById('ppAssignee')?.value || '');
+  const hint = document.getElementById('ppCreateHint');
+  const fail = (msg)=>{ if(hint){ hint.style.display='block'; hint.style.background='#fff1f0'; hint.style.color='#a40000'; hint.textContent=msg; } toast(msg); }
+  if(!name) return fail('请输入项目名称');
+  if(!area) return fail('请输入项目面积');
+  if(!openDate) return fail('请选择预计开业/接铺时间');
+  if(!assignee) return fail('请选择负责人；如果项目由总监主导，也请先在“推荐负责人”中选择“总监协调”');
+  const computed = computeRecommendations({area,type,openDate,reuse,directorId});
+  const item = {
+    id: uid(),
+    name, area, type, open_date: openDate, status, director_id: directorId || null, reuse,
+    employee_id: assignee,
+    employee_name: resolvePreplanPersonName(assignee),
+    start_date: computed.startDate,
+    weeks: computed.weeks
+  };
+  preplanItems.unshift(item);
+  savePreplans();
+  if(hint){ hint.style.display='block'; hint.style.background='#eef9ef'; hint.style.color='#136c2e'; hint.textContent='已加入预排期，可在右侧甘特图中继续拖动调整时间与负责人。'; }
+  document.getElementById('ppName').value='';
+  renderPreplanFormHelpers();
+  renderPreplanPage();
+  toast('✓ 已加入预排期');
+}
+function resolvePreplanPersonName(empId){
+  if(!empId) return '未分配';
+  if(String(empId).startsWith('director:')){
+    const realId = String(empId).split(':')[1];
+    const d = allEmployees.find(e=>e.id===realId);
+    return d ? `${d.name}（总监协调）` : '总监协调';
+  }
+  return allEmployees.find(e=>e.id===empId)?.name || '未分配';
+}
+function shiftPreplan(id, weeks){
+  const item = preplanItems.find(x=>x.id===id);
+  if(!item) return;
+  item.start_date = toISODate(addDays(new Date(item.start_date), weeks*7));
+  item.open_date = toISODate(addDays(new Date(item.open_date), weeks*7));
+  savePreplans(); renderPreplanPage(); toast(`✓ 已顺延 ${weeks} 周`);
+}
+function deletePreplan(id){
+  preplanItems = preplanItems.filter(x=>x.id!==id);
+  savePreplans(); renderPreplanPage(); toast('✓ 已删除预排项目');
+}
+function togglePreplanCancel(id){
+  const item = preplanItems.find(x=>x.id===id); if(!item) return;
+  item.status = item.status==='cancelled' ? 'pre' : 'cancelled';
+  savePreplans(); renderPreplanPage(); toast(item.status==='cancelled'?'✓ 已取消预排':'✓ 已恢复预排');
+}
+function preplanIntersects(itemA, itemB){
+  const a1 = startOfWeek(new Date(itemA.start_date));
+  const a2 = addDays(a1, Math.round(safeNum(itemA.weeks)*7));
+  const b1 = startOfWeek(new Date(itemB.start_date));
+  const b2 = addDays(b1, Math.round(safeNum(itemB.weeks)*7));
+  return a1 < b2 && b1 < a2;
+}
+function hasPreplanConflict(item){
+  return preplanItems.some(x=>x.id!==item.id && x.employee_id===item.employee_id && x.status!=='cancelled' && preplanIntersects(item,x));
+}
+function renderPreplanList(){
+  const el = document.getElementById('preplanList');
+  if(!el) return;
+  if(!preplanItems.length){ el.innerHTML = '<div class="preplan-empty">暂无预排项目。请先填写左侧表单。</div>'; return; }
+  el.innerHTML = preplanItems.map(item=>{
+    const conflict = hasPreplanConflict(item);
+    const endDate = toISODate(addDays(new Date(item.start_date), Math.round(item.weeks*7)-1));
+    return `<div class="preplan-item">
+      <div class="name">${item.name}</div>
+      <div class="meta">${item.type==='copy'?'复制店':'创新店'} · ${safeNum(item.area)}㎡ · 周期 ${item.weeks} 周<br>负责人：${resolvePreplanPersonName(item.employee_id)}<br>开始：${item.start_date} · 交付：${endDate}${conflict?'<br><span style="color:#c0392b">存在时间冲突，请在甘特图中调整</span>':''}</div>
+      <div class="ops">
+        <button class="btn-sm btn-blue" onclick="shiftPreplan('${item.id}',1)">顺延1周</button>
+        <button class="btn-sm btn-blue" onclick="shiftPreplan('${item.id}',4)">顺延4周</button>
+        <button class="btn-sm ${item.status==='cancelled'?'btn-green':'btn-red'}" onclick="togglePreplanCancel('${item.id}')">${item.status==='cancelled'?'恢复':'取消'}</button>
+        <button class="btn-sm btn-red" onclick="deletePreplan('${item.id}')">删除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function getPreplanPeopleRows(){
+  const base = getAssignablePeople().filter(e=>!shouldExcludeFromWorkload(e) || /设计总监/.test(e.job_title||'')).map(e=>({ id:e.id, name:e.name, title:e.job_title||'' }));
+  const directorRows = preplanItems.filter(x=>String(x.employee_id).startsWith('director:')).map(x=>{
+    const rid = String(x.employee_id).split(':')[1];
+    const d = allEmployees.find(e=>e.id===rid);
+    return d ? { id:`director:${rid}`, name:`${d.name}（总监）`, title:d.job_title||'设计总监' } : null;
+  }).filter(Boolean);
+  const map = new Map();
+  [...directorRows, ...base].forEach(p=>{ if(!map.has(p.id)) map.set(p.id,p); });
+  return [...map.values()];
+}
+function renderPreplanGantt(){
+  const el = document.getElementById('preplanGantt');
+  if(!el) return;
+  const start = getTimelineStart();
+  const weeks = getTimelineWeeks();
+  const people = getPreplanPeopleRows();
+  if(!people.length){ el.innerHTML = '<div class="preplan-empty">暂无可用于预排的人员</div>'; return; }
+  const header = `<div class="gantt-header"><div>人员</div>${Array.from({length:weeks}).map((_,i)=>{ const wk = addDays(start,i*7); return `<div>W${i+1}<br><span style="font-size:10px;color:var(--text-sub)">${wk.getMonth()+1}/${wk.getDate()}</span></div>`; }).join('')}</div>`;
+  const rows = people.map(person=>{
+    const blocks = preplanItems.filter(x=>x.employee_id===person.id && x.status!=='cancelled');
+    const blockHtml = blocks.map(item=>{
+      const col = Math.max(0, weekDiff(start, new Date(item.start_date)));
+      const widthPct = Math.max(6, Math.min(100, (safeNum(item.weeks)/weeks)*100));
+      const leftPct = Math.max(0, Math.min(100, (col/weeks)*100));
+      const conflict = hasPreplanConflict(item) ? ' conflict' : '';
+      return `<div class="gantt-block ${item.status}${conflict}" draggable="true" ondragstart="dragPreplan(event,'${item.id}')" style="left:${leftPct}%;width:${widthPct}%" title="${item.name} · ${item.start_date}">${item.name}<small>${item.weeks}周 · ${item.type==='copy'?'复制':'创新'}</small></div>`;
+    }).join('');
+    return `<div class="gantt-row"><div class="person">${person.name}<br><span style="font-size:11px;color:var(--text-sub)">${person.title}</span></div><div class="dropzone">${Array.from({length:weeks}).map((_,i)=>`<div class="wk" ondragover="allowPreplanDrop(event)" ondrop="dropPreplan(event,'${person.id}',${i})"></div>`).join('')}${blockHtml}</div></div>`;
+  }).join('');
+  el.innerHTML = header + rows;
+}
+function dragPreplan(ev,id){ ev.dataTransfer.setData('text/plain', id); }
+function allowPreplanDrop(ev){ ev.preventDefault(); }
+function dropPreplan(ev, personId, weekIndex){
+  ev.preventDefault();
+  const id = ev.dataTransfer.getData('text/plain');
+  const item = preplanItems.find(x=>x.id===id);
+  if(!item) return;
+  const start = addDays(getTimelineStart(), weekIndex*7);
+  item.employee_id = personId;
+  item.employee_name = resolvePreplanPersonName(personId);
+  item.start_date = toISODate(start);
+  item.open_date = toISODate(addDays(start, Math.round(item.weeks*7)));
+  savePreplans();
+  renderPreplanPage();
+  toast('✓ 已更新预排期');
+}
+function renderPreplanPage(){
+  loadPreplans();
+  ensurePreplanWiring();
+  renderPreplanFormHelpers();
+  renderPreplanList();
+  renderPreplanGantt();
+}
 
 // ── 任务工时库（本地修正分类） ───────────────────────────────
 const TASK_CLASS_KEY = 'worktime_task_class_map_v1';
