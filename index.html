@@ -272,6 +272,51 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
   border-radius:10px;letter-spacing:0.06em;vertical-align:middle;margin-left:6px}
 .intel-badge.live{background:var(--green-soft);color:var(--green)}
 .intel-badge.est{background:var(--gold-soft);color:var(--gold)}
+
+/* ── Added mobile / preschedule / tasklib ── */
+.mobile-only{display:none}
+@media(max-width:768px){
+  .desktop-only{display:none!important}
+  .mobile-only{display:block}
+  .content{padding:14px 14px 92px}
+  .stat-card{padding:18px}
+  .s-label{font-size:11px}
+  .s-val{font-size:28px}
+  .card-body{padding:18px}
+  .action-btn,.btn-primary{min-height:46px}
+  .mobile-fabbar{position:fixed;left:0;right:0;bottom:70px;z-index:45;display:flex;gap:8px;padding:10px 12px;background:linear-gradient(to top, rgba(245,246,247,.98), rgba(245,246,247,.82));backdrop-filter:blur(8px)}
+  .mobile-fabbar .action-btn{flex:1;justify-content:center;padding:12px 8px;font-size:12px}
+  #newProjModal .modal-box{width:100%;height:100vh;max-height:100vh;border-radius:0}
+  .project-form-jump{position:sticky;top:0;background:var(--paper);padding:10px 0 12px;border-bottom:1px solid var(--border);z-index:5;display:flex;gap:8px;overflow:auto;margin-bottom:14px}
+  .project-form-section{scroll-margin-top:56px}
+}
+.mobile-project-list,.mobile-payment-list{display:grid;gap:12px}
+.m-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:var(--shadow)}
+.m-card-title{font-size:15px;font-weight:700;margin-bottom:6px}
+.m-card-meta{font-size:12px;color:var(--text-sub);display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.m-card-actions{display:flex;gap:8px;flex-wrap:wrap}
+.m-card-actions .btn-sm{padding:8px 12px;font-size:12px}
+.gantt-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px}
+.gantt-head,.gantt-row{display:grid;grid-template-columns:140px repeat(12, minmax(70px,1fr));min-width:980px}
+.gantt-head>div,.gantt-row>div{padding:10px;border-bottom:1px solid var(--cream);border-right:1px solid var(--cream);font-size:12px}
+.gantt-head{background:var(--cream);font-weight:600;position:sticky;top:0;z-index:2}
+.gantt-person{font-weight:600;background:#fff;position:sticky;left:0;z-index:1}
+.gantt-cell{min-height:42px;position:relative;background:#fff}
+.gantt-pill{position:absolute;left:4px;right:4px;top:6px;bottom:6px;border-radius:8px;padding:4px 6px;font-size:11px;color:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.gantt-pill.formal{background:var(--ink)}
+.gantt-pill.pre{background:var(--blue)}
+.gantt-pill.conflict{background:var(--accent)}
+.pre-item{border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px;background:var(--card)}
+.pre-item-hd{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:8px}
+.pre-item-title{font-size:15px;font-weight:700}
+.pre-item-meta{font-size:12px;color:var(--text-sub);display:flex;gap:10px;flex-wrap:wrap}
+.pre-item-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.candidate-card{border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px}
+.candidate-reasons{font-size:12px;color:var(--text-sub);margin-top:6px;line-height:1.7}
+.tasklib-filters{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:10px}
+@media(max-width:900px){.tasklib-filters{grid-template-columns:repeat(2,minmax(120px,1fr))}}
+.task-row-select{min-width:140px}
+
 </style>
 </head>
 <body>
@@ -334,6 +379,12 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
     </button>
     <button class="nav-btn admin-nav admin-only" onclick="nav('quote',this)">
       <span class="icon">🧮</span>报价参考
+    </button>
+    <button class="nav-btn admin-nav admin-only" onclick="nav('preschedule',this)">
+      <span class="icon">🗓</span>预排期
+    </button>
+    <button class="nav-btn admin-nav admin-only" onclick="nav('tasklib',this)">
+      <span class="icon">🧩</span>任务工时库
     </button>
     <button class="nav-btn admin-nav admin-only" onclick="nav('team',this)">
       <span class="icon">👥</span>团队管理
@@ -611,6 +662,81 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
 </div>
 
 
+
+<!-- PAGE: 预排期 -->
+<div class="page" id="page-preschedule">
+  <div class="employee-only" style="padding:60px 0;text-align:center;color:var(--text-sub)">
+    <div style="font-size:48px;margin-bottom:16px">🔒</div>
+    <div style="font-size:15px;font-weight:600">预排期仅管理者可见</div>
+  </div>
+  <div class="admin-only">
+    <div class="notice" style="margin-bottom:16px">🗓 所有未来项目都可以先排。系统会按预计开业/接铺时间倒排开始时间，结合项目类型、面积与人选推荐，支持取消、顺延和重新排期。</div>
+    <div class="two-col preschedule-layout">
+      <div>
+        <div class="section-hd"><div class="section-title">新建预排项目</div></div>
+        <div class="card"><div class="card-body">
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">项目名称</label><input class="form-input" id="psName" placeholder="如：XX门店复制店"></div>
+            <div class="form-group"><label class="form-label">品牌 / 客户</label><input class="form-input" id="psBrand" placeholder="可选"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">面积（㎡）</label><input type="number" class="form-input" id="psArea" value="300"></div>
+            <div class="form-group"><label class="form-label">项目类型</label>
+              <select class="form-select" id="psModel"><option value="innovation">创新店</option><option value="copy">复制店</option></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">预计开业 / 接铺时间</label><input type="date" class="form-input" id="psOpenDate"></div>
+            <div class="form-group"><label class="form-label">指定总监</label><select class="form-select" id="psDirector"><option value="">无指定</option></select></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">是否优先沿用原深化</label><select class="form-select" id="psReuse"><option value="false">否</option><option value="true">是</option></select></div>
+            <div class="form-group"><label class="form-label">当前状态</label><select class="form-select" id="psStatus"><option value="tentative">预排中</option><option value="confirmed">已确认</option></select></div>
+          </div>
+          <div class="form-group"><label class="form-label">备注</label><input class="form-input" id="psNote" placeholder="可填写总监指定、甲方要求等"></div>
+          <div class="card" style="margin:12px 0 0"><div class="card-body" id="psCalculatedBox"></div></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+            <button class="action-btn" onclick="savePreSchedule()">＋ 保存预排项目</button>
+            <button class="action-btn secondary" onclick="clearPreScheduleForm()">重置</button>
+          </div>
+        </div></div>
+      </div>
+      <div>
+        <div class="section-hd"><div class="section-title">推荐人员</div></div>
+        <div class="card"><div class="card-body" id="preScheduleCandidates"></div></div>
+      </div>
+    </div>
+    <div class="section-hd"><div class="section-title">预排项目池</div></div>
+    <div class="card"><div class="card-body" id="preScheduleList"></div></div>
+    <div class="section-hd"><div class="section-title">未来 12 周甘特图</div></div>
+    <div class="card"><div class="card-body" id="preScheduleGantt"></div></div>
+  </div>
+</div>
+
+<!-- PAGE: 任务工时库 -->
+<div class="page" id="page-tasklib">
+  <div class="employee-only" style="padding:60px 0;text-align:center;color:var(--text-sub)">
+    <div style="font-size:48px;margin-bottom:16px">🔒</div>
+    <div style="font-size:15px;font-weight:600">任务工时库仅管理者可见</div>
+  </div>
+  <div class="admin-only">
+    <div class="notice" style="margin-bottom:16px">🧩 系统会读取飞书导入后的任务内容，自动归类成标准任务，并支持人工修正。先抓平面方案、图纸、材料、修改四大类，逐步形成你们公司自己的任务工时库。</div>
+    <div class="card"><div class="card-body">
+      <div class="tasklib-filters">
+        <select class="form-select" id="tasklibTime" onchange="renderTaskLibrary()"></select>
+        <select class="form-select" id="tasklibModel" onchange="renderTaskLibrary()"><option value="all">全部项目类型</option><option value="innovation">创新店</option><option value="copy">复制店</option></select>
+        <select class="form-select" id="tasklibArea" onchange="renderTaskLibrary()"><option value="all">全部面积段</option><option value="0-100">0-100㎡</option><option value="100-300">100-300㎡</option><option value="300-800">300-800㎡</option><option value="800+">800㎡以上</option></select>
+        <select class="form-select" id="tasklibRole" onchange="renderTaskLibrary()"><option value="all">全部岗位</option></select>
+        <select class="form-select" id="tasklibRework" onchange="renderTaskLibrary()"><option value="all">全部记录</option><option value="no">排除返工</option><option value="yes">仅返工</option></select>
+      </div>
+    </div></div>
+    <div class="section-hd"><div class="section-title">任务基线</div></div>
+    <div class="card"><div id="taskLibSummary"></div></div>
+    <div class="section-hd"><div class="section-title">任务样本明细（支持人工修正）</div></div>
+    <div class="card"><div id="taskLibDetails"></div></div>
+  </div>
+</div>
+
 <!-- PAGE: 绩效管理（仅管理员） -->
 <div class="page" id="page-bonus">
   <div class="employee-only" style="padding:60px 0;text-align:center;color:var(--text-sub)">
@@ -865,11 +991,18 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
   </div>
 </div>
 
+<div class="mobile-fabbar admin-only mobile-only">
+  <button class="action-btn" onclick="openModal('importModal')">导入工时</button>
+  <button class="action-btn secondary" onclick="openModal('newProjModal')">新建项目</button>
+  <button class="action-btn secondary" onclick="openModal('paymentModal')">录回款</button>
+</div>
     </div><!-- /content -->
     <nav class="bottom-nav"><div class="bottom-nav-inner">
       <button class="bnav-btn active" onclick="nav('timelog',this,'bnav')"><span class="bi">⏱</span><span>工时</span></button>
       <button class="bnav-btn" onclick="nav('project',this,'bnav')"><span class="bi">📁</span><span>项目</span></button>
       <button class="bnav-btn admin-nav admin-only" onclick="nav('dashboard',this,'bnav')"><span class="bi">📊</span><span>看板</span></button>
+      <button class="bnav-btn admin-nav admin-only" onclick="nav('preschedule',this,'bnav')"><span class="bi">🗓</span><span>预排</span></button>
+      <button class="bnav-btn admin-nav admin-only" onclick="nav('tasklib',this,'bnav')"><span class="bi">🧩</span><span>任务库</span></button>
       <button class="bnav-btn admin-nav admin-only" onclick="nav('quote',this,'bnav')"><span class="bi">🧮</span><span>报价</span></button>
       <button class="bnav-btn admin-nav admin-only" onclick="nav('bonus',this,'bnav')"><span class="bi">💰</span><span>绩效</span></button>
       <button class="bnav-btn" onclick="nav('profile',this,'bnav')"><span class="bi">👤</span><span>我的</span></button>
@@ -916,6 +1049,12 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
     <div class="modal-title"><button class="modal-close" onclick="closeModal('newProjModal')">×</button><span id="npModalTitle">新建项目</span></div>
       <input type="hidden" id="npEditId" value="">
     <div class="modal-body">
+      <div class="project-form-jump mobile-only">
+        <button class="chip active" type="button" onclick="jumpProjectForm('base', this)">基本信息</button>
+        <button class="chip" type="button" onclick="jumpProjectForm('time', this)">时间状态</button>
+        <button class="chip" type="button" onclick="jumpProjectForm('members', this)">成员分工</button>
+      </div>
+      <div id="projSectionBase" class="project-form-section"></div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">项目名称</label>
           <input type="text" class="form-input" id="npName" placeholder="项目全称"></div>
@@ -928,6 +1067,7 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
         <div class="form-group"><label class="form-label">设计面积（㎡）</label>
           <input type="number" class="form-input" id="npArea" placeholder="0"></div>
       </div>
+      <div id="projSectionTime" class="project-form-section"></div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">开始日期</label>
           <input type="date" class="form-input" id="npStart" onchange="calcBudget()"></div>
@@ -976,6 +1116,7 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
       <button class="btn-primary" id="createProjBtn" onclick="createProject()">创建项目</button>
       <button class="btn-primary" id="saveProjBtn" style="display:none;background:var(--green)" onclick="saveEditProject()">保存修改</button>
 
+      <div id="projSectionMembers" class="project-form-section"></div>
       <!-- 项目成员（仅编辑模式显示） -->
       <div id="npMembersSection" style="display:none;margin-top:20px;border-top:1px solid var(--border);padding-top:16px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -3139,6 +3280,8 @@ function renderAll(){
   renderProjectPage();
   renderDashboard();
   renderQuote();
+  renderPreSchedule();
+  renderTaskLibrary();
   renderProfile();
   renderTeam();
   renderBonus();
@@ -3243,124 +3386,77 @@ function renderEmpLoadBars(){
 }
 
 // ── 项目页 ────────────────────────────────────────────────────
+
+function isMobileView(){ return window.innerWidth <= 768; }
+const TASK_CATEGORY_OPTIONS = ['平面方案','方案推敲','方案汇报','平面施工图','立面施工图','节点大样','综合施工图整理','材料选择','材料整理/下单','样板确认','方案修改','图纸修改','客户调整','内部返工','沟通会议','现场跟进','其他'];
+const TASK_KEYWORDS = [[/平面|布局|翻嘎嘛|平面图/i,'平面方案'],[/推敲|概念|草图/i,'方案推敲'],[/汇报|ppt|文本|提案/i,'方案汇报'],[/施工图|平面施工/i,'平面施工图'],[/立面/i,'立面施工图'],[/节点|大样/i,'节点大样'],[/综合|整理图纸|图纸整理/i,'综合施工图整理'],[/材料选择|选材/i,'材料选择'],[/材料|下单|清单/i,'材料整理/下单'],[/样板|样品/i,'样板确认'],[/方案修改|调整方案/i,'方案修改'],[/图纸修改/i,'图纸修改'],[/客户调整|客户修改/i,'客户调整'],[/返工|待返工/i,'内部返工'],[/会议|沟通|对接/i,'沟通会议'],[/现场|工地/i,'现场跟进']];
+function readJSONStorage(key, fallback){ try{ return JSON.parse(localStorage.getItem(key) || 'null') ?? fallback; }catch(e){ return fallback; } }
+function writeJSONStorage(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
+function getPreScheduleItems(){ return readJSONStorage('oai_preschedules', []); }
+function savePreScheduleItems(items){ writeJSONStorage('oai_preschedules', items); }
+function getTaskOverrides(){ return readJSONStorage('oai_task_overrides', {}); }
+function saveTaskOverrides(data){ writeJSONStorage('oai_task_overrides', data); }
+function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[m])); }
+function classifyTaskContent(log){ const o=getTaskOverrides(); if(o[log.id]) return o[log.id]; const txt=`${log.task_content||''} ${log.note||''} ${log.stage||''}`; for(const [re,label] of TASK_KEYWORDS){ if(re.test(txt)) return label; } if(log.stage==='修改调整') return '内部返工'; if(log.stage==='施工图') return '平面施工图'; if(log.stage==='现场跟进') return '现场跟进'; return '其他'; }
+function getTasklibTimeOptions(){ const now=new Date(); const opts=[]; for(let i=0;i<8;i++){ const d=new Date(now.getFullYear(), now.getMonth()-i,1); const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; opts.push({value:key,label:`${d.getFullYear()}年${d.getMonth()+1}月`}); } return opts; }
+function initTasklibControls(){ const sel=document.getElementById('tasklibTime'); if(sel && !sel.dataset.inited){ const opts=getTasklibTimeOptions(); sel.innerHTML=opts.map(o=>`<option value="${o.value}">${o.label}</option>`).join(''); sel.value=opts[0]?.value||''; sel.dataset.inited='1'; } const role=document.getElementById('tasklibRole'); if(role && !role.dataset.inited){ const jobs=[...new Set(allEmployees.map(e=>e.job_title).filter(Boolean))]; role.innerHTML='<option value="all">全部岗位</option>'+jobs.map(j=>`<option value="${j}">${j}</option>`).join(''); role.dataset.inited='1'; } }
+function getAreaBand(area){ area=safeNum(area); if(area<=100) return '0-100'; if(area<=300) return '100-300'; if(area<=800) return '300-800'; return '800+'; }
+function getTaskLibraryRows(){ initTasklibControls(); const ym=(document.getElementById('tasklibTime')||{}).value || formatLocalMonth(); const model=(document.getElementById('tasklibModel')||{}).value || 'all'; const areaBand=(document.getElementById('tasklibArea')||{}).value || 'all'; const role=(document.getElementById('tasklibRole')||{}).value || 'all'; const rework=(document.getElementById('tasklibRework')||{}).value || 'all'; return allLogs.filter(l=>String(l.log_date||'').startsWith(ym)).filter(l=>{ const proj=allProjects.find(p=>p.id===l.project_id); const emp=allEmployees.find(e=>e.id===l.employee_id); if(model!=='all' && ((model==='copy')!==!!proj?.is_chain)) return false; if(areaBand!=='all' && getAreaBand(proj?.area)!==areaBand) return false; if(role!=='all' && emp?.job_title!==role) return false; const rw=isReworkLog(l); if(rework==='yes' && !rw) return false; if(rework==='no' && rw) return false; return true; }).map(l=>{ const proj=allProjects.find(p=>p.id===l.project_id); const emp=allEmployees.find(e=>e.id===l.employee_id); return {...l,_task:classifyTaskContent(l),_proj:proj,_emp:emp}; }); }
+function renderTaskLibrary(){ if(!isAdmin) return; initTasklibControls(); const rows=getTaskLibraryRows(); const summaryEl=document.getElementById('taskLibSummary'); const detailsEl=document.getElementById('taskLibDetails'); if(summaryEl){ if(!rows.length) summaryEl.innerHTML='<div class="empty">当前筛选下暂无任务样本</div>'; else { const groups={}; rows.forEach(r=>((groups[r._task] ||= []).push(safeNum(r.hours)))); summaryEl.innerHTML=`<table class="data-table"><thead><tr><th>任务</th><th>样本数</th><th>平均工时</th><th>中位数</th><th>最大值</th><th>最小值</th><th>返工占比</th></tr></thead><tbody>${Object.entries(groups).sort((a,b)=>b[1].length-a[1].length).map(([task,vals])=>{ const taskRows=rows.filter(r=>r._task===task); const rwPct=Math.round(taskRows.filter(r=>isReworkLog(r)).length/taskRows.length*100); return `<tr><td class="fw6">${task}</td><td>${taskRows.length}</td><td class="mono">${(average(vals)||0).toFixed(1)}h</td><td class="mono">${(median(vals)||0).toFixed(1)}h</td><td class="mono">${Math.max(...vals).toFixed(1)}h</td><td class="mono">${Math.min(...vals).toFixed(1)}h</td><td class="mono">${rwPct}%</td></tr>`; }).join('')}</tbody></table>`; } } if(detailsEl){ if(!rows.length) detailsEl.innerHTML='<div class="empty">暂无明细</div>'; else detailsEl.innerHTML=`<div style="overflow-x:auto"><table class="data-table"><thead><tr><th>日期</th><th>员工</th><th>项目</th><th>原始任务内容</th><th>标准任务</th><th>工时</th></tr></thead><tbody>${rows.slice(0,300).map(r=>`<tr><td>${r.log_date}</td><td>${r._emp?.name||'—'}</td><td>${r._proj?.name||'—'}</td><td style="max-width:220px;white-space:normal">${escapeHtml(r.task_content||r.note||r.stage||'—')}</td><td><select class="form-select task-row-select" onchange="updateTaskOverride('${r.id}', this.value)">${TASK_CATEGORY_OPTIONS.map(opt=>`<option value="${opt}" ${opt===r._task?'selected':''}>${opt}</option>`).join('')}</select></td><td class="mono">${safeNum(r.hours).toFixed(1)}h</td></tr>`).join('')}</tbody></table></div>`; } }
+function updateTaskOverride(logId, value){ const o=getTaskOverrides(); o[logId]=value; saveTaskOverrides(o); renderTaskLibrary(); toast('已更新任务归类'); }
+function estimateScheduleByArea(area, model){ area=safeNum(area); let weeks=4; if(area>=1000) weeks=10; else if(area>=800) weeks=8; else if(area>=300) weeks=(model==='copy'?5:6); else if(area>=100) weeks=(model==='copy'?3.5:4); else if(area>=20) weeks=(model==='copy'?0.4:0.7); if(model==='copy' && area>=1000) weeks=9; return weeks; }
+function getPrescheduleCalc(){ const area=safeNum((document.getElementById('psArea')||{}).value); const model=(document.getElementById('psModel')||{}).value||'innovation'; const openDate=(document.getElementById('psOpenDate')||{}).value || ''; const weeks=estimateScheduleByArea(area, model); const peopleNeeded=area>=1000?2:1; let startDate=''; if(openDate){ const end=new Date(openDate+'T00:00:00'); end.setDate(end.getDate()-Math.round(weeks*7)); startDate=formatLocalDate(end); } return {weeks,startDate,peopleNeeded,area,model,openDate}; }
+function renderPreScheduleCalc(){ const box=document.getElementById('psCalculatedBox'); if(!box) return; const c=getPrescheduleCalc(); box.innerHTML=`<div class="two-col" style="gap:12px"><div><div class="s-label">系统建议周期</div><div class="s-val" style="font-size:24px">${c.weeks}<span class="s-unit">周</span></div></div><div><div class="s-label">倒排开始时间</div><div class="s-val" style="font-size:24px">${c.startDate||'—'}</div></div></div><div style="margin-top:10px;font-size:12px;color:var(--text-sub)">${c.area>=1000?'该项目按超大项目处理，默认双人协作。':'该项目按单人主责处理。'} 复制店仍按复制店逻辑推荐人员。</div>`; renderPreScheduleCandidates(); }
+function getPreScheduleCandidates(item=null){ const calc=item ? {area:item.area, model:item.model, openDate:item.openDate, weeks:item.weeks, startDate:item.startDate} : getPrescheduleCalc(); const brand=item?.brand || (document.getElementById('psBrand')||{}).value || ''; const directorId=item?.directorId || (document.getElementById('psDirector')||{}).value || ''; const reuse=item?.preferSameDeepen ?? (((document.getElementById('psReuse')||{}).value||'false')==='true'); let pool=getWorkloadEmployees(); if(calc.model==='copy') pool=pool.filter(e=>/深化|执行|高级深化|设计总监|主案/.test(e.job_title||'')); else pool=pool.filter(e=>!/助理/.test(e.job_title||'')); const preItems=getPreScheduleItems().filter(x=>x.status!=='cancelled'); return pool.map(emp=>{ let score=0; const reasons=[]; if(directorId && emp.id===directorId){ score+=100; reasons.push('已指定总监'); } const futureCount=preItems.filter(x=>(x.assignees||[]).includes(emp.id)).length + allProjects.filter(p=>p.status!=='done'&&p.status!=='paused'&&p.director_id===emp.id).length; score += Math.max(0, 40 - futureCount*8); reasons.push(`当前未来占用 ${futureCount} 个项目`); if(calc.model==='copy' && /深化|执行|高级深化/.test(emp.job_title||'')){ score+=25; reasons.push('复制店匹配深化/执行岗位'); } if(calc.model==='innovation' && /主案|设计总监|执行/.test(emp.job_title||'')){ score+=18; reasons.push('创新店匹配方案/总监能力'); } const brandProjects=allProjects.filter(p=>brand && ((p.client||'').includes(brand) || (p.name||'').includes(brand))); const worked=allLogs.some(l=>l.employee_id===emp.id && brandProjects.some(p=>p.id===l.project_id)); if(worked){ score+=12; reasons.push('做过相同品牌/门店相关项目'); } if(reuse && calc.model==='copy' && worked){ score+=12; reasons.push('符合复制店尽量沿用原深化原则'); } return {emp, score, reasons}; }).sort((a,b)=>b.score-a.score).slice(0,3); }
+function renderPreScheduleCandidates(item=null){ const el=document.getElementById('preScheduleCandidates'); if(!el) return; const recs=getPreScheduleCandidates(item); if(!recs.length){ el.innerHTML='<div class="empty">暂无可推荐人员</div>'; return; } el.innerHTML=recs.map((r,idx)=>`<div class="candidate-card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><div class="fw6">${idx===0?'推荐':'备选'}：${r.emp.name}</div><div style="font-size:12px;color:var(--text-sub)">${r.emp.job_title||'—'}</div></div><div class="badge ${idx===0?'badge-active':'badge-warn'}">${Math.round(r.score)}分</div></div><div class="candidate-reasons">${r.reasons.map(x=>`• ${x}`).join('<br>')}</div></div>`).join(''); }
+function clearPreScheduleForm(){ ['psName','psBrand','psOpenDate','psNote'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); if(document.getElementById('psArea')) document.getElementById('psArea').value='300'; if(document.getElementById('psModel')) document.getElementById('psModel').value='innovation'; if(document.getElementById('psReuse')) document.getElementById('psReuse').value='false'; if(document.getElementById('psStatus')) document.getElementById('psStatus').value='tentative'; renderPreScheduleCalc(); }
+function savePreSchedule(){ const c=getPrescheduleCalc(); if(!(document.getElementById('psName')||{}).value?.trim()){ toast('请填写项目名称'); return; } if(!c.openDate){ toast('请填写预计开业/接铺时间'); return; } const recs=getPreScheduleCandidates(); const items=getPreScheduleItems(); items.unshift({ id:`ps_${Date.now()}`, name:document.getElementById('psName').value.trim(), brand:document.getElementById('psBrand').value.trim(), area:c.area, model:c.model, openDate:c.openDate, startDate:c.startDate, weeks:c.weeks, peopleNeeded:c.peopleNeeded, directorId:document.getElementById('psDirector').value || '', preferSameDeepen:document.getElementById('psReuse').value==='true', status:document.getElementById('psStatus').value || 'tentative', note:document.getElementById('psNote').value.trim(), assignees: recs.slice(0,c.peopleNeeded).map(r=>r.emp.id), createdAt:formatLocalDate() }); savePreScheduleItems(items); clearPreScheduleForm(); renderPreSchedule(); toast('✓ 已保存预排项目'); }
+function shiftPreSchedule(id, months=1){ const items=getPreScheduleItems(); const item=items.find(x=>x.id===id); if(!item) return; const d=new Date(item.openDate+'T00:00:00'); d.setMonth(d.getMonth()+months); item.openDate=formatLocalDate(d); const end=new Date(item.openDate+'T00:00:00'); end.setDate(end.getDate()-Math.round(item.weeks*7)); item.startDate=formatLocalDate(end); savePreScheduleItems(items); renderPreSchedule(); toast('已顺延并重新排期'); }
+function cancelPreSchedule(id){ const items=getPreScheduleItems(); const item=items.find(x=>x.id===id); if(!item) return; item.status='cancelled'; savePreScheduleItems(items); renderPreSchedule(); toast('已取消该预排项目'); }
+function deletePreSchedule(id){ savePreScheduleItems(getPreScheduleItems().filter(x=>x.id!==id)); renderPreSchedule(); toast('已删除该预排项目'); }
+function choosePreScheduleAssignee(id, empId){ const items=getPreScheduleItems(); const item=items.find(x=>x.id===id); if(!item) return; item.assignees=[empId]; savePreScheduleItems(items); renderPreSchedule(); toast('已更新项目人选'); }
+function initPreScheduleControlOptions(){ const sel=document.getElementById('psDirector'); if(sel && !sel.dataset.hydrated){ const admins=allEmployees.filter(e=>e.role==='admin'); sel.innerHTML='<option value="">无指定</option>'+admins.map(e=>`<option value="${e.id}">${e.name}</option>`).join(''); sel.dataset.hydrated='1'; } ['psArea','psModel','psOpenDate','psBrand','psDirector','psReuse'].forEach(id=>{ const el=document.getElementById(id); if(el && !el.dataset.bound){ el.addEventListener('input',()=>renderPreScheduleCalc()); el.addEventListener('change',()=>renderPreScheduleCalc()); el.dataset.bound='1'; } }); }
+function getWeekStarts(count=12){ const now=new Date(); const start=new Date(now); const weekday=(now.getDay()+6)%7; start.setDate(now.getDate()-weekday); start.setHours(0,0,0,0); return Array.from({length:count},(_,i)=>{ const d=new Date(start); d.setDate(start.getDate()+i*7); return d; }); }
+function overlapsWeek(startStr,endStr,weekStart){ if(!startStr||!endStr) return false; const s=new Date(startStr+'T00:00:00'); const e=new Date(endStr+'T00:00:00'); const ws=new Date(weekStart); const we=new Date(weekStart); we.setDate(we.getDate()+6); return s<=we && e>=ws; }
+function renderPreSchedule(){ if(!isAdmin) return; initPreScheduleControlOptions(); renderPreScheduleCalc(); const items=getPreScheduleItems(); const listEl=document.getElementById('preScheduleList'); if(listEl){ const activeItems=items.filter(x=>x.status!=='cancelled'); if(!activeItems.length) listEl.innerHTML='<div class="empty">暂无预排项目</div>'; else listEl.innerHTML=activeItems.map(item=>{ const recs=getPreScheduleCandidates(item); const assignedNames=(item.assignees||[]).map(id=>allEmployees.find(e=>e.id===id)?.name).filter(Boolean).join('、') || '未选择'; return `<div class="pre-item"><div class="pre-item-hd"><div><div class="pre-item-title">${item.name}</div><div class="pre-item-meta"><span>${item.model==='copy'?'复制店':'创新店'}</span><span>${item.area}㎡</span><span>预计开始：${item.startDate||'—'}</span><span>交付节点：${item.openDate||'—'}</span><span>标准周期：${item.weeks}周</span></div></div><div><span class="badge ${item.status==='confirmed'?'badge-active':'badge-warn'}">${item.status==='confirmed'?'已确认':'预排中'}</span></div></div><div style="font-size:13px;margin-bottom:8px">当前人选：<strong>${assignedNames}</strong></div><div style="font-size:12px;color:var(--text-sub)">${item.note||'无备注'}</div><div class="candidate-reasons" style="margin-top:8px">${recs.map(r=>`<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:6px"><div>${r.emp.name} · ${r.emp.job_title||'—'}<span style="color:var(--text-sub)">（${Math.round(r.score)}分）</span></div><button class="btn-sm btn-blue" onclick="choosePreScheduleAssignee('${item.id}','${r.emp.id}')">选择</button></div>`).join('')}</div><div class="pre-item-actions"><button class="btn-sm btn-blue" onclick="shiftPreSchedule('${item.id}',1)">顺延1个月</button><button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="cancelPreSchedule('${item.id}')">取消预排</button><button class="btn-sm btn-red" onclick="deletePreSchedule('${item.id}')">删除</button></div></div>`; }).join(''); }
+  const ganttEl=document.getElementById('preScheduleGantt'); if(ganttEl){ const weeks=getWeekStarts(12); const employees=getWorkloadEmployees(); let html='<div class="gantt-wrap"><div class="gantt-head"><div class="gantt-person">人员</div>'+weeks.map(w=>`<div>${w.getMonth()+1}/${w.getDate()}</div>`).join('')+'</div>'; employees.forEach(emp=>{ const formal=allProjects.filter(p=>p.status!=='done'&&p.status!=='paused'&&p.director_id===emp.id).map(p=>({start:p.start_date,end:p.drawings_delivered_at||p.deadline,name:p.name,type:'formal'})).filter(x=>x.start&&x.end); const pres=getPreScheduleItems().filter(x=>x.status!=='cancelled' && (x.assignees||[]).includes(emp.id)).map(x=>({start:x.startDate,end:x.openDate,name:x.name,type:'pre'})); html += `<div class="gantt-row"><div class="gantt-person">${emp.name}</div>` + weeks.map(ws=>{ const f=formal.find(t=>overlapsWeek(t.start,t.end,ws)); const p=pres.find(t=>overlapsWeek(t.start,t.end,ws)); let inner=''; if(f&&p) inner='<div class="gantt-pill conflict">冲突</div>'; else if(f) inner=`<div class="gantt-pill formal">${f.name}</div>`; else if(p) inner=`<div class="gantt-pill pre">${p.name}</div>`; return `<div class="gantt-cell">${inner}</div>`; }).join('') + '</div>'; }); ganttEl.innerHTML=html+'</div>'; } }
+function jumpProjectForm(section, btn){ document.querySelectorAll('.project-form-jump .chip').forEach(x=>x.classList.remove('active')); if(btn) btn.classList.add('active'); const map={base:'projSectionBase', time:'projSectionTime', members:'projSectionMembers'}; const el=document.getElementById(map[section]); if(el) el.scrollIntoView({behavior:'smooth', block:'start'}); }
+
 let projFilter='all';
 function filterProj(s,el){
   document.querySelectorAll('#projFilter .chip').forEach(c=>c.classList.remove('active'));
   el.classList.add('active'); projFilter=s; renderProjectPage();
 }
 
+function getProjectStatusBadge(status){ return status==='active'?'进行中':status==='construction'?'🏗施工跟踪':status==='paused'?'⏸暂停':'已完结'; }
 function renderProjectPage(){
   if(!isAdmin){renderEmpProjTable();return}
-  const list=projFilter==='all'?allProjects:allProjects.filter(p=>p.status===projFilter);
-  // 风险预警
+  const list=projFilter==='all'?allProjects:allProjects.filter(p=>projFilter==='risk' ? ((safeNum(p.hours_budget)>0 && safeNum(p.hours_used)/safeNum(p.hours_budget)>0.85) || (safeNum(p.contract_amount)>0 && safeNum(p.labor_cost)/safeNum(p.contract_amount)>0.4)) : p.status===projFilter);
   const ra=document.getElementById('riskAlerts');
   if(ra){
-    const risky=allProjects.filter(p=>{
-      if(p.status==='done' || p.status==='paused') return false;
-      const hb = parseFloat(p.hours_budget)||0;
-      const hu = parseFloat(p.hours_used)||0;
-      const ca = parseFloat(p.contract_amount)||0;
-      const lc = parseFloat(p.labor_cost)||0;
-      return (hb>0 && hu/hb>0.85) || (ca>0 && lc/ca>0.7);
-    });
-    ra.innerHTML=risky.map(p=>{
-      const hb = parseFloat(p.hours_budget)||0;
-      const hu = parseFloat(p.hours_used)||0;
-      const ca = parseFloat(p.contract_amount)||0;
-      const lc = parseFloat(p.labor_cost)||0;
-      const hoursPct = hb>0 ? Math.round(calcAdjustedHours(hu)/hb*100) : 0;
-      const costPct = ca>0 ? Math.round(lc/ca*100) : 0;
-      return `<div class="notice red">⚠ <strong>${p.name?.slice(0,16)}</strong> — 工时消耗 ${hoursPct}%${ca>0?`，人力成本占合同 ${costPct}%`:'，合同额未填写'}</div>`;
-    }).join('');
+    const risky=allProjects.filter(p=>p.status!=='done' && p.status!=='paused').filter(p=>(safeNum(p.hours_budget)>0 && safeNum(p.hours_used)/safeNum(p.hours_budget)>0.85) || (safeNum(p.contract_amount)>0 && safeNum(p.labor_cost)/safeNum(p.contract_amount)>0.4));
+    ra.innerHTML=risky.slice(0,5).map(p=>`<div class="notice red">⚠ <strong>${p.name?.slice(0,16)}</strong> — 工时进度 ${Math.round((safeNum(p.hours_budget)?calcAdjustedHours(safeNum(p.hours_used))/safeNum(p.hours_budget):0)*100)}%，成本占合同 ${safeNum(p.contract_amount)?Math.round(safeNum(p.labor_cost)/safeNum(p.contract_amount)*100):0}%</div>`).join('');
   }
-  const el=document.getElementById('projTable');
-  if(!el)return;
-  if(!list.length){el.innerHTML='<div class="empty">暂无项目</div>';return}
-  el.innerHTML=`<div class="card" style="margin-bottom:16px"><div style="overflow-x:auto"><table class="data-table">
-    <thead><tr><th>项目名称</th><th>合同额</th><th>已回款</th><th>人力成本</th><th>利润率</th><th>工时进度 <span title="实际工时含主管10%+总监10%管理折算" style="cursor:help;color:var(--gold)">ⓘ</span></th><th>状态</th><th>操作</th></tr></thead>
-    <tbody>${list.map(p=>{
-      const margin=p.contract_amount>0?Math.round((p.contract_amount-p.labor_cost)/p.contract_amount*100):0;
-      const adjHours = calcAdjustedHours(p.hours_used||0);
-      const pct=p.hours_budget>0?Math.round(adjHours/p.hours_budget*100):0;
-      return `<tr>
-        <td class="fw6" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-          ${p.name}
-          ${p.director_id?`<div style="font-size:10px;color:var(--text-sub)">${allEmployees.find(e=>e.id===p.director_id)?.name||''}总监</div>`:''}
-        </td>
-        <td class="mono">¥${p.contract_amount}万</td>
-        <td class="mono">¥${(p.paid_amount||0).toFixed(1)}万</td>
-        <td class="mono">¥${(p.labor_cost||0).toFixed(1)}万</td>
-        <td class="mono ${margin<20?'dn':margin>=38?'up':''}">${margin}%</td>
-        <td><div style="display:flex;align-items:center;gap:6px">
-          <div style="width:60px;height:5px;background:var(--cream);border-radius:3px;overflow:hidden">
-            <div style="width:${Math.min(pct,100)}%;height:100%;border-radius:3px;background:${pct>90?'var(--accent)':pct>70?'var(--gold)':'var(--green)'}"></div>
-          </div><span class="mono" style="font-size:11px">${pct}% <span style="font-size:9px;color:var(--text-sub)" title="实际录入${Math.round(p.hours_used||0)}h × 1.2管理折算 = ${Math.round(adjHours)}h">ⓘ</span></span>
-        </div></td>
-        <td>
-          <span class="badge badge-${p.status}">${p.status==='active'?'进行中':p.status==='construction'?'🏗施工跟踪':p.status==='paused'?'⏸暂停':p.status==='risk'?'⚠预警':'已完结'}</span>
-          ${p.deadline&&p.status==='active'&&new Date(p.deadline)<new Date()?'<div style="font-size:10px;color:var(--accent);margin-top:2px">⚠施工图已超期</div>':''}
-          ${p.status==='construction'&&p.completion_date?`<div style="font-size:10px;color:var(--text-sub);margin-top:2px">预计竣工：${p.completion_date}</div>`:''}
-        </td>
-        <td style="display:flex;gap:4px">
-          <button class="btn-sm btn-blue" onclick="quickPayment('${p.id}')">回款</button>
-          <button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="editProject('${p.id}')">编辑</button>
-          <button class="btn-sm btn-red" onclick="deleteProject('${p.id}','${p.name?.replace(/'/g,'')}')">删除</button>
-        </td>
-      </tr>`;
-    }).join('')}</tbody>
-  </table></div></div>`;
-  // 回款记录
+  const el=document.getElementById('projTable'); if(!el)return;
+  if(!list.length){ el.innerHTML='<div class="empty">暂无项目</div>'; }
+  else if(isMobileView()){
+    el.innerHTML=`<div class="mobile-project-list">${list.map(p=>{ const margin=safeNum(p.contract_amount)>0?Math.round((safeNum(p.contract_amount)-safeNum(p.labor_cost))/safeNum(p.contract_amount)*100):0; const pct=safeNum(p.hours_budget)>0?Math.round(calcAdjustedHours(safeNum(p.hours_used))/safeNum(p.hours_budget)*100):0; const riskTone=pct>90 || margin<20 ? 'badge-risk' : pct>70 ? 'badge-warn' : 'badge-active'; return `<div class="m-card"><div class="m-card-title">${p.name}</div><div class="m-card-meta"><span>${getProjectModelLabel(p)}</span><span>${safeNum(p.area)||'—'}㎡</span><span>${p.deadline||'无截止日'}</span></div><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px"><div><div style="font-size:12px;color:var(--text-sub)">工时进度</div><div class="mono">${pct}%</div></div><div><div style="font-size:12px;color:var(--text-sub)">利润率</div><div class="mono ${margin<20?'dn':margin>=38?'up':''}">${margin}%</div></div><div><span class="badge ${riskTone}">${getProjectStatusBadge(p.status)}</span></div></div><div class="m-card-actions"><button class="btn-sm btn-blue" onclick="quickPayment('${p.id}')">回款</button><button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="editProject('${p.id}')">编辑</button><button class="btn-sm btn-red" onclick="deleteProject('${p.id}','${(p.name||'').replace(/'/g,'')}')">删除</button></div></div>`; }).join('')}</div>`;
+  } else {
+    el.innerHTML=`<div class="card" style="margin-bottom:16px"><div style="overflow-x:auto"><table class="data-table"><thead><tr><th>项目名称</th><th>合同额</th><th>已回款</th><th>人力成本</th><th>利润率</th><th>工时进度 <span title="实际工时含主管10%+总监10%管理折算" style="cursor:help;color:var(--gold)">ⓘ</span></th><th>状态</th><th>操作</th></tr></thead><tbody>${list.map(p=>{ const margin=safeNum(p.contract_amount)>0?Math.round((safeNum(p.contract_amount)-safeNum(p.labor_cost))/safeNum(p.contract_amount)*100):0; const adjHours=calcAdjustedHours(safeNum(p.hours_used)); const pct=safeNum(p.hours_budget)>0?Math.round(adjHours/safeNum(p.hours_budget)*100):0; return `<tr><td class="fw6" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}${p.director_id?`<div style="font-size:10px;color:var(--text-sub)">${allEmployees.find(e=>e.id===p.director_id)?.name||''}总监</div>`:''}</td><td class="mono">¥${safeNum(p.contract_amount)}万</td><td class="mono">¥${safeNum(p.paid_amount)}万</td><td class="mono">¥${Math.round(safeNum(p.labor_cost)).toLocaleString()}</td><td class="mono ${margin<20?'dn':margin>=38?'up':''}">${margin}%</td><td><div style="display:flex;align-items:center;gap:6px"><div style="width:60px;height:5px;background:var(--cream);border-radius:3px;overflow:hidden"><div style="width:${Math.min(pct,100)}%;height:100%;border-radius:3px;background:${pct>90?'var(--accent)':pct>70?'var(--gold)':'var(--green)'}"></div></div><span class="mono" style="font-size:11px">${pct}%</span></div></td><td><span class="badge badge-${p.status}">${getProjectStatusBadge(p.status)}</span></td><td style="display:flex;gap:4px"><button class="btn-sm btn-blue" onclick="quickPayment('${p.id}')">回款</button><button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="editProject('${p.id}')">编辑</button><button class="btn-sm btn-red" onclick="deleteProject('${p.id}','${(p.name||'').replace(/'/g,'')}')">删除</button></td></tr>`; }).join('')}</tbody></table></div></div>`;
+  }
   const pt=document.getElementById('paymentTable');
   if(pt){
-    if(!allPayments.length){pt.innerHTML='<div class="empty">暂无回款记录</div>';return}
-    pt.innerHTML=`<table class="data-table"><thead><tr><th>日期</th><th>项目</th><th>类型</th><th>金额</th><th>备注</th></tr></thead>
-    <tbody>${allPayments.map(p=>`<tr>
-      <td>${p.payment_date}</td>
-      <td>${p.project?.name?.slice(0,14)||'—'}</td>
-      <td><span class="badge ${p.type.includes('回款')||p.type.includes('款')?'badge-active':'badge-warn'}">${p.type}</span></td>
-      <td class="mono fw6">¥${p.amount}万</td>
-      <td style="color:var(--text-sub)">${p.note||'—'}</td>
-      <td style="display:flex;gap:4px">
-        <button class="btn-sm btn-blue" onclick="editPayment('${p.id}')">编辑</button>
-        <button class="btn-sm btn-red" onclick="deletePayment('${p.id}')">删除</button>
-      </td>
-    </tr>`).join('')}</tbody></table>`;
+    if(!allPayments.length){ pt.innerHTML='<div class="empty">暂无回款记录</div>'; }
+    else if(isMobileView()){
+      pt.innerHTML=`<div class="mobile-payment-list">${allPayments.map(p=>`<div class="m-card"><div class="m-card-title">${p.project?.name?.slice(0,20)||'—'}</div><div class="m-card-meta"><span>${p.payment_date}</span><span>${p.type}</span></div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div class="mono fw6">¥${safeNum(p.amount)}万</div><div style="font-size:12px;color:var(--text-sub)">${p.note||'—'}</div></div><div class="m-card-actions"><button class="btn-sm btn-blue" onclick="editPayment('${p.id}')">编辑</button><button class="btn-sm btn-red" onclick="deletePayment('${p.id}')">删除</button></div></div>`).join('')}</div>`;
+    } else {
+      pt.innerHTML=`<table class="data-table"><thead><tr><th>日期</th><th>项目</th><th>类型</th><th>金额</th><th>备注</th><th>操作</th></tr></thead><tbody>${allPayments.map(p=>`<tr><td>${p.payment_date}</td><td>${p.project?.name?.slice(0,14)||'—'}</td><td><span class="badge ${String(p.type).includes('回款')||String(p.type).includes('款')?'badge-active':'badge-warn'}">${p.type}</span></td><td class="mono fw6">¥${p.amount}万</td><td style="color:var(--text-sub)">${p.note||'—'}</td><td style="display:flex;gap:4px"><button class="btn-sm btn-blue" onclick="editPayment('${p.id}')">编辑</button><button class="btn-sm btn-red" onclick="deletePayment('${p.id}')">删除</button></td></tr>`).join('')}</tbody></table>`;
+    }
   }
-  // 横向对比
   const cb=document.getElementById('compareBody');
-  if(cb) cb.innerHTML=allProjects.map(p=>{
-    const margin=p.contract_amount>0?Math.round((p.contract_amount-p.labor_cost)/p.contract_amount*100):0;
-    const pct=p.hours_budget>0?Math.round(p.hours_used/p.hours_budget*100):0;
-    const hourly=p.hours_used>0?Math.round(p.contract_amount*10000/p.hours_used):0;
-    return `<tr>
-      <td class="fw6">${p.name?.slice(0,14)}</td>
-      <td class="mono">¥${p.contract_amount}万</td>
-      <td class="mono ${margin<20?'dn':margin>=38?'up':''}">${margin}%</td>
-      <td class="mono">${Math.round(p.hours_used||0)}h</td>
-      <td><div style="display:flex;align-items:center;gap:6px">
-        <div style="width:50px;height:5px;background:var(--cream);border-radius:3px;overflow:hidden">
-          <div style="width:${Math.min(pct,100)}%;height:100%;background:${pct>90?'var(--accent)':'var(--green)'};border-radius:3px"></div>
-        </div><span style="font-size:11px">${pct}%</span></div></td>
-      <td class="mono">¥${hourly}/h</td>
-      <td><span class="badge badge-${p.status}">${p.status==='active'?'进行中':p.status==='construction'?'🏗施工跟踪':p.status==='paused'?'⏸暂停':p.status==='risk'?'⚠预警':'已完结'}</span></td>
-    </tr>`;
-  }).join('');
+  if(cb) cb.innerHTML=allProjects.map(p=>{ const margin=safeNum(p.contract_amount)>0?Math.round((safeNum(p.contract_amount)-safeNum(p.labor_cost))/safeNum(p.contract_amount)*100):0; const pct=safeNum(p.hours_budget)>0?Math.round(safeNum(p.hours_used)/safeNum(p.hours_budget)*100):0; const hourly=safeNum(p.hours_used)>0?Math.round(safeNum(p.contract_amount)*10000/safeNum(p.hours_used)):0; return `<tr><td class="fw6">${p.name?.slice(0,14)}</td><td class="mono">¥${safeNum(p.contract_amount)}万</td><td class="mono ${margin<20?'dn':margin>=38?'up':''}">${margin}%</td><td class="mono">${Math.round(safeNum(p.hours_used)||0)}h</td><td><div style="display:flex;align-items:center;gap:6px"><div style="width:50px;height:5px;background:var(--cream);border-radius:3px;overflow:hidden"><div style="width:${Math.min(pct,100)}%;height:100%;background:${pct>90?'var(--accent)':'var(--green)'};border-radius:3px"></div></div><span style="font-size:11px">${pct}%</span></div></td><td class="mono">¥${hourly}/h</td><td><span class="badge badge-${p.status}">${getProjectStatusBadge(p.status)}</span></td></tr>`; }).join('');
 }
-
-function renderEmpProjTable(){
-  const el=document.getElementById('empProjTable');
-  if(!el)return;
-  const myProjIds=[...new Set(allLogs.map(l=>l.project_id))];
-  const myProjs=allProjects.filter(p=>myProjIds.includes(p.id));
-  if(!myProjs.length){el.innerHTML='<div class="empty">暂无参与项目</div>';return}
-  el.innerHTML=`<table class="data-table"><thead><tr><th>项目名称</th><th>客户</th><th>状态</th></tr></thead>
-  <tbody>${myProjs.map(p=>`<tr>
-    <td class="fw6">${p.name}</td>
-    <td>${p.client||'—'}</td>
-    <td><span class="badge badge-${p.status}">${p.status==='active'?'进行中':p.status==='construction'?'🏗施工跟踪':p.status==='paused'?'⏸暂停':p.status==='risk'?'⚠预警':'已完结'}</span></td>
-  </tr>`).join('')}</tbody></table>`;
-}
-
+function renderEmpProjTable(){ const el=document.getElementById('empProjTable'); if(!el)return; const myProjIds=[...new Set(allLogs.map(l=>l.project_id))]; const myProjs=allProjects.filter(p=>myProjIds.includes(p.id)); if(!myProjs.length){el.innerHTML='<div class="empty">暂无参与项目</div>';return} if(isMobileView()) el.innerHTML=`<div class="mobile-project-list">${myProjs.map(p=>`<div class="m-card"><div class="m-card-title">${p.name}</div><div class="m-card-meta"><span>${p.client||'—'}</span><span>${getProjectStatusBadge(p.status)}</span></div></div>`).join('')}</div>`; else el.innerHTML=`<table class="data-table"><thead><tr><th>项目名称</th><th>客户</th><th>状态</th></tr></thead><tbody>${myProjs.map(p=>`<tr><td class="fw6">${p.name}</td><td>${p.client||'—'}</td><td><span class="badge badge-${p.status}">${getProjectStatusBadge(p.status)}</span></td></tr>`).join('')}</tbody></table>`; }
 function quickPayment(projId){
   const el=document.getElementById('payProj');
   if(el) el.value=projId;
@@ -4212,6 +4308,8 @@ const pageInfo={
   project:{title:'项目管理',sub:'项目经营数据与风险评估'},
   dashboard:{title:'经营看板',sub:'数据可信度 · 人效概览 · 风险待办'},
   quote:{title:'报价参考',sub:'工装报价区间 · 历史案例 · 图纸交付节奏'},
+  preschedule:{title:'项目预排期',sub:'倒排时间 · 推荐人选 · 甘特图联动'},
+  tasklib:{title:'任务工时库',sub:'任务归类 · 单条工时基线 · 人工修正'},
   team:{title:'团队管理',sub:'员工账号与权限管理'},
   bonus:{title:'绩效管理',sub:'项目成员配置 · 绩效打分 · 奖金核算'},
   profile:{title:'我的档案',sub:'个人工时与效率数据'},
