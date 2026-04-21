@@ -303,7 +303,7 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
   .step-tab{padding:8px 12px;border-radius:999px;border:1px solid var(--border);background:#fff;font-size:12px;white-space:nowrap}
   .step-tab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
   .preplan-layout{display:block!important}
-  .gantt-wrap{overflow:auto}
+  .gantt-wrap{overflow:auto;max-width:100%}
 }
 .preplan-layout{display:grid;grid-template-columns:360px 1fr;gap:18px}
 .preplan-card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
@@ -316,15 +316,15 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
 .preplan-item .ops{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 .preplan-reco{margin-top:8px;font-size:12px;color:var(--text-sub)}
 .gantt-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
-.gantt-track-header{display:grid;grid-template-columns:repeat(12,110px)}
-.gantt-header-week{text-align:center}
-.gantt-grid{min-width:980px}
-.gantt-header,.gantt-row{display:grid;grid-template-columns:160px repeat(12,110px)}
+.gantt-grid{width:max-content;min-width:100%}
+.gantt-header,.gantt-row{display:grid;grid-template-columns:160px repeat(12, 1fr)}
 .gantt-header{position:sticky;top:0;background:var(--card);z-index:2;border-bottom:1px solid var(--border)}
 .gantt-header div,.gantt-row .cell{padding:10px;border-right:1px solid var(--cream);border-bottom:1px solid var(--cream);font-size:12px}
 .gantt-row .person{padding:10px;font-weight:600;background:#fafafa;border-right:1px solid var(--cream);border-bottom:1px solid var(--cream)}
+.gantt-header div:first-child{background:#fafafa;position:sticky;left:0;z-index:3}
+.gantt-row .person{position:sticky;left:0;z-index:2}
 .gantt-row{position:relative;min-height:64px}
-.gantt-row .dropzone{grid-column:2 / span 12;display:grid;grid-template-columns:repeat(12,1fr);position:relative;min-height:64px}
+.gantt-row .dropzone{grid-column:2 / span 12;display:grid;grid-template-columns:repeat(12,110px);position:relative;min-height:64px;overflow:hidden}
 .gantt-row .dropzone .wk{border-right:1px dashed var(--cream);min-height:64px}
 .gantt-block{position:absolute;top:10px;height:44px;border-radius:10px;padding:6px 10px;color:#fff;font-size:12px;font-weight:700;display:flex;flex-direction:column;justify-content:center;cursor:grab;box-shadow:0 6px 16px rgba(31,35,41,.14)}
 .gantt-block small{font-size:10px;font-weight:500;opacity:.9}
@@ -4554,7 +4554,7 @@ function renderPreplanFormHelpers(){
   if(dirSel){
     const current = dirSel.value;
     const dirs = getDirectorPeople();
-    dirSel.innerHTML = '<option value="">未指定</option>' + (dirs.length ? dirs.map(e=>`<option value="${e.id}">${e.name}</option>`).join('') : '<option value="" disabled>暂无可选总监</option>');
+    dirSel.innerHTML = '<option value="">未指定</option>' + dirs.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
     if(current && [...dirSel.options].some(o=>o.value===current)) dirSel.value = current;
   }
   const area = safeNum(document.getElementById('ppArea')?.value);
@@ -4709,8 +4709,8 @@ ${block.start_date} · ${block.weeks}周`;
       return `<div class="gantt-block ${cl}" style="${style}" title="${title}" ${attrs}>${block.name}</div>`;
     }).join('');
     return `<div class="gantt-row" ondragover="preplanDragOver(event)" ondrop="preplanDrop(event,'${person.id}')">
-      <div class="person">${person.name}<div style="font-size:10px;color:var(--text-sub);font-weight:400">${person.job_title||''}</div></div>
-      <div class="dropzone">${Array.from({length:weeks},()=>'<div class="wk"></div>').join('')}${blocksHtml}</div>
+      <div class="gantt-person">${person.name}<div style="font-size:10px;color:var(--text-sub);font-weight:400">${person.job_title||''}</div></div>
+      <div class="gantt-track">${Array.from({length:weeks},()=>'<div class="gantt-cell"></div>').join('')}${blocksHtml}</div>
     </div>`;
   }).join('');
   el.innerHTML = `<div class="gantt-header"><div></div><div class="gantt-track-header">${cols}</div></div>${rows}`;
@@ -4723,7 +4723,7 @@ function preplanDrop(ev, employeeId){
   if(!draggedPreplanId) return;
   const item = preplanItems.find(x=>x.id===draggedPreplanId);
   if(!item) return;
-  const track = ev.currentTarget.querySelector('.dropzone');
+  const track = ev.currentTarget.querySelector('.gantt-track');
   if(!track) return;
   const rect = track.getBoundingClientRect();
   const x = ev.clientX - rect.left;
@@ -4766,7 +4766,6 @@ function renderPreplanPage(){
 // ── 任务工时库（本地修正分类） ───────────────────────────────
 const TASK_CLASS_KEY = 'worktime_task_class_map_v2';
 let taskClassMap = {};
-let currentTaskLibTask = '';
 const TASK_CATEGORIES = ['平面方案初稿','平面方案调整','动线优化','功能分区调整','效果图建模','效果图渲染','方案文本/PPT','汇报后修改','平面施工图','天花施工图','地面铺装图','立面施工图','节点大样','家具定制图','门头/招牌图','机电条件配合','图纸校对/出图整理','材料筛选','材料整理成册','样板确认/调整','套店调整','复制店图纸替换','老店资料复用整理','客户修改','内部返工','会议沟通','现场问题处理','资料整理/归档'];
 function loadTaskClassMap(){
   try{ taskClassMap = JSON.parse(localStorage.getItem(TASK_CLASS_KEY)||'{}') || {}; }catch(_){ taskClassMap = {}; }
@@ -4854,12 +4853,11 @@ function renderTaskLibrary(){
       const hours = arr.map(x=>x.hours);
       const avg = hours.reduce((a,b)=>a+b,0)/Math.max(1,hours.length);
       const reworkPct = Math.round(arr.filter(x=>x.rework).length/Math.max(1,arr.length)*100);
-      return `<tr onclick="showTaskLibDetail('${k}')" style="cursor:pointer"><td class="fw6">${k}</td><td>${arr.length}</td><td class="mono">${avg.toFixed(1)}h</td><td class="mono">${median(hours).toFixed(1)}h</td><td class="mono">${(hours.length ? Math.max(...hours) : 0).toFixed(1)}h</td><td class="mono">${reworkPct}%</td></tr>`;
+      return `<tr onclick="showTaskLibDetail('${k}')" style="cursor:pointer"><td class="fw6">${k}</td><td>${arr.length}</td><td class="mono">${avg.toFixed(1)}h</td><td class="mono">${median(hours).toFixed(1)}h</td><td class="mono">${Math.max(...hours).toFixed(1)}h</td><td class="mono">${reworkPct}%</td></tr>`;
     }).join('')
   }</tbody></table>`;
 }
 function showTaskLibDetail(task){
-  currentTaskLibTask = task;
   const rows = getTaskLibRows().filter(r=>r.task===task).slice(0,40);
   const el = document.getElementById('taskLibDetail');
   if(!el) return;
@@ -4878,9 +4876,8 @@ function showTaskLibDetail(task){
 function updateTaskClass(logId, val){
   taskClassMap[logId] = val;
   saveTaskClassMap();
-  const keepTask = currentTaskLibTask || val;
   renderTaskLibrary();
-  showTaskLibDetail(keepTask);
+  showTaskLibDetail(val);
 }
 
 
@@ -4964,8 +4961,7 @@ function isThisWeek(dateStr){
   const d=new Date(dateStr);
   const now=new Date();
   const startOfWeek=new Date(now);
-  const day = (now.getDay() + 6) % 7; // 周一为0
-  startOfWeek.setDate(now.getDate()-day);
+  startOfWeek.setDate(now.getDate()-now.getDay());
   startOfWeek.setHours(0,0,0,0);
   return d>=startOfWeek;
 }
