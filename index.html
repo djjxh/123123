@@ -305,7 +305,7 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
   .preplan-layout{display:block!important}
   .gantt-wrap{overflow:auto}
 }
-.preplan-layout{display:grid;grid-template-columns:360px 1fr;gap:18px}
+.preplan-layout{display:grid;grid-template-columns:360px minmax(0,1fr);gap:18px;align-items:start}
 .preplan-card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
 .preplan-card .hd{padding:14px 16px;border-bottom:1px solid var(--cream);font-weight:700}
 .preplan-card .bd{padding:16px}
@@ -316,23 +316,22 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
 .preplan-item .ops{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 .preplan-reco{margin-top:8px;font-size:12px;color:var(--text-sub)}
 .gantt-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
-.gantt-wrap{overflow:auto;max-width:100%;position:relative}
-.gantt-grid{width:max-content;min-width:1480px}
+.gantt-wrap{overflow-x:auto;overflow-y:hidden;max-width:100%}
+.gantt-grid{min-width:1480px;width:max-content}
 .gantt-header,.gantt-row{display:grid;grid-template-columns:160px repeat(12,110px);align-items:stretch}
-.gantt-header{position:sticky;top:0;background:var(--card);z-index:3;border-bottom:1px solid var(--border)}
-.gantt-person,.gantt-header-spacer{padding:10px;font-weight:600;background:#fafafa;border-right:1px solid var(--cream);border-bottom:1px solid var(--cream);position:sticky;left:0;z-index:2}
-.gantt-header-spacer{z-index:4}
-.gantt-track-header{display:grid;grid-template-columns:repeat(12,110px);background:var(--card)}
-.gantt-header-week{padding:10px;border-right:1px solid var(--cream);border-bottom:1px solid var(--cream);font-size:12px;font-weight:600;color:var(--text-sub);text-align:center;white-space:nowrap}
-.gantt-row{min-height:64px}
-.gantt-track{display:grid;grid-template-columns:repeat(12,110px);position:relative;min-height:64px;overflow:hidden}
-.gantt-cell{border-right:1px dashed var(--cream);border-bottom:1px solid var(--cream);min-height:64px}
-.gantt-block{position:absolute;top:8px;height:44px;border-radius:10px;padding:6px 10px;color:#fff;font-size:12px;font-weight:700;display:flex;flex-direction:column;justify-content:center;cursor:grab;box-shadow:0 6px 16px rgba(31,35,41,.14);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.gantt-header{position:sticky;top:0;background:var(--card);z-index:4;border-bottom:1px solid var(--border)}
+.gantt-header > div:first-child{background:#fafafa;position:sticky;left:0;z-index:5;border-right:1px solid var(--cream);border-bottom:1px solid var(--cream)}
+.gantt-track-header{display:grid;grid-template-columns:repeat(12,110px)}
+.gantt-header-week{padding:10px;border-right:1px solid var(--cream);border-bottom:1px solid var(--cream);font-size:12px;text-align:center}
+.gantt-row{position:relative;min-height:64px}
+.gantt-person{padding:10px;font-weight:600;background:#fafafa;border-right:1px solid var(--cream);border-bottom:1px solid var(--cream);position:sticky;left:0;z-index:3}
+.gantt-track{position:relative;display:grid;grid-template-columns:repeat(12,110px);min-height:64px;border-bottom:1px solid var(--cream);background:#fff}
+.gantt-cell{border-right:1px dashed var(--cream);min-height:64px}
+.gantt-block{position:absolute;top:10px;height:44px;border-radius:10px;padding:6px 10px;color:#fff;font-size:12px;font-weight:700;display:flex;flex-direction:column;justify-content:center;cursor:grab;box-shadow:0 6px 16px rgba(31,35,41,.14);white-space:nowrap;overflow:hidden}
 .gantt-block small{font-size:10px;font-weight:500;opacity:.9}
 .gantt-block.pre{background:#6c8cff}
-.gantt-block.confirmed,.gantt-block.formal{background:#2da44e}
+.gantt-block.confirmed{background:#2da44e}
 .gantt-block.cancelled{background:#999}
-.gantt-block.outsource{background:#8f959e}
 .gantt-block.conflict{outline:3px solid #ffb4b4}
 .preplan-empty{padding:26px;text-align:center;color:var(--text-sub);font-size:13px}
 
@@ -4715,7 +4714,7 @@ ${block.start_date} · ${block.weeks}周`;
       <div class="gantt-track">${Array.from({length:weeks},()=>'<div class="gantt-cell"></div>').join('')}${blocksHtml}</div>
     </div>`;
   }).join('');
-  el.innerHTML = `<div class="gantt-header"><div class="gantt-header-spacer"></div><div class="gantt-track-header">${cols}</div></div>${rows}`;
+  el.innerHTML = `<div class="gantt-header"><div></div><div class="gantt-track-header">${cols}</div></div>${rows}`;
 }
 let draggedPreplanId = null;
 function preplanDragStart(ev, id){ draggedPreplanId = id; }
