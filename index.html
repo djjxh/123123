@@ -6,7 +6,94 @@
 <title>工时管家 · 室内设计工作室</title>
 <link rel="icon" href="data:,">
 <!-- Supabase JS SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+
+/* ===== 自动任务识别模块（新增） ===== */
+let allTaskRules = [];
+let allTaskClassifications = [];
+let pendingTaskClassifications = [];
+
+async function loadTaskRules(){
+  const { data } = await sb.from('task_rules').select('*').eq('is_active', true);
+  allTaskRules = data || [];
+}
+
+async function loadTaskClassifications(){
+  const { data } = await sb.from('task_classifications').select('*');
+  allTaskClassifications = data || [];
+  pendingTaskClassifications = allTaskClassifications.filter(x => !x.is_confirmed);
+}
+
+function classifyTaskText(text){
+  const raw = String(text || '');
+  let score = {};
+  allTaskRules.forEach(r=>{
+    if(raw.includes(r.keyword)){
+      score[r.category] = (score[r.category]||0) + (r.weight||10);
+    }
+  });
+  const best = Object.entries(score).sort((a,b)=>b[1]-a[1])[0] || ['ignore',0];
+  return {category: best[0], confidence: best[1]};
+}
+
+async function classifyAllLogs(){
+  if(!allLogs.length) return;
+  const rows = allLogs.map(log=>{
+    const r = classifyTaskText(log.note || '');
+    return {
+      log_id: log.id,
+      project_id: log.project_id,
+      raw_text: log.note || '',
+      category: r.category,
+      confidence: r.confidence,
+      is_confirmed: r.confidence > 10 && r.category !== 'revision'
+    };
+  });
+  await sb.from('task_classifications').upsert(rows, { onConflict: 'log_id' });
+}
+
+async function autoCreateStartNodes(){
+  const grouped = {};
+  allTaskClassifications.forEach(c=>{
+    if(!c.is_confirmed) return;
+    if(!grouped[c.project_id]) grouped[c.project_id]=[];
+    grouped[c.project_id].push(c);
+  });
+
+  for(const pid in grouped){
+    const has = allProjectNodes.filter(n=>n.project_id===pid).map(n=>n.node_type);
+    const types = [
+      {cat:'concept', node:'concept_started'},
+      {cat:'technical', node:'technical_started'},
+      {cat:'docking', node:'docking_started'}
+    ];
+    for(const t of types){
+      if(has.includes(t.node)) continue;
+      const first = grouped[pid].find(x=>x.category===t.cat);
+      if(!first) continue;
+      await sb.from('project_nodes').insert({
+        project_id: pid,
+        node_type: t.node,
+        node_date: new Date().toISOString().slice(0,10),
+        node_at: new Date().toISOString(),
+        source: 'task_auto',
+        note: '自动识别'
+      });
+    }
+  }
+}
+
+async function initTaskAI(){
+  await loadTaskRules();
+  await classifyAllLogs();
+  await loadTaskClassifications();
+  await autoCreateStartNodes();
+}
+
+setTimeout(()=>{initTaskAI();}, 2000);
+
+
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;600&display=swap');
 
@@ -5471,6 +5558,93 @@ function isThisWeek(dateStr){
 }
 
 // admin-only 由 CSS .admin-mode 控制，不用 inline style 覆盖
+
+
+/* ===== 自动任务识别模块（新增） ===== */
+let allTaskRules = [];
+let allTaskClassifications = [];
+let pendingTaskClassifications = [];
+
+async function loadTaskRules(){
+  const { data } = await sb.from('task_rules').select('*').eq('is_active', true);
+  allTaskRules = data || [];
+}
+
+async function loadTaskClassifications(){
+  const { data } = await sb.from('task_classifications').select('*');
+  allTaskClassifications = data || [];
+  pendingTaskClassifications = allTaskClassifications.filter(x => !x.is_confirmed);
+}
+
+function classifyTaskText(text){
+  const raw = String(text || '');
+  let score = {};
+  allTaskRules.forEach(r=>{
+    if(raw.includes(r.keyword)){
+      score[r.category] = (score[r.category]||0) + (r.weight||10);
+    }
+  });
+  const best = Object.entries(score).sort((a,b)=>b[1]-a[1])[0] || ['ignore',0];
+  return {category: best[0], confidence: best[1]};
+}
+
+async function classifyAllLogs(){
+  if(!allLogs.length) return;
+  const rows = allLogs.map(log=>{
+    const r = classifyTaskText(log.note || '');
+    return {
+      log_id: log.id,
+      project_id: log.project_id,
+      raw_text: log.note || '',
+      category: r.category,
+      confidence: r.confidence,
+      is_confirmed: r.confidence > 10 && r.category !== 'revision'
+    };
+  });
+  await sb.from('task_classifications').upsert(rows, { onConflict: 'log_id' });
+}
+
+async function autoCreateStartNodes(){
+  const grouped = {};
+  allTaskClassifications.forEach(c=>{
+    if(!c.is_confirmed) return;
+    if(!grouped[c.project_id]) grouped[c.project_id]=[];
+    grouped[c.project_id].push(c);
+  });
+
+  for(const pid in grouped){
+    const has = allProjectNodes.filter(n=>n.project_id===pid).map(n=>n.node_type);
+    const types = [
+      {cat:'concept', node:'concept_started'},
+      {cat:'technical', node:'technical_started'},
+      {cat:'docking', node:'docking_started'}
+    ];
+    for(const t of types){
+      if(has.includes(t.node)) continue;
+      const first = grouped[pid].find(x=>x.category===t.cat);
+      if(!first) continue;
+      await sb.from('project_nodes').insert({
+        project_id: pid,
+        node_type: t.node,
+        node_date: new Date().toISOString().slice(0,10),
+        node_at: new Date().toISOString(),
+        source: 'task_auto',
+        note: '自动识别'
+      });
+    }
+  }
+}
+
+async function initTaskAI(){
+  await loadTaskRules();
+  await classifyAllLogs();
+  await loadTaskClassifications();
+  await autoCreateStartNodes();
+}
+
+setTimeout(()=>{initTaskAI();}, 2000);
+
+
 </script>
 </body>
 </html>
