@@ -303,9 +303,10 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
   .step-tab{padding:8px 12px;border-radius:999px;border:1px solid var(--border);background:#fff;font-size:12px;white-space:nowrap}
   .step-tab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
   .preplan-layout{display:block!important}
-  .gantt-wrap{overflow:auto}
 }
-.preplan-layout{display:grid;grid-template-columns:360px minmax(0,1fr);gap:18px}
+
+/* 预排期：卡片 + 右侧稳定周历 */
+.preplan-layout{display:grid;grid-template-columns:360px minmax(0,1fr);gap:18px;align-items:start}
 .preplan-card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
 .preplan-card .hd{padding:14px 16px;border-bottom:1px solid var(--cream);font-weight:700}
 .preplan-card .bd{padding:16px}
@@ -315,27 +316,47 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
 .preplan-item .meta{font-size:12px;color:var(--text-sub);line-height:1.7}
 .preplan-item .ops{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 .preplan-reco{margin-top:8px;font-size:12px;color:var(--text-sub)}
-.gantt-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
-.gantt-wrap{overflow:auto;max-width:100%}
+.preplan-empty{padding:26px;text-align:center;color:var(--text-sub);font-size:13px}
+
+.gantt-wrap{overflow-x:auto;overflow-y:hidden;max-width:100%;border:1px solid var(--cream);border-radius:12px;background:#fff}
 .gantt-grid{width:max-content;min-width:100%}
-.gantt-header,.gantt-row{display:grid;grid-template-columns:160px repeat(12,110px);align-items:stretch}
-.gantt-header{position:sticky;top:0;background:var(--card);z-index:3;border-bottom:1px solid var(--border)}
-.gantt-person,.gantt-header-spacer{padding:10px;font-size:12px;border-right:1px solid var(--cream);border-bottom:1px solid var(--cream);background:#fafafa}
-.gantt-person{font-weight:600;position:sticky;left:0;z-index:2}
-.gantt-header-spacer{position:sticky;left:0;z-index:4}
-.gantt-track-header,.gantt-track{display:grid;grid-template-columns:repeat(12,110px);position:relative}
-.gantt-header-week,.gantt-cell{padding:10px;border-right:1px solid var(--cream);border-bottom:1px solid var(--cream);font-size:12px;text-align:center;background:#fff}
-.gantt-cell{min-height:64px;border-right:1px dashed var(--cream)}
-.gantt-row{min-height:64px}
-.gantt-track{overflow:hidden;min-height:64px}
-.gantt-block{position:absolute;top:8px;height:44px;border-radius:10px;padding:6px 10px;color:#fff;font-size:12px;font-weight:700;display:flex;flex-direction:column;justify-content:center;cursor:grab;box-shadow:0 6px 16px rgba(31,35,41,.14);overflow:hidden;white-space:nowrap}
-.gantt-block small{font-size:10px;font-weight:500;opacity:.9}
+.gantt-header,.gantt-row{display:grid;grid-template-columns:160px minmax(0,1fr);align-items:stretch}
+.gantt-header{position:sticky;top:0;background:#fff;z-index:3;border-bottom:1px solid var(--border)}
+.gantt-header > div:first-child{position:sticky;left:0;z-index:4;background:#fafafa;border-right:1px solid var(--cream)}
+.gantt-track-header,.gantt-track{display:grid;grid-template-columns:repeat(12,110px);width:fit-content}
+.gantt-header-week{padding:10px 8px;text-align:center;font-size:12px;border-right:1px solid var(--cream)}
+.gantt-row{min-height:74px}
+.gantt-person{position:sticky;left:0;z-index:2;background:#fafafa;padding:12px 10px;border-right:1px solid var(--cream);border-bottom:1px solid var(--cream);font-weight:600;display:flex;flex-direction:column;justify-content:center}
+.gantt-person div{font-size:10px;color:var(--text-sub);font-weight:400;margin-top:2px}
+.gantt-track{position:relative;min-height:74px;border-bottom:1px solid var(--cream);overflow:hidden}
+.gantt-cell{border-right:1px dashed var(--cream);min-height:74px}
+.gantt-block{position:absolute;top:10px;height:42px;border-radius:10px;padding:8px 10px;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;box-shadow:0 6px 16px rgba(31,35,41,.14);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .gantt-block.pre{background:#6c8cff}
 .gantt-block.confirmed{background:#2da44e}
 .gantt-block.cancelled{background:#999}
-.gantt-block.formal{background:#64748b}
+.gantt-block.formal{background:#8f959e}
 .gantt-block.conflict{outline:3px solid #ffb4b4}
-.preplan-empty{padding:26px;text-align:center;color:var(--text-sub);font-size:13px}
+.gantt-block.phase-concept{background: linear-gradient(135deg, #6c8cff 0%, #8ea7ff 100%); border-left: 4px solid #3b5bdb}
+.gantt-block.phase-technical{background: linear-gradient(135deg, #2da44e 0%, #52c41a 100%); border-left: 4px solid #1b612c}
+.gantt-block.phase-outsource{background: repeating-linear-gradient(45deg, #f5f5f5, #f5f5f5 10px, #e8e8e8 10px, #e8e8e8 20px); color: #666; border: 1px dashed #ccc; box-shadow: none}
+
+/* 项目追踪时间轴 */
+.track-timeline { position: relative; padding-left: 20px; border-left: 2px solid var(--border); margin-left: 10px; }
+.track-node { position: relative; padding-bottom: 24px; }
+.track-node:last-child { padding-bottom: 0; }
+.track-node::before { content: ''; position: absolute; left: -26px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--border); border: 2px solid #fff; }
+.track-node.active::before { background: var(--accent); border-color: var(--accent-soft); }
+.track-node.concept::before { background: var(--blue); }
+.track-node.technical::before { background: var(--green); }
+.track-node.revision::before { background: var(--gold); }
+.track-node-hd { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+.track-node-title { font-size: 13px; font-weight: 700; }
+.track-node-date { font-size: 11px; color: var(--text-sub); font-family: 'DM Mono', monospace; }
+.track-node-tasks { font-size: 11px; color: var(--text-sub); background: var(--cream); padding: 8px; border-radius: 6px; margin-top: 6px; line-height: 1.6; }
+.track-node-suggest { font-size: 10px; color: var(--accent); background: var(--accent-soft); padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: 600; }
+.track-metric-item { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px; }
+.track-metric-val { font-family: 'DM Mono', monospace; font-weight: 600; }
+
 
 </style>
 </head>
@@ -544,9 +565,15 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
               </div>
             </div>
             <div class="form-row">
-              <div class="form-group"><label class="form-label">预计开业/接铺时间</label><input type="date" class="form-input" id="ppOpenDate"></div>
+              <div class="form-group"><label class="form-label">预计接铺日期 (进场)</label><input type="date" class="form-input" id="ppTakeoverDate" onchange="renderPreplanFormHelpers()"></div>
+              <div class="form-group"><label class="form-label">预计开业日期 (完毕)</label><input type="date" class="form-input" id="ppOpenDate" onchange="renderPreplanFormHelpers()"></div>
+            </div>
+            <div class="form-row">
               <div class="form-group"><label class="form-label">状态</label>
                 <select class="form-select" id="ppStatus"><option value="pre">预排中</option><option value="confirmed">已确认</option></select>
+              </div>
+              <div class="form-group"><label class="form-label">建议施工周期</label>
+                <input type="text" class="form-input" id="ppConstDuration" readonly style="background:var(--bg-main)" placeholder="自动计算">
               </div>
             </div>
             <div class="form-row">
@@ -555,7 +582,41 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
                 <select class="form-select" id="ppReuse"><option value="false">否</option><option value="true">是</option></select>
               </div>
             </div>
-            <div class="form-group"><label class="form-label">推荐负责人</label><select class="form-select" id="ppAssignee"></select></div>
+
+            <!-- 分段设置 -->
+            <div style="background:var(--bg-main);padding:12px;border-radius:10px;margin-bottom:12px;border:1px solid var(--border)">
+              <div style="font-size:12px;font-weight:700;margin-bottom:10px;display:flex;justify-content:space-between">
+                <span>分段排期设置</span>
+                <span id="ppTotalWeeksLabel" style="color:var(--accent)">总计 0 周</span>
+              </div>
+              
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">方案阶段 (周)</label>
+                  <input type="number" class="form-input" id="ppConceptWeeks" step="0.5" value="3" oninput="renderPreplanFormHelpers()">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">深化阶段 (周)</label>
+                  <input type="number" class="form-input" id="ppTechnicalWeeks" step="0.5" value="3" oninput="renderPreplanFormHelpers()">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">方案负责人</label>
+                <select class="form-select" id="ppConceptAssignee" onchange="renderPreplanFormHelpers()"></select>
+              </div>
+
+              <div class="form-group">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                  <label class="form-label" style="margin-bottom:0">深化负责人</label>
+                  <label style="font-size:11px;color:var(--text-sub);display:flex;align-items:center;gap:4px;cursor:pointer">
+                    <input type="checkbox" id="ppOutsource" onchange="renderPreplanFormHelpers()"> 深化外包
+                  </label>
+                </div>
+                <select class="form-select" id="ppTechnicalAssignee"></select>
+              </div>
+            </div>
+
             <div id="ppRecoBox" style="font-size:12px;color:var(--text-sub);line-height:1.7;margin:-2px 0 8px"></div>
             <div id="ppRecoCards" style="display:grid;gap:10px;margin:0 0 12px"></div>
             <div id="ppCreateHint" style="display:none;font-size:12px;border-radius:10px;padding:10px 12px;margin-bottom:12px"></div>
@@ -572,10 +633,23 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
           <div class="hd">未来 12 周人员预排甘特图</div>
           <div class="bd">
             <div class="gantt-toolbar">
-              <div style="font-size:12px;color:var(--text-sub)">拖动项目块可调整到任意周；拖到其他人员行可更换负责人。</div>
-              <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <span class="badge badge-active">已确认</span>
-                <span class="badge" style="background:#e8f0ff;color:#4d72ff">预排中</span>
+              <div style="font-size:12px;color:var(--text-sub)">拖动项目块可调整时间；不同颜色代表不同设计阶段。</div>
+              <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:8px">
+                <div style="display:flex;align-items:center;gap:5px;font-size:12px">
+                  <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:linear-gradient(135deg, #6c8cff 0%, #8ea7ff 100%)"></span>方案
+                </div>
+                <div style="display:flex;align-items:center;gap:5px;font-size:12px">
+                  <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:linear-gradient(135deg, #2da44e 0%, #52c41a 100%)"></span>深化
+                </div>
+                <div style="display:flex;align-items:center;gap:5px;font-size:12px">
+                  <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:repeating-linear-gradient(45deg, #f5f5f5, #f5f5f5 5px, #e8e8e8 5px, #e8e8e8 10px);border:1px solid #ccc"></span>外包
+                </div>
+                <div style="width:1px;height:12px;background:var(--border);margin:0 4px"></div>
+                <span class="badge badge-active" style="font-size:11px;padding:2px 8px">已确认</span>
+                <span class="badge" style="background:#e8f0ff;color:#4d72ff;font-size:11px;padding:2px 8px">预排中</span>
+                <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:#ff4d4f;font-weight:600">
+                  <span style="width:10px;height:10px;border:2px solid #ffb4b4;border-radius:3px"></span> 冲突
+                </span>
               </div>
             </div>
             <div class="gantt-wrap"><div id="preplanGantt" class="gantt-grid"></div></div>
@@ -613,6 +687,8 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
       <div>
         <div class="section-hd"><div class="section-title">今日待办</div></div>
         <div class="card"><div id="todayTodoList" style="padding:4px 0 8px"></div></div>
+        <div class="section-hd"><div class="section-title">项目周期预警 <span class="intel-badge live">节点</span></div></div>
+        <div class="card"><div id="projectNodeAlerts" style="padding:4px 0 8px"></div></div>
       </div>
       <div>
         <div class="section-hd"><div class="section-title">团队异常</div></div>
@@ -1171,6 +1247,73 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
       </div>
     </div></div></div>
 
+<!-- MODAL: 项目追踪 -->
+<div class="modal-overlay" id="projectTrackModal" onclick="closeModalOutside(event,'projectTrackModal')">
+  <div class="modal-box" style="max-width:850px"><div class="modal-handle"></div>
+    <div class="modal-title" style="display:flex;justify-content:space-between;align-items:center">
+      <div><button class="modal-close" onclick="closeModal('projectTrackModal')">×</button>项目节点追踪</div>
+      <div id="trackProjName" style="font-size:14px;color:var(--text-sub);margin-right:30px"></div>
+    </div>
+    <div class="modal-body">
+      <div class="two-col" style="grid-template-columns: 280px 1fr; gap: 24px">
+        <!-- 左侧：节点打点按钮 -->
+        <div style="border-right:1px solid var(--border);padding-right:20px">
+          <div style="font-size:12px;font-weight:700;margin-bottom:12px;color:var(--text-sub)">阶段节点打点</div>
+          
+          <div style="margin-bottom:20px">
+            <div style="font-size:11px;color:var(--text-sub);margin-bottom:6px">方案阶段</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <button class="btn-sm" style="background:var(--blue-soft);color:var(--blue)" onclick="markNode('concept_started')">开始方案</button>
+              <button class="btn-sm" style="background:var(--blue-soft);color:var(--blue)" onclick="markNode('concept_completed')">方案完成</button>
+              <button class="btn-sm" style="background:var(--blue-soft);color:var(--blue);grid-column: span 2" onclick="markNode('submitted_to_client')">提交甲方</button>
+            </div>
+          </div>
+
+          <div style="margin-bottom:20px">
+            <div style="font-size:11px;color:var(--text-sub);margin-bottom:6px">甲方反馈与修改</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="markNode('client_feedback_received')">收到反馈</button>
+              <button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="markNode('client_confirmed')">确认方案</button>
+              <button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="markNode('revision_started')">开始修改</button>
+              <button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="markNode('revision_completed')">完成修改</button>
+            </div>
+          </div>
+
+          <div style="margin-bottom:20px">
+            <div style="font-size:11px;color:var(--text-sub);margin-bottom:6px">施工图与后期</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <button class="btn-sm" style="background:var(--green-soft);color:var(--green)" onclick="markNode('technical_started')">开始深化</button>
+              <button class="btn-sm" style="background:var(--green-soft);color:var(--green)" onclick="markNode('technical_completed')">深化完成</button>
+              <button class="btn-sm" style="background:var(--green-soft);color:var(--green)" onclick="markNode('docking_started')">开始对接</button>
+              <button class="btn-sm" style="background:var(--green-soft);color:var(--green)" onclick="markNode('docking_completed')">对接结束</button>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-size:11px;color:var(--text-sub);margin-bottom:6px">人员释放</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <button class="btn-sm" style="background:var(--ink);color:var(--paper)" onclick="markNode('concept_released')">方案释放</button>
+              <button class="btn-sm" style="background:var(--ink);color:var(--paper)" onclick="markNode('technical_released')">深化释放</button>
+              <button class="btn-sm" style="background:var(--ink);color:var(--paper);grid-column: span 2" onclick="markNode('released')">项目全员释放</button>
+            </div>
+          </div>
+          <!-- 节点备注录入 -->
+          <div style="margin-top:20px;padding-top:15px;border-top:1px dashed var(--border)">
+            <div style="font-size:11px;color:var(--text-sub);margin-bottom:6px">节点备注 (可选)</div>
+            <textarea id="trackNodeNote" class="form-input" style="font-size:12px;height:60px;resize:none" placeholder="在此录入打点备注..."></textarea>
+          </div>
+        </div>
+
+        <!-- 右侧：时间轴与联动统计 -->
+        <div>
+          <div id="trackTimelineArea" style="margin-bottom:24px"></div>
+          <div id="trackAnalysisArea" style="background:var(--bg-main);border-radius:12px;padding:16px;border:1px solid var(--border)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="paymentModal" onclick="closeModalOutside(event,'paymentModal')">
   <div class="modal-box"><div class="modal-handle"></div>
     <div class="modal-title"><button class="modal-close" onclick="closeModal('paymentModal')">×</button>录入回款/报销</div>
@@ -1359,6 +1502,8 @@ let allLogs = [];
 let allPayments = [];
 let allMembers = [];   // project_members
 let allScores  = [];   // project_scores
+let allProjectNodes = []; // project_nodes
+let _trackingProjId = null; // 当前正在追踪的项目ID
 
 // ── 日期工具（使用本地时区，避免 UTC 日期导致统计偏移）────────────────
 function pad2(n){
@@ -1381,7 +1526,8 @@ function getMonthlyWorkdays(yearMonth){
   const daysInMonth = new Date(y, m, 0).getDate();
   let workdays = 0;
   for(let d = 1; d <= daysInMonth; d++){
-    const day = new Date(y, m-1, d).getDay();
+    // 注意：Date 构造函数的月份是 0 索引的，所以用 m-1
+    const day = new Date(y, m - 1, d).getDay();
     if(day !== 0 && day !== 6) workdays++;
   }
   return workdays;
@@ -1455,32 +1601,35 @@ sb.auth.onAuthStateChange((event, session) => {
 
 async function loadUserProfile(){
   const uid = currentUser.id;
+  const email = currentUser.email;
 
+  // 1. 优先通过 Auth ID 查找
+  let {data, error} = await sb.from('users').select('*').eq('id', uid).maybeSingle();
 
-  const {data, error} = await sb.from('users')
-    .select('*').eq('id', uid).maybeSingle();
-
-
-  if(data){
-    userProfile = data;
-    isAdmin = data.role === 'admin';
-  } else {
-    const {data:byEmail} = await sb.from('users')
-      .select('*').eq('email', currentUser.email).maybeSingle();
+  // 2. 如果 ID 没找到，尝试通过 Email 查找（兼容旧数据）
+  if(!data && email){
+    const {data:byEmail} = await sb.from('users').select('*').eq('email', email).maybeSingle();
     if(byEmail){
-      userProfile = byEmail;
-      isAdmin = byEmail.role === 'admin';
-    } else {
-      const {data:newUser} = await sb.from('users').insert({
-        id: uid,
-        email: currentUser.email,
-        name: currentUser.email.split('@')[0],
-        role: 'employee'
-      }).select().single();
-      userProfile = newUser;
-      isAdmin = false;
+      data = byEmail;
+      // 顺便把 ID 补上，方便以后直接查找
+      await sb.from('users').update({ id: uid }).eq('email', email);
     }
   }
+
+  // 3. 还是没找到，则创建新用户
+  if(!data){
+    const {data:newUser, error:insErr} = await sb.from('users').insert({
+      id: uid,
+      email: email,
+      name: email.split('@')[0],
+      role: 'employee'
+    }).select().single();
+    if(insErr) { console.error('Create user failed:', insErr); return; }
+    data = newUser;
+  }
+
+  userProfile = data;
+  isAdmin = data.role === 'admin';
 }
 
 function showApp(){
@@ -1499,8 +1648,14 @@ function showApp(){
 // 数据加载
 // ══════════════════════════════════════════════════════════════
 async function loadAllData(){
-  await Promise.all([loadProjects(),loadEmployees(),loadLogs(),loadPayments(),loadMembersAndScores()]);
+  await Promise.all([loadProjects(),loadEmployees(),loadLogs(),loadPayments(),loadMembersAndScores(),loadProjectNodes()]);
   renderAll();
+}
+
+async function loadProjectNodes(){
+  if(!isAdmin){ allProjectNodes=[]; return; }
+  const {data, error} = await sb.from('project_nodes').select('*').order('node_at', {ascending: true});
+  allProjectNodes = data || [];
 }
 
 async function loadMembersAndScores(){
@@ -2085,168 +2240,6 @@ async function doFixAmount(){
   }
 }
 
-async function parseImportFile(file){
-  // 动态加载 SheetJS
-  if(!window.XLSX){
-    await new Promise((res,rej)=>{
-      const s=document.createElement('script');
-      s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-      s.onload=res; s.onerror=rej;
-      document.head.appendChild(s);
-    });
-  }
-  const buf = await file.arrayBuffer();
-  const wb  = XLSX.read(buf, {type:'array', cellDates:true});
-  const ws  = wb.Sheets[wb.SheetNames[0]];
-  const raw = XLSX.utils.sheet_to_json(ws, {defval:''});
-
-  // 列名映射（兼容飞书导出格式）
-  const COL = {
-    person:   ['负责人','负责人员','责任人'],
-    project:  ['群组','所属项目','项目'],
-    task:     ['任务内容','任务名称','任务'],
-    date:     ['日期','任务日期','完成日期'],
-    hours:    ['工时','工时（小时）','实际工时','实际工时（员工填写）','计划工时','计划工时（主管填写）'],
-    revision: ['修改次数','修改次数（次）'],
-    status:   ['任务进度','状态','进度'],
-  };
-
-  function findCol(row, candidates){
-    const keys = Object.keys(row);
-    // 先精确匹配
-    for(const c of candidates){ if(c in row) return c; }
-    // 再模糊匹配：候选名是列名的前缀，或列名包含候选名
-    for(const c of candidates){
-      const found = keys.find(k => k.startsWith(c) || k.includes(c));
-      if(found) return found;
-    }
-    return null;
-  }
-
-  // 取已完成和未完成的行（未完成工时仍需记录成本）
-  const DONE_KEYWORDS = ['已完成','完成','done','Done','DONE'];
-  const UNDONE_KEYWORDS = ['未完成','进行中','处理中','待完成','返工'];
-  importRows = [];
-  const warns = [];
-  let skipped = 0;
-
-  for(const row of raw){
-    const statusKey = findCol(row, COL.status);
-    const statusVal = statusKey ? String(row[statusKey]).trim() : '';
-    const isDone = DONE_KEYWORDS.includes(statusVal);
-    const isUndone = UNDONE_KEYWORDS.includes(statusVal);
-    if(!isDone && !isUndone){ skipped++; continue; }
-
-    const personKey   = findCol(row, COL.person);
-    const projectKey  = findCol(row, COL.project);
-    const taskKey     = findCol(row, COL.task);
-    const dateKey     = findCol(row, COL.date);
-    const hoursKey    = findCol(row, COL.hours);
-    const revKey      = findCol(row, COL.revision);
-
-    const person  = personKey  ? String(row[personKey]).trim()  : '';
-    const project = projectKey ? String(row[projectKey]).trim() : '';
-    const task    = taskKey    ? String(row[taskKey]).trim()    : '';
-    const hours   = hoursKey   ? parseFloat(row[hoursKey]) || 0 : 0;
-    const rev     = revKey     ? parseInt(row[revKey])   || 0   : 0;
-
-    // 日期处理
-    let dateStr = '';
-    if(dateKey && row[dateKey]){
-      const d = row[dateKey];
-      if(d instanceof Date){
-        dateStr = formatLocalDate(d);
-      } else {
-        dateStr = String(d).slice(0,10);
-      }
-    }
-    if(!dateStr) dateStr = formatLocalDate();
-
-    if(!person)  { warns.push('有行缺少「负责人」，已跳过'); continue; }
-    if(!project) { warns.push(`「${person}」的记录缺少「群组」，已跳过`); continue; }
-    // 飞书未填工时时，默认计入1小时并给出提示
-    const finalHours = hours > 0 ? hours : 1;
-    if(hours <= 0) { warns.push(`「${person} / ${task.slice(0,10)}」未填工时，已按1小时计入`); }
-
-    importRows.push({ person, project, task, date:dateStr, hours:finalHours, revision:rev, status:statusVal, undone:isUndone });
-  }
-
-  // 找出未匹配项目的行，收集唯一群组名
-  const unmatchedGroups = {}; // groupName -> [rows]
-  for(const row of importRows){
-    const proj = allProjects.find(p=>
-      p.name===row.project || p.name.includes(row.project) || row.project.includes(p.name)
-    );
-    if(!proj){
-      if(!unmatchedGroups[row.project]) unmatchedGroups[row.project] = [];
-      unmatchedGroups[row.project].push(row);
-    }
-  }
-
-  // 渲染预览
-  const tbody = document.getElementById('importPreviewBody');
-  tbody.innerHTML = importRows.map(r=>{
-    const matched = allProjects.find(p=>
-      p.name===r.project || p.name.includes(r.project) || r.project.includes(p.name)
-    );
-    const rowStyle = matched ? '' : 'background:#fff8e1';
-    return `<tr style="${rowStyle}">
-      <td>${r.person}</td>
-      <td style="color:${matched?'inherit':'#e65100'}">${r.project}${matched?'':' ⚠'}</td>
-      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.task}</td>
-      <td>${r.date}</td>
-      <td>${r.hours}h</td>
-      <td>${r.revision}次</td>
-      <td>${r.undone?'<span style="color:var(--accent);font-weight:600">未完成</span>':'<span style="color:var(--green);font-weight:600">已完成</span>'}</td>
-    </tr>`;
-  }).join('');
-
-  document.getElementById('importSummary').textContent =
-    `共 ${importRows.length} 条，其中 ${Object.keys(unmatchedGroups).length} 个群组未匹配项目`;
-
-  const warnBox = document.getElementById('importWarnBox');
-  warnBox.innerHTML = warns.length
-    ? `<div style="background:#fff8e1;border-radius:8px;padding:8px 12px;font-size:11px;color:#7a5800">`
-      + [...new Set(warns)].map(w=>`⚠️ ${w}`).join('<br>') + '</div>'
-    : '';
-
-  // 渲染未匹配区块
-  const unmatchedWrap = document.getElementById('unmatchedWrap');
-  const unmatchedList = document.getElementById('unmatchedList');
-  const groupNames = Object.keys(unmatchedGroups);
-  unmatchedGroupSelectIds = new Map();
-  if(groupNames.length){
-    unmatchedWrap.style.display = 'block';
-    unmatchedList.innerHTML = groupNames.map((gName,index)=>{
-      const rows = unmatchedGroups[gName];
-      const selectId = `unmatch_${index}`;
-      unmatchedGroupSelectIds.set(gName, selectId);
-      const totalH = rows.reduce((s,r)=>s+r.hours,0);
-      const persons = [...new Set(rows.map(r=>r.person))].join('、');
-      const projOptions = allProjects.map(p=>
-        `<option value="${p.id}">${p.name}</option>`
-      ).join('');
-      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-        <div style="flex:1;min-width:180px">
-          <div style="font-size:12px;font-weight:600">${gName}</div>
-          <div style="font-size:11px;color:var(--text-sub)">${rows.length}条记录 · ${totalH.toFixed(1)}h · ${persons}</div>
-        </div>
-        <select class="form-select" id="${selectId}"
-          style="font-size:12px;max-width:200px">
-          <option value="">— 跳过这些记录 —</option>
-          <option value="__new__">＋ 新建项目「${gName}」</option>
-          ${projOptions}
-        </select>
-      </div>`;
-    }).join('');
-  } else {
-    unmatchedWrap.style.display = 'none';
-  }
-
-  document.getElementById('importPreviewWrap').style.display = importRows.length ? 'block' : 'none';
-  if(!importRows.length) toast('没有找到可导入的记录，请检查列名和任务进度字段');
-}
-
 async function doImport(){
   if(!importRows.length){ toast('没有可导入的数据'); return; }
   const btn = document.getElementById('doImportBtn');
@@ -2304,13 +2297,16 @@ async function doImport(){
     const noteStr = (row.undone
       ? `【待返工】${row.task}（修改${row.revision}次）`
       : `${row.task}（修改${row.revision}次）`).slice(0,200);
-    const taskCore = row.task.slice(0,20); // 用任务名前20字做模糊匹配，兼容旧格式
+    
+    // 更加精确的去重：使用任务内容的哈希或核心文本，并结合日期
+    const taskCore = row.task.trim();
     const existsList = allLogs.filter(l=>
       l.employee_id===emp.id &&
       l.project_id===proj.id &&
       l.log_date===row.date &&
       (l.note===noteStr || (l.note||'').includes(taskCore))
     );
+
     // 如果有多条重复（历史遗留），保留最新一条，删除其余
     if(existsList.length > 1){
       const sorted = existsList.sort((a,b)=>a.id>b.id?-1:1);
@@ -2319,8 +2315,9 @@ async function doImport(){
       const keep = sorted[0];
       if(parseFloat(keep.hours) !== row.hours){
         await sb.from('time_logs').update({ hours: row.hours, note: noteStr }).eq('id', keep.id);
+        updated++;
       }
-      success++; updated++; duplicated++; continue;
+      success++; duplicated++; continue;
     }
     if(existsList.length === 1){
       const exists = existsList[0];
@@ -2555,6 +2552,210 @@ async function deletePayment(id){
 // ══════════════════════════════════════════════════════════════
 
 
+
+// ══════════════════════════════════════════════════════════════
+// 项目追踪模块 (Nodes tracking)
+// ══════════════════════════════════════════════════════════════
+const NODE_NAMES = {
+  concept_started: '开始方案', concept_completed: '方案完成', submitted_to_client: '提交甲方',
+  client_feedback_received: '收到反馈', client_confirmed: '确认方案', 
+  revision_started: '开始修改', revision_completed: '完成修改',
+  technical_started: '开始深化', technical_completed: '深化完成',
+  docking_started: '开始对接', docking_completed: '对接结束',
+  concept_released: '方案释放', technical_released: '深化释放', released: '项目全员释放'
+};
+
+const NODE_KEYWORDS = {
+  concept_started: ['方案', '平面', '概念', '脑暴', '构思'],
+  concept_completed: ['完成方案', '方案结束', '概念结束'],
+  submitted_to_client: ['提交', '汇报', '演示', '发给甲方', '汇报方案'],
+  client_feedback_received: ['收到意见', '反馈', '甲方意见'],
+  client_confirmed: ['确认', '通过', '定稿'],
+  revision_started: ['修改', '调整', '二改', '深化修改'],
+  revision_completed: ['修改完成', '调整结束'],
+  technical_started: ['施工图', '深化', 'CAD', '节点', '立面'],
+  technical_completed: ['深化完成', '施工图完成', '出图'],
+  docking_started: ['对接', '配合', '物料', '现场', '跟进'],
+  docking_completed: ['对接结束', '配合完成']
+};
+
+async function openProjectTrack(projId){
+  _trackingProjId = projId;
+  const proj = allProjects.find(p=>p.id===projId);
+  if(!proj) return;
+  document.getElementById('trackProjName').textContent = proj.name;
+  openModal('projectTrackModal');
+  renderProjectTrack();
+}
+
+async function markNode(nodeType, note='', source='manual'){
+  if(!_trackingProjId) return;
+  const today = formatLocalDate();
+  const now = new Date().toISOString();
+  
+  // 如果没有传 note，尝试从界面 textarea 获取
+  const finalNote = note || document.getElementById('trackNodeNote')?.value || '';
+  
+  // 自动计算修改轮次 (仅针对 revision_started)
+  let revisionRound = null;
+  if(nodeType === 'revision_started'){
+    const prevRounds = allProjectNodes.filter(n=>n.project_id===_trackingProjId && n.node_type==='revision_started').length;
+    revisionRound = prevRounds + 1;
+  }
+
+  const {error} = await sb.from('project_nodes').insert({
+    project_id: _trackingProjId,
+    node_type: nodeType,
+    node_date: today,
+    node_at: now,
+    revision_round: revisionRound,
+    source: source,
+    note: finalNote,
+    created_by: currentUser.id
+  });
+  if(error){ toast('打点失败：'+error.message); return; }
+  
+  // 清空备注框
+  const noteEl = document.getElementById('trackNodeNote');
+  if(noteEl) noteEl.value = '';
+
+  toast(`✓ 已标记节点：${NODE_NAMES[nodeType]}`);
+  await loadProjectNodes();
+  renderProjectTrack();
+}
+
+async function deleteNode(nodeId){
+  if(!isAdmin) return alert('仅管理员可删除节点');
+  const node = allProjectNodes.find(n=>n.id===nodeId);
+  if(!node) return;
+  
+  // 安全限制：仅允许删除当前项目的最后一个（最新）节点，防止时间轴中间断层
+  const projNodes = allProjectNodes.filter(n=>n.project_id===node.project_id)
+    .sort((a,b)=>new Date(b.node_at) - new Date(a.node_at));
+  
+  if(projNodes.length > 0 && projNodes[0].id !== nodeId){
+    toast('为了数据完整性，仅允许撤销最新的一个节点');
+    return;
+  }
+
+  if(!confirm(`确认撤销节点 [${NODE_NAMES[node.node_type]}]？`)) return;
+  const {error} = await sb.from('project_nodes').delete().eq('id', nodeId);
+  if(error){ toast('删除失败'); return; }
+  toast('已撤销');
+  await loadProjectNodes();
+  renderProjectTrack();
+}
+
+function renderProjectTrack(){
+  const timeline = document.getElementById('trackTimelineArea');
+  const analysis = document.getElementById('trackAnalysisArea');
+  if(!timeline || !analysis) return;
+
+  const nodes = allProjectNodes.filter(n=>n.project_id===_trackingProjId);
+  const logs  = allLogs.filter(l=>l.project_id===_trackingProjId);
+
+  // 1. 渲染时间轴
+  if(!nodes.length){
+    timeline.innerHTML = '<div class="empty">暂无追踪记录，请在左侧点击按钮打点</div>';
+  } else {
+    let html = '<div class="track-timeline">';
+    nodes.forEach((n, idx)=>{
+      const nodeClass = n.node_type.includes('concept') ? 'concept' : 
+                        n.node_type.includes('technical') ? 'technical' : 
+                        n.node_type.includes('revision') ? 'revision' : 'active';
+      
+      // 联动任务展示：找出此节点日期附近的 3 条任务
+      const nearLogs = logs.filter(l => Math.abs(new Date(l.log_date) - new Date(n.node_date)) <= 86400000 * 3)
+                           .sort((a,b)=>a.log_date > b.log_date ? -1 : 1)
+                           .slice(0, 3);
+      
+      const tasksHtml = nearLogs.length 
+        ? `<div class="track-node-tasks">
+            <div style="font-weight:600;margin-bottom:4px">联动任务：</div>
+            ${nearLogs.map(l=>`<div>• ${l.log_date} ${l.employee?.name}: ${l.note?.slice(0,30)}</div>`).join('')}
+           </div>`
+        : '';
+
+      html += `<div class="track-node ${nodeClass}">
+        <div class="track-node-hd">
+          <div class="track-node-title">${NODE_NAMES[n.node_type]}</div>
+          <div style="display:flex;align-items:center">
+            <div class="track-node-date">${n.node_date}</div>
+            <button onclick="deleteNode('${n.id}')" style="background:none;border:none;color:#ff4d4f;cursor:pointer;font-size:14px;margin-left:8px">×</button>
+          </div>
+        </div>
+        ${tasksHtml}
+      </div>`;
+    });
+
+    // 联动引擎建议：基于最新任务内容建议节点
+    const lastLogs = logs.slice(0, 5);
+    let suggestNode = null;
+    for(const l of lastLogs){
+      const note = l.note || '';
+      for(const [type, kws] of Object.entries(NODE_KEYWORDS)){
+        // 逻辑改进：如果该节点已存在且非重复类节点(如修改)，则跳过，避免重复建议
+        const isRepeatable = type === 'revision_started';
+        if(!isRepeatable && nodes.some(n=>n.node_type === type)) continue;
+
+        if(kws.some(kw => note.includes(kw))){
+          suggestNode = type;
+          break;
+        }
+      }
+      if(suggestNode) break;
+    }
+
+    if(suggestNode){
+      html += `<div class="notice blue" style="margin-top:20px;font-size:11px">
+        💡 系统根据近期任务「${lastLogs[0]?.note?.slice(0,15)}...」建议标记节点：<strong>${NODE_NAMES[suggestNode]}</strong>
+        <button class="btn-sm" style="margin-left:8px;padding:2px 8px;background:var(--blue);color:#fff" onclick="markNode('${suggestNode}', '系统建议确认', 'task_suggest')">确认打点</button>
+      </div>`;
+    }
+
+    html += '</div>';
+    timeline.innerHTML = html;
+  }
+
+  // 2. 渲染分析统计
+  const metrics = calculateProjectMetrics(_trackingProjId, nodes, logs);
+  analysis.innerHTML = `
+    <div style="font-size:13px;font-weight:700;margin-bottom:12px">项目周期统计</div>
+    <div class="track-metric-item"><span>方案总耗时</span><span class="track-metric-val">${metrics.conceptDays} 天</span></div>
+    <div class="track-metric-item"><span>甲方反馈等待</span><span class="track-metric-val">${metrics.waitDays} 天</span></div>
+    <div class="track-metric-item"><span>修改轮次</span><span class="track-metric-val">${metrics.revisions} 轮</span></div>
+    <div class="track-metric-item"><span>施工图耗时</span><span class="track-metric-val">${metrics.technicalDays} 天</span></div>
+    <div class="track-metric-item"><span>后期对接耗时</span><span class="track-metric-val">${metrics.dockingDays} 天</span></div>
+    <div class="track-metric-item"><span>总周期</span><span class="track-metric-val">${metrics.totalDays} 天</span></div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--border);font-size:11px;color:var(--text-sub)">
+      ${metrics.isReleased ? '✅ 项目已释放' : '⏳ 状态：进行中'}
+      ${metrics.revisions > 3 ? '<span style="color:var(--accent);margin-left:10px">⚠ 修改轮次过多</span>' : ''}
+    </div>
+  `;
+}
+
+function calculateProjectMetrics(projId, nodes, logs){
+  const m = {
+    conceptDays: 0, waitDays: 0, revisions: 0, technicalDays: 0, dockingDays: 0, totalDays: 0, isReleased: false
+  };
+  if(!nodes.length) return m;
+
+  const getD = (type) => nodes.find(n=>n.node_type===type)?.node_date;
+  const diff = (d1, d2) => d1 && d2 ? Math.round((new Date(d2) - new Date(d1)) / 86400000) : 0;
+
+  const start = getD('concept_started');
+  const end = getD('released') || formatLocalDate();
+  
+  m.totalDays = diff(start, end);
+  m.conceptDays = diff(start, getD('concept_completed') || getD('submitted_to_client'));
+  m.waitDays = diff(getD('submitted_to_client'), getD('client_feedback_received'));
+  m.technicalDays = diff(getD('technical_started'), getD('technical_completed'));
+  m.dockingDays = diff(getD('docking_started'), getD('docking_completed'));
+  m.revisions = nodes.filter(n=>n.node_type==='revision_started').length;
+  m.isReleased = nodes.some(n=>n.node_type==='released');
+
+  return m;
+}
 
 // ── 项目弹窗内联成员管理 ──────────────────────────────────────
 function renderInlineMembers(projId){
@@ -3472,6 +3673,7 @@ function renderProjectPage(){
           ${p.status==='construction'&&p.completion_date?`<div style="font-size:10px;color:var(--text-sub);margin-top:2px">预计竣工：${p.completion_date}</div>`:''}
         </td>
         <td style="display:flex;gap:4px">
+          <button class="btn-sm" style="background:var(--blue-soft);color:var(--blue)" onclick="openProjectTrack('${p.id}')">追踪</button>
           <button class="btn-sm btn-blue" onclick="quickPayment('${p.id}')">回款</button>
           <button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="editProject('${p.id}')">编辑</button>
           <button class="btn-sm btn-red" onclick="deleteProject('${p.id}','${p.name?.replace(/'/g,'')}')">删除</button>
@@ -3798,8 +4000,72 @@ function renderDashboard(){
   renderBusinessSummary(info, { rawPeriodH, adjPeriodH, riskyProjects });
   renderTodayTodoList(info);
   renderTeamAlerts(info);
+  renderProjectNodeAlerts(info);
   renderEmpRank();
   renderIntelligence();
+}
+
+function renderProjectNodeAlerts(info){
+  const el = document.getElementById('projectNodeAlerts');
+  if(!el) return;
+
+  const activeProjs = allProjects.filter(p=>p.status!=='done' && p.status!=='paused');
+  const alerts = [];
+
+  activeProjs.forEach(p=>{
+    const nodes = allProjectNodes.filter(n=>n.project_id===p.id);
+    const logs  = allLogs.filter(l=>l.project_id===p.id);
+    const metrics = calculateProjectMetrics(p.id, nodes, logs);
+    
+    if(metrics.revisions > 3){
+      alerts.push({
+        type: 'danger',
+        msg: `项目 <strong>${p.name?.slice(0,12)}</strong> 修改已达 ${metrics.revisions} 轮，效率严重受损`,
+        projId: p.id
+      });
+    }
+
+    const finishTechDate = nodes.find(n=>n.node_type==='technical_completed')?.node_date;
+    if(finishTechDate && !metrics.isReleased){
+      const overflowLogs = logs.filter(l => l.log_date > finishTechDate);
+      const overflowHours = overflowLogs.reduce((s,l)=>s+safeNum(l.hours),0);
+      if(overflowHours > 40){
+        alerts.push({
+          type: 'danger',
+          msg: `项目 <strong>${p.name?.slice(0,12)}</strong> 施工图完成后仍产生 ${overflowHours}h 杂务，可能存在严重返工或对接混乱`,
+          projId: p.id
+        });
+      }
+    }
+
+    const submitDate = nodes.find(n=>n.node_type==='submitted_to_client')?.node_date;
+    const feedbackDate = nodes.find(n=>n.node_type==='client_feedback_received')?.node_date;
+    if(submitDate && !feedbackDate){
+      const wait = Math.round((new Date() - new Date(submitDate)) / 86400000);
+      if(wait > 7){
+        alerts.push({
+          type: 'warning',
+          msg: `项目 <strong>${p.name?.slice(0,12)}</strong> 已提交方案 ${wait} 天，甲方未反馈`,
+          projId: p.id
+        });
+      }
+    }
+  });
+
+  if(!alerts.length){
+    el.innerHTML = '<div class="empty">暂无周期异常记录</div>';
+    return;
+  }
+
+  el.innerHTML = alerts.map(a=>`
+    <div class="list-item" style="cursor:pointer" onclick="openProjectTrack('${a.projId}')">
+      <div style="width:4px;height:30px;background:${a.type==='danger'?'#ff4d4f':'#faad14'};border-radius:2px;margin-right:10px"></div>
+      <div class="li-info">
+        <div style="font-size:12px;line-height:1.6">${a.msg}</div>
+      </div>
+      <div style="font-size:12px;color:var(--accent)">查看 ❯</div>
+    </div>
+  `).join('');
 }
 
 function renderBusinessSummary(info, metrics){
@@ -4019,7 +4285,6 @@ function renderEmpRank(){
 }
 
 // ── 团队管理 ──────────────────────────────────────────────────
-// ── 团队管理 ──────────────────────────────────────────────────
 function renderTeam(){
   if(!isAdmin)return;
   const el=document.getElementById('teamBody');
@@ -4177,11 +4442,20 @@ function renderEWMA(){
   const el=document.getElementById('ewmaChart');
   const ins=document.getElementById('ewmaInsight');
   if(!el)return;
-  // 按周聚合真实工时
+  // 按周聚合真实工时 (ISO 周计算)
+  function getISOWeek(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  }
+
   const weeklyMap={};
   allLogs.forEach(l=>{
     const d=new Date(l.log_date);
-    const week=`${d.getFullYear()}-W${String(Math.ceil((d.getDate())/7)).padStart(2,'0')}`;
+    const weekNum = getISOWeek(d);
+    const week=`${d.getFullYear()}-W${String(weekNum).padStart(2,'0')}`;
     weeklyMap[week]=(weeklyMap[week]||0)+parseFloat(l.hours||0);
   });
   const weeks=Object.keys(weeklyMap).sort().slice(-10);
@@ -4400,16 +4674,33 @@ function toISODate(date){ return formatLocalDate(date); }
 function weekDiff(a,b){ return Math.round((startOfWeek(b)-startOfWeek(a))/86400000/7); }
 function getPreplanWeeks(area, type){
   const a = safeNum(area);
-  let weeks = 6;
-  if(a<=35) weeks = 0.7;
-  else if(a<=100) weeks = 4;
-  else if(a<=300) weeks = type==='copy' ? 5 : 6;
-  else if(a<=800) weeks = 8;
-  else if(a<=1000) weeks = 10;
-  else weeks = 10;
-  if(type==='copy' && a<=100) weeks = 3.2;
-  if(type==='copy' && a>300 && a<800) weeks = 7.2;
-  return Math.max(1, Math.round(weeks*10)/10);
+  
+  // 1. 设计周期逻辑 (方案+深化)
+  let designWeeks = 6;
+  if(a<=35) designWeeks = 0.7;
+  else if(a<=100) designWeeks = 4;
+  else if(a<=300) designWeeks = type==='copy' ? 5 : 6;
+  else if(a<=800) designWeeks = 8;
+  else if(a<=1000) designWeeks = 10;
+  else designWeeks = 10;
+  if(type==='copy' && a<=100) designWeeks = 3.2;
+  if(type==='copy' && a>300 && a<800) designWeeks = 7.2;
+  const total = Math.max(1, Math.round(designWeeks*10)/10);
+  
+  // 默认比例：创新店 3:2，复制店 1:1
+  let cRatio = type==='innovation' ? 0.6 : 0.5;
+  const cWeeks = Math.round(total * cRatio * 2) / 2;
+  const tWeeks = total - cWeeks;
+
+  // 2. 施工周期逻辑 (基于面积)
+  let constWeeks = 4; 
+  if(a < 100) constWeeks = 4;
+  else if(a <= 400) constWeeks = 7; // 1.5-2个月
+  else if(a <= 700) constWeeks = 10; 
+  else if(a <= 1000) constWeeks = 12; // 3个月
+  else constWeeks = 14;
+
+  return { total, concept: cWeeks, technical: tWeeks, construction: constWeeks };
 }
 function getWorkloadRoleBucket(emp){
   const t = emp?.job_title || '';
@@ -4518,10 +4809,20 @@ function scoreRecommendation(emp, type, reuse, start, weeks, directorId){
   score += Object.values(detail).reduce((a,b)=>a+b,0);
   return { availability, score, reasons, detail };
 }
-function computeRecommendations({area,type,openDate,reuse,directorId}){
-  const weeks = getPreplanWeeks(area, type);
-  const open = openDate ? new Date(openDate) : null;
-  const start = open ? addDays(startOfWeek(open), -Math.round(weeks*7)) : getTimelineStart();
+function computeRecommendations({area,type,openDate,takeoverDate,reuse,directorId}){
+  const weekData = getPreplanWeeks(area, type);
+  const totalWeeks = weekData.total;
+  
+  // 倒排逻辑：设计完成时间 = 接铺时间 (施工进场)
+  let designFinishDate;
+  if(takeoverDate){
+    designFinishDate = new Date(takeoverDate);
+  } else if(openDate){
+    // 如果没有接铺时间，按 开业时间 - 施工周期 倒推
+    designFinishDate = addDays(new Date(openDate), -weekData.construction * 7);
+  }
+
+  const start = designFinishDate ? addDays(startOfWeek(designFinishDate), -Math.round(totalWeeks*7)) : getTimelineStart();
   const assignable = getAssignablePeople().filter(e=>{
     const bucket = getWorkloadRoleBucket(e);
     if(type==='copy') return bucket==='draft' || bucket==='assistant' || /深化|执行/.test(e.job_title||'');
@@ -4532,7 +4833,7 @@ function computeRecommendations({area,type,openDate,reuse,directorId}){
   if(directorId){
     const d = directors.find(e=>String(e.id)===String(directorId));
     if(d){
-      const s = scoreRecommendation(d, type, reuse, start, weeks, directorId);
+      const s = scoreRecommendation(d, type, reuse, start, totalWeeks, directorId);
       directorReco.push({ id:d.id, name:d.name, title:d.job_title||'设计总监', ...s, forced:true });
     }
   }
@@ -4540,15 +4841,20 @@ function computeRecommendations({area,type,openDate,reuse,directorId}){
     id:e.id,
     name:e.name,
     title:e.job_title||'',
-    ...scoreRecommendation(e, type, reuse, start, weeks, directorId)
+    ...scoreRecommendation(e, type, reuse, start, totalWeeks, directorId)
   })).sort((a,b)=>b.score-a.score);
   const recommendations = [...directorReco, ...scored].slice(0,6);
-  return { weeks, startDate:toISODate(start), recommendations };
+  return { weeks: totalWeeks, weekData, startDate:toISODate(start), recommendations };
 }
 function selectRecommendedAssignee(id){
-  const sel = document.getElementById('ppAssignee');
-  if(!sel) return;
-  sel.value = String(id);
+  const selC = document.getElementById('ppConceptAssignee');
+  const selT = document.getElementById('ppTechnicalAssignee');
+  const outsource = document.getElementById('ppOutsource')?.checked;
+  
+  if(selC) selC.value = String(id);
+  // 如果没有勾选外包，也填入深化负责人（默认同一人）
+  if(selT && !outsource) selT.value = String(id);
+
   const cards = document.querySelectorAll('[data-reco-card]');
   cards.forEach(card=>card.style.borderColor = card.dataset.recoCard===String(id) ? 'var(--accent)' : 'var(--border)');
 }
@@ -4558,38 +4864,86 @@ function renderPreplanFormHelpers(){
     const current = dirSel.value;
     const dirs = getDirectorPeople();
     dirSel.innerHTML = '<option value="">未指定</option>' + dirs.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
-    if(current && [...dirSel.options].some(o=>o.value===current)) dirSel.value = current;
+    if (current && [...dirSel.options].some(o => o.value === current)) {
+      dirSel.value = current;
+    }
   }
   const area = safeNum(document.getElementById('ppArea')?.value);
   const type = document.getElementById('ppType')?.value || 'innovation';
   const openDate = document.getElementById('ppOpenDate')?.value;
+  const takeoverDate = document.getElementById('ppTakeoverDate')?.value;
   const reuse = document.getElementById('ppReuse')?.value === 'true';
   const directorId = document.getElementById('ppDirector')?.value || '';
-  const assigneeSel = document.getElementById('ppAssignee');
+  const outsource = document.getElementById('ppOutsource')?.checked;
+
+  const cAssigneeSel = document.getElementById('ppConceptAssignee');
+  const tAssigneeSel = document.getElementById('ppTechnicalAssignee');
+  const cWeeksInput = document.getElementById('ppConceptWeeks');
+  const tWeeksInput = document.getElementById('ppTechnicalWeeks');
+  const totalWeeksLabel = document.getElementById('ppTotalWeeksLabel');
+  const constDurationInput = document.getElementById('ppConstDuration');
+  
   const recoBox = document.getElementById('ppRecoBox');
   const recoCards = document.getElementById('ppRecoCards');
   const hint = document.getElementById('ppCreateHint');
-  if(!assigneeSel || !recoBox || !recoCards) return;
-  if(!openDate || !area){
-    assigneeSel.innerHTML = '<option value="">请先填写面积和预计开业/接铺时间</option>';
-    recoBox.innerHTML = '填写面积与预计开业/接铺时间后，系统会自动计算周期、倒排开始时间，并给出前 3 名推荐负责人。';
+
+  if(!cAssigneeSel || !tAssigneeSel || !recoBox || !recoCards) return;
+
+  // 1. 更新建议施工周期显示
+  const weekData = getPreplanWeeks(area, type);
+  if(constDurationInput) constDurationInput.value = area ? `约 ${weekData.construction} 周` : '';
+
+  // 2. 自动补全日期逻辑 (如果只填了一个)
+  if(area && openDate && !takeoverDate){
+    const suggestedTakeover = addDays(new Date(openDate), -weekData.construction * 7);
+    // 仅在输入框为空时补全，避免干扰用户手动修改
+  }
+
+  // 处理深化外包逻辑
+  tAssigneeSel.disabled = outsource;
+  if(outsource) tAssigneeSel.value = '';
+
+  if(!area || (!openDate && !takeoverDate)){
+    cAssigneeSel.innerHTML = '<option value="">请先填写面积和日期</option>';
+    tAssigneeSel.innerHTML = '<option value="">请先填写面积和日期</option>';
+    recoBox.innerHTML = '填写面积与<strong>预计接铺日期</strong>后，系统会自动计算周期、倒排开始时间。';
     recoCards.innerHTML = '';
     if(hint){ hint.style.display='none'; hint.textContent=''; }
     return;
   }
-  const data = computeRecommendations({area,type,openDate,reuse,directorId});
+
+  const data = computeRecommendations({area,type,openDate,takeoverDate,reuse,directorId});
   preplanRecommendations = data.recommendations;
-  const current = assigneeSel.value;
-  assigneeSel.innerHTML = '<option value="">请选择负责人</option>' + data.recommendations.map((r,i)=>`<option value="${r.id}">${i<3?`推荐${i+1} · `:''}${r.name} · ${r.title||''} · ${Math.round(r.score)}分</option>`).join('');
-  if(current && [...assigneeSel.options].some(o=>o.value===current)) assigneeSel.value = current;
-  recoBox.innerHTML = `系统倒排开始时间：<strong>${data.startDate}</strong>；标准周期约 <strong>${data.weeks} 周</strong>。`;
+
+  // 自动填充周数（仅在初次或面积/类型变动时）
+  const currentTotal = safeNum(cWeeksInput.value) + safeNum(tWeeksInput.value);
+  if(currentTotal === 0 || !cWeeksInput.dataset.manual){
+     cWeeksInput.value = data.weekData.concept;
+     tWeeksInput.value = data.weekData.technical;
+  }
+  if(totalWeeksLabel) totalWeeksLabel.textContent = `总计 ${safeNum(cWeeksInput.value) + safeNum(tWeeksInput.value)} 周`;
+
+  const cCurrent = cAssigneeSel.value;
+  const tCurrent = tAssigneeSel.value;
+  
+  const optionsHtml = '<option value="">请选择负责人</option>' + data.recommendations.map((r,i)=>
+    `<option value="${r.id}">${i<3?`推荐${i+1} · `:''}${r.name} · ${r.title||''} · ${Math.round(r.score)}分</option>`
+  ).join('');
+  
+  cAssigneeSel.innerHTML = optionsHtml;
+  tAssigneeSel.innerHTML = optionsHtml;
+  
+  if(cCurrent && [...cAssigneeSel.options].some(o=>o.value===cCurrent)) cAssigneeSel.value = cCurrent;
+  if(tCurrent && [...tAssigneeSel.options].some(o=>o.value===tCurrent)) tAssigneeSel.value = tCurrent;
+
+  recoBox.innerHTML = `系统倒排开始时间：<strong>${data.startDate}</strong>；标准周期约 <strong>${data.weeks} 周</strong>（方案 ${data.weekData.concept} + 深化 ${data.weekData.technical}）。`;
+  
   const top3 = data.recommendations.slice(0,3);
   recoCards.innerHTML = top3.length ? top3.map((r,i)=>{
     const detailText = [
       `可用度 ${r.detail?.availability||0}`,
       `类型匹配 ${r.detail?.typeFit||0}`,
-      `能力匹配 ${r.detail?.ability||0}`,
-      `沿用加分 ${r.detail?.reuse||0}`
+      `能力匹配 ${r.detail?.ability||0}`
     ].join(' · ');
     return `<div data-reco-card="${r.id}" onclick="selectRecommendedAssignee('${r.id}')" style="border:1px solid var(--border);border-radius:12px;padding:12px;cursor:pointer;background:#fff">
       <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
@@ -4600,29 +4954,29 @@ function renderPreplanFormHelpers(){
         <div style="font-family:'DM Mono',monospace;font-size:18px;font-weight:700;color:var(--accent)">${Math.round(r.score)}</div>
       </div>
       <div style="font-size:11px;color:var(--text-sub);margin:8px 0 6px">${detailText}</div>
-      <div style="font-size:12px;line-height:1.7">${r.reasons.slice(0,3).map(x=>`• ${x}`).join('<br>')}</div>
+      <div style="font-size:12px;line-height:1.7">${r.reasons.slice(0,2).map(x=>`• ${x}`).join('<br>')}</div>
     </div>`;
   }).join('') : '<div class="empty">当前条件下暂无可推荐负责人</div>';
-  if(hint){
-    hint.style.display='block';
-    hint.style.background = '#eef6ff';
-    hint.style.color = '#225';
-    hint.textContent = top3.length ? '请从上方推荐中选择负责人；点击推荐卡片可直接带入下拉。' : '当前没有合适推荐，请检查员工在职状态或项目时间。';
-  }
 }
 function ensurePreplanWiring(){
-  ['ppArea','ppType','ppOpenDate','ppReuse','ppDirector'].forEach(id=>{
+  ['ppArea','ppType','ppOpenDate','ppTakeoverDate','ppReuse','ppDirector','ppOutsource','ppConceptWeeks','ppTechnicalWeeks'].forEach(id=>{
     const el = document.getElementById(id);
     if(el && !el.dataset.ppBound){
-      el.addEventListener('change', renderPreplanFormHelpers);
-      el.addEventListener('input', renderPreplanFormHelpers);
+      el.addEventListener('change', (e)=>{
+        if(id==='ppConceptWeeks'||id==='ppTechnicalWeeks') el.dataset.manual='1';
+        renderPreplanFormHelpers();
+      });
+      el.addEventListener('input', (e)=>{
+        if(id==='ppConceptWeeks'||id==='ppTechnicalWeeks') el.dataset.manual='1';
+        renderPreplanFormHelpers();
+      });
       el.dataset.ppBound='1';
     }
   });
-  const assignee = document.getElementById('ppAssignee');
-  if(assignee && !assignee.dataset.ppBound){
-    assignee.addEventListener('change', ()=>selectRecommendedAssignee(assignee.value));
-    assignee.dataset.ppBound='1';
+  const cAssignee = document.getElementById('ppConceptAssignee');
+  if(cAssignee && !cAssignee.dataset.ppBound){
+    cAssignee.addEventListener('change', ()=>selectRecommendedAssignee(cAssignee.value));
+    cAssignee.dataset.ppBound='1';
   }
 }
 function normalizePreplanEmployeeId(val){
@@ -4634,83 +4988,220 @@ function createPreplan(){
   const name = document.getElementById('ppName')?.value.trim();
   const area = safeNum(document.getElementById('ppArea')?.value);
   const type = document.getElementById('ppType')?.value || 'innovation';
+  const takeoverDate = document.getElementById('ppTakeoverDate')?.value;
   const openDate = document.getElementById('ppOpenDate')?.value;
   const status = document.getElementById('ppStatus')?.value || 'pre';
   const directorId = document.getElementById('ppDirector')?.value || '';
   const reuse = document.getElementById('ppReuse')?.value === 'true';
-  const assignee = normalizePreplanEmployeeId(document.getElementById('ppAssignee')?.value || '');
+  const outsource = document.getElementById('ppOutsource')?.checked;
+  
+  const cAssignee = normalizePreplanEmployeeId(document.getElementById('ppConceptAssignee')?.value || '');
+  const tAssignee = normalizePreplanEmployeeId(document.getElementById('ppTechnicalAssignee')?.value || '');
+  
+  const cWeeks = safeNum(document.getElementById('ppConceptWeeks')?.value);
+  const tWeeks = safeNum(document.getElementById('ppTechnicalWeeks')?.value);
+
   const hint = document.getElementById('ppCreateHint');
-  const recData = computeRecommendations({area,type,openDate,reuse,directorId});
+  const recData = computeRecommendations({area,type,openDate,takeoverDate,reuse,directorId});
 
-  if(!name){ toast('请填写项目名称'); if(hint){hint.style.display='block'; hint.style.background='#fff1f0'; hint.style.color='#a12922'; hint.textContent='请先填写项目名称。';} return; }
-  if(!area){ toast('请填写面积'); if(hint){hint.style.display='block'; hint.style.background='#fff1f0'; hint.style.color='#a12922'; hint.textContent='请先填写项目面积。';} return; }
-  if(!openDate){ toast('请选择预计开业/接铺时间'); if(hint){hint.style.display='block'; hint.style.background='#fff1f0'; hint.style.color='#a12922'; hint.textContent='请选择预计开业/接铺时间。';} return; }
-  if(!assignee){ toast('请选择负责人'); if(hint){hint.style.display='block'; hint.style.background='#fff1f0'; hint.style.color='#a12922'; hint.textContent='请从推荐列表中选择负责人后再加入预排期。';} return; }
+  if(!name){ toast('请填写项目名称'); return; }
+  if(!area){ toast('请填写面积'); return; }
+  if(!takeoverDate && !openDate){ toast('请填写预计接铺或开业日期'); return; }
+  if(!cAssignee){ toast('请选择方案负责人'); return; }
+  if(!outsource && !tAssignee){ toast('请选择深化负责人或勾选外包'); return; }
 
-  const emp = allEmployees.find(e=>String(e.id)===String(assignee));
-  const startDate = recData.startDate;
-  const item = {
-    id: uid(), name, area, type,
-    open_date: openDate,
-    start_date: startDate,
-    weeks: recData.weeks,
-    employee_id: assignee,
-    employee_name: emp?.name || '未匹配',
-    employee_title: emp?.job_title || '',
-    status,
+  const group_id = uid(); // 用于关联方案和深化阶段
+  const createdAt = new Date().toISOString();
+  
+  // 1. 创建方案阶段
+  const empC = allEmployees.find(e=>String(e.id)===String(cAssignee));
+  const conceptItem = {
+    id: uid(), group_id, name: `${name} (方案)`, 
+    area, type, open_date: openDate, takeover_date: takeoverDate,
+    start_date: recData.startDate,
+    weeks: cWeeks,
+    employee_id: cAssignee,
+    employee_name: empC?.name || '未匹配',
+    employee_title: empC?.job_title || '',
+    status, phase: 'concept',
     director_id: directorId || null,
-    reuse_original: reuse,
-    created_at: new Date().toISOString()
+    created_at: createdAt
   };
-  preplanItems.push(item);
+  preplanItems.push(conceptItem);
+
+  // 2. 创建深化阶段
+  const tStartDate = toISODate(addDays(new Date(recData.startDate), cWeeks * 7));
+  if (outsource) {
+    const outsourceItem = {
+      id: uid(), group_id, name: `${name} (深化外包)`,
+      area, type, open_date: openDate, takeover_date: takeoverDate,
+      start_date: tStartDate,
+      weeks: tWeeks,
+      employee_id: 'outsource',
+      employee_name: '外包团队',
+      employee_title: '外包',
+      status, phase: 'outsource',
+      director_id: directorId || null,
+      created_at: createdAt
+    };
+    preplanItems.push(outsourceItem);
+  } else {
+    const empT = allEmployees.find(e=>String(e.id)===String(tAssignee));
+    const technicalItem = {
+      id: uid(), group_id, name: `${name} (深化)`,
+      area, type, open_date: openDate, takeover_date: takeoverDate,
+      start_date: tStartDate,
+      weeks: tWeeks,
+      employee_id: tAssignee,
+      employee_name: empT?.name || '未匹配',
+      employee_title: empT?.job_title || '',
+      status, phase: 'technical',
+      director_id: directorId || null,
+      created_at: createdAt
+    };
+    preplanItems.push(technicalItem);
+  }
+
   savePreplans();
   renderPreplanPage();
-  if(hint){ hint.style.display='block'; hint.style.background='#eef9ef'; hint.style.color='#136c2e'; hint.textContent='已加入预排期，可在右侧甘特图中继续拖动调整时间与负责人。'; }
-  ['ppName'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  toast('✓ 已加入预排期');
+  
+  if(hint){ 
+    hint.style.display='block'; 
+    hint.style.background='#eef9ef'; 
+    hint.style.color='#136c2e'; 
+    hint.textContent='已成功拆分为方案和深化阶段加入预排期。'; 
+  }
+  
+  document.getElementById('ppName').value='';
+  toast('✓ 已加入预排期 (分段)');
 }
 function renderPreplanList(){
   const el = document.getElementById('preplanList');
   if(!el) return;
   if(!preplanItems.length){ el.innerHTML = '<div class="empty" style="padding:20px 0">暂无预排项目</div>'; return; }
-  el.innerHTML = preplanItems.map(item=>`<div style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;opacity:${item.status==='cancelled'?0.55:1}">
-    <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
-      <div>
-        <div style="font-size:13px;font-weight:700">${item.name}</div>
-        <div style="font-size:11px;color:var(--text-sub);margin-top:4px">${item.area}㎡ · ${item.type==='copy'?'复制店':'创新店'} · ${item.employee_name||'未分配'} · 开始 ${item.start_date} · ${item.weeks}周</div>
-      </div>
-      <span class="badge ${item.status==='confirmed'?'badge-active':'badge-warn'}">${item.status==='confirmed'?'已确认':item.status==='cancelled'?'已取消':'预排中'}</span>
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-      <button class="btn-sm btn-blue" onclick="shiftPreplan('${item.id}',1)">顺延1周</button>
-      <button class="btn-sm" style="background:#f3f0ff;color:#6c5ce7" onclick="shiftPreplan('${item.id}',4)">顺延4周</button>
-      <button class="btn-sm" style="background:#eef6ff;color:#225" onclick="togglePreplanCancel('${item.id}')">${item.status==='cancelled'?'恢复':'取消'}</button>
-      <button class="btn-sm btn-red" onclick="deletePreplan('${item.id}')">删除</button>
-    </div>
-  </div>`).join('');
+  
+  // 按项目名（group_id）分组显示会更清晰
+  const groups = {};
+  preplanItems.forEach(item => {
+    const gid = item.group_id || 'ungrouped';
+    if(!groups[gid]) groups[gid] = [];
+    groups[gid].push(item);
+  });
+
+  el.innerHTML = Object.values(groups).map(group => {
+    return `<div style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px;background:var(--bg-main)">
+      ${group.map(item => `
+        <div style="padding:8px 0;border-bottom:${group.indexOf(item)===group.length-1?'none':'1px dashed var(--border)'};opacity:${item.status==='cancelled'?0.55:1}">
+          <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+            <div>
+              <div style="font-size:13px;font-weight:700">${item.name}</div>
+              <div style="font-size:11px;color:var(--text-sub);margin-top:4px">
+                ${item.employee_name||'未分配'} · ${item.start_date} · ${item.weeks}周
+                ${item.phase==='outsource'?'<span style="color:var(--accent)">[外包]</span>':''}
+              </div>
+            </div>
+            <span class="badge ${item.status==='confirmed'?'badge-active':item.status==='cancelled'?'badge-grey':'badge-warn'}" style="font-size:10px">
+              ${item.status==='confirmed'?'已确认':item.status==='cancelled'?'已取消':'预排中'}
+            </span>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+            <button class="btn-sm" style="padding:2px 8px;font-size:10px" onclick="shiftPreplan('${item.id}',1)">顺延1周</button>
+            <button class="btn-sm" style="padding:2px 8px;font-size:10px" onclick="togglePreplanCancel('${item.id}')">${item.status==='cancelled'?'恢复':'取消'}</button>
+            <button class="btn-sm btn-red" style="padding:2px 8px;font-size:10px" onclick="deletePreplan('${item.id}')">删除</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>`;
+  }).join('');
 }
 function renderPreplanGantt(){
   const el = document.getElementById('preplanGantt');
   if(!el) return;
-  const people = getAssignablePeople().slice().sort((a,b)=>(a.job_title||'').localeCompare(b.job_title||'') || (a.name||'').localeCompare(b.name||''));
+  
+  // 获取所有在职且可分配的人员
+  const assignablePeople = getAssignablePeople().slice();
+  
+  // 检查是否有外包项目
+  const hasOutsource = preplanItems.some(item => item.employee_id === 'outsource' && item.status !== 'cancelled');
+  if (hasOutsource) {
+    assignablePeople.push({ id: 'outsource', name: '外包团队', job_title: '外部合作' });
+  }
+
+  const people = assignablePeople.sort((a,b)=>(a.job_title||'').localeCompare(b.job_title||'') || (a.name||'').localeCompare(b.name||''));
   const start = getTimelineStart();
   const weeks = getTimelineWeeks();
   const cols = Array.from({length:weeks}, (_,i)=>{
     const d = addDays(start, i*7);
     return `<div class="gantt-header-week">${d.getMonth()+1}/${d.getDate()}</div>`;
   }).join('');
+
+  // 辅助函数：解析 YYYY-MM-DD 为本地日期对象，避免时区偏差
+  function parseDateSafe(str) {
+    if(!str) return null;
+    const [y, m, d] = str.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+
   const rows = people.map(person=>{
     const blocks = getPersonBlocks(person.id);
+    
+    // 简单冲突检测：检查同一人名下的预排块是否有重叠
+    const sortedBlocks = blocks.filter(b => b.status !== 'cancelled')
+      .sort((a, b) => parseDateSafe(a.start_date) - parseDateSafe(b.start_date));
+    
     const blocksHtml = blocks.map(block=>{
-      const left = weekDiff(start, new Date(block.start_date));
-      const width = Math.max(1, safeNum(block.weeks));
-      const cl = block.formal ? 'formal' : (block.status==='confirmed' ? 'confirmed' : 'pre');
-      const title = `${block.name}
-${block.start_date} · ${block.weeks}周`;
-      const style = `left:${left*110}px;width:${width*110-10}px;top:8px`;
-      const attrs = block.formal ? '' : `draggable="true" ondragstart="preplanDragStart(event,'${block.id}')"`;
-      return `<div class="gantt-block ${cl}" style="${style}" title="${title}" ${attrs}>${block.name}</div>`;
+      const bStart = parseDateSafe(block.start_date);
+      if(!bStart) return '';
+      
+      const bWeeks = safeNum(block.weeks) || 1;
+      const bEnd = addDays(bStart, bWeeks * 7);
+      
+      // 计算相对于甘特图起点的偏移（周数）
+      const diffStart = (bStart - start) / (86400000 * 7);
+      const diffEnd = (bEnd - start) / (86400000 * 7);
+      
+      // 如果块完全在显示范围外，则不渲染
+      if (diffEnd <= 0 || diffStart >= weeks) return '';
+      
+      // 裁剪到显示范围内 (0 到 weeks)
+      const visibleStart = Math.max(0, diffStart);
+      const visibleEnd = Math.min(weeks, diffEnd);
+      const visibleWeeks = visibleEnd - visibleStart;
+      
+      if (visibleWeeks <= 0) return '';
+
+      const leftPx = visibleStart * 110;
+      const widthPx = visibleWeeks * 110 - 12; // 减去间距
+      
+      let isConflict = false;
+      if (!block.formal && block.status !== 'cancelled' && block.employee_id !== 'outsource') {
+        isConflict = sortedBlocks.some(other => 
+          other.id !== block.id && 
+          parseDateSafe(other.start_date) < bEnd && 
+          addDays(parseDateSafe(other.start_date), (safeNum(other.weeks)||1)*7) > bStart
+        );
+      }
+
+      // 阶段样式
+      let phaseClass = '';
+      if (block.phase === 'concept') phaseClass = 'phase-concept';
+      else if (block.phase === 'technical') phaseClass = 'phase-technical';
+      else if (block.phase === 'outsource') phaseClass = 'phase-outsource';
+
+      const cl = [
+        'gantt-block',
+        block.formal ? 'formal' : (block.status==='cancelled' ? 'cancelled' : (block.status==='confirmed' ? 'confirmed' : 'pre')),
+        phaseClass,
+        isConflict ? 'conflict' : ''
+      ].filter(Boolean).join(' ');
+      
+      const title = `${block.name}\n${block.start_date} · ${block.weeks}周${isConflict ? '\n⚠️ 存在时间冲突' : ''}`;
+      const style = `left:${leftPx}px;width:${Math.max(40, widthPx)}px;top:10px`;
+      const attrs = (block.formal || block.employee_id === 'outsource') ? '' : `draggable="true" ondragstart="preplanDragStart(event,'${block.id}')"`;
+      
+      return `<div class="${cl}" style="${style}" title="${title}" ${attrs}>${block.name}</div>`;
     }).join('');
+
     return `<div class="gantt-row" ondragover="preplanDragOver(event)" ondrop="preplanDrop(event,'${person.id}')">
       <div class="gantt-person">${person.name}<div style="font-size:10px;color:var(--text-sub);font-weight:400">${person.job_title||''}</div></div>
       <div class="gantt-track">${Array.from({length:weeks},()=>'<div class="gantt-cell"></div>').join('')}${blocksHtml}</div>
@@ -4744,7 +5235,17 @@ function preplanDrop(ev, employeeId){
 }
 function shiftPreplan(id, weeks){
   const item = preplanItems.find(x=>x.id===id); if(!item) return;
-  const d = addDays(new Date(item.start_date), weeks*7);
+  
+  function parseDateSafe(str) {
+    if(!str) return null;
+    const [y, m, d] = str.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+
+  const currentStart = parseDateSafe(item.start_date);
+  if(!currentStart) return;
+  
+  const d = addDays(currentStart, weeks * 7);
   item.start_date = toISODate(d);
   savePreplans(); renderPreplanPage(); toast(`✓ 已顺延 ${weeks} 周`);
 }
