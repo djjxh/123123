@@ -3,104 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>工时管家 · 室内设计工作室</title>
+<title>设计项目控制台</title>
+<!-- 产品重构版：隐藏低频功能，放大决策系统 -->
+<!-- 谁来做版：含设计师经验匹配与分配理由生成 -->
 <link rel="icon" href="data:,">
 <!-- Supabase JS SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-
-/* ===== 自动任务识别模块（新增） ===== */
-let allTaskRules = [];
-let allTaskClassifications = [];
-let pendingTaskClassifications = [];
-
-async function loadTaskRules(){
-  const { data } = await sb.from('task_rules').select('*').eq('is_active', true);
-  allTaskRules = data || [];
-}
-
-async function loadTaskClassifications(){
-  const { data } = await sb.from('task_classifications').select('*');
-  allTaskClassifications = data || [];
-  pendingTaskClassifications = allTaskClassifications.filter(x => !x.is_confirmed);
-}
-
-function classifyTaskText(text){
-  const raw = String(text || '');
-  let score = {};
-  allTaskRules.forEach(r=>{
-    if(raw.includes(r.keyword)){
-      score[r.category] = (score[r.category]||0) + (r.weight||10);
-    }
-  });
-  const best = Object.entries(score).sort((a,b)=>b[1]-a[1])[0] || ['ignore',0];
-  return {category: best[0], confidence: best[1]};
-}
-
-async function classifyAllLogs(){
-  if(!allLogs.length) return;
-  const rows = allLogs.map(log=>{
-    const r = classifyTaskText(log.note || '');
-    return {
-      log_id: log.id,
-      project_id: log.project_id,
-      raw_text: log.note || '',
-      category: r.category,
-      confidence: r.confidence,
-      is_confirmed: r.confidence > 10 && r.category !== 'revision'
-    };
-  });
-  await sb.from('task_classifications').upsert(rows, { onConflict: 'log_id' });
-}
-
-async function autoCreateStartNodes(){
-  const grouped = {};
-  allTaskClassifications.forEach(c=>{
-    if(!c.is_confirmed) return;
-    if(!grouped[c.project_id]) grouped[c.project_id]=[];
-    grouped[c.project_id].push(c);
-  });
-
-  for(const pid in grouped){
-    const has = allProjectNodes.filter(n=>n.project_id===pid).map(n=>n.node_type);
-    const types = [
-      {cat:'concept', node:'concept_started'},
-      {cat:'technical', node:'technical_started'},
-      {cat:'docking', node:'docking_started'}
-    ];
-    for(const t of types){
-      if(has.includes(t.node)) continue;
-      const first = grouped[pid].find(x=>x.category===t.cat);
-      if(!first) continue;
-      await sb.from('project_nodes').insert({
-        project_id: pid,
-        node_type: t.node,
-        node_date: new Date().toISOString().slice(0,10),
-        node_at: new Date().toISOString(),
-        source: 'task_auto',
-        note: '自动识别'
-      });
-    }
-  }
-}
-
-async function initTaskAI(){
-  await loadTaskRules();
-  await classifyAllLogs();
-  await loadTaskClassifications();
-  await autoCreateStartNodes();
-}
-
-setTimeout(()=>{initTaskAI();}, 2000);
-
-
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;600&display=swap');
 
 :root {
   --ink:#1f2329; --paper:#f5f6f7; --cream:#f0f1f3; --warm-mid:#8f959e;
   --accent:#3370ff; --accent-soft:#e8f0ff;
-  --gold:#2da44e; --gold-soft:#e3f5e9;
+  --gold:#b7791f; --gold-soft:#fff4d6;
   --green:#2da44e; --green-soft:#e3f5e9;
   --blue:#3370ff; --blue-soft:#e8f0ff;
   --text-sub:#646a73; --border:#e0e3e8; --card:#ffffff;
@@ -108,10 +23,10 @@ setTimeout(()=>{initTaskAI();}, 2000);
   --sidebar-w:220px;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-height:100vh}
+body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-height:100vh;min-height:100dvh}
 
 /* ── LAYOUT ── */
-.app-shell{display:flex;min-height:100vh}
+.app-shell{display:flex;min-height:100vh;min-height:100dvh}
 .sidebar{width:var(--sidebar-w);background:#1d2129;color:#f0f1f3;
   display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;
   z-index:50;padding:28px 0 20px;transition:transform 0.3s}
@@ -147,7 +62,7 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
   font-family:'Noto Sans SC',sans-serif;margin-top:8px;transition:all 0.15s}
 .logout-btn:hover{color:var(--accent-soft);background:rgba(192,57,43,0.15)}
 
-.main{margin-left:var(--sidebar-w);flex:1;min-height:100vh;display:flex;flex-direction:column}
+.main{margin-left:var(--sidebar-w);flex:1;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
 .topbar{background:var(--card);border-bottom:1px solid var(--border);
   padding:16px 32px;display:flex;justify-content:space-between;align-items:center;
   position:sticky;top:0;z-index:40}
@@ -189,7 +104,7 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
 
 /* ── LOGIN ── */
 .login-screen{
-  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;
   background:var(--ink);padding:20px}
 .login-box{
   background:var(--paper);border-radius:20px;
@@ -289,9 +204,11 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
 .modal-overlay{position:fixed;inset:0;background:rgba(26,22,18,0.55);
   z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
 .modal-overlay.open{display:flex}
+.modal-overlay:focus{outline:none}
 .modal-box{background:var(--paper);border-radius:16px;width:100%;max-width:520px;
   max-height:90vh;overflow-y:auto;animation:fadeUp 0.25s ease;
   box-shadow:0 24px 60px rgba(0,0,0,0.25)}
+.modal-box:focus,.modal:focus{outline:2px solid var(--accent);outline-offset:2px}
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:600px){
   .modal-overlay{align-items:flex-end;padding:0}
@@ -385,14 +302,14 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
   .mobile-meta{font-size:12px;color:var(--text-sub);line-height:1.7}
   .mobile-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
   .mobile-actions .btn-sm{padding:8px 12px;font-size:12px}
-  .modal-box.mobile-full{width:100%;max-width:none;height:100vh;max-height:100vh;border-radius:0}
+  .modal-box.mobile-full{width:100%;max-width:none;height:100vh;height:100dvh;max-height:100vh;max-height:100dvh;border-radius:0}
   .step-tabs{display:flex;gap:8px;overflow:auto;padding-bottom:8px;margin-bottom:14px}
   .step-tab{padding:8px 12px;border-radius:999px;border:1px solid var(--border);background:#fff;font-size:12px;white-space:nowrap}
   .step-tab.active{background:var(--ink);color:#fff;border-color:var(--ink)}
   .preplan-layout{display:block!important}
 }
 
-/* 预排期：卡片 + 右侧稳定周历 */
+/* 人员安排：卡片 + 右侧稳定周历 */
 .preplan-layout{display:grid;grid-template-columns:360px minmax(0,1fr);gap:18px;align-items:start}
 .preplan-card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
 .preplan-card .hd{padding:14px 16px;border-bottom:1px solid var(--cream);font-weight:700}
@@ -452,7 +369,7 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
 <!-- ════ LOGIN SCREEN ════ -->
 <div class="login-screen" id="loginScreen">
   <div class="login-box">
-    <div class="login-logo">工时管家</div>
+    <div class="login-logo">设计项目控制台</div>
     <div class="login-sub">INTERIOR DESIGN STUDIO · 内部管理系统</div>
 
     <!-- 邮箱+密码登录 -->
@@ -486,8 +403,8 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
 <!-- SIDEBAR -->
 <div class="sidebar" id="sidebar">
   <div class="sidebar-logo">
-    <div class="logo-title">工时管家</div>
-    <div class="logo-sub">INTERIOR DESIGN STUDIO</div>
+    <div class="logo-title">设计项目控制台</div>
+    <div class="logo-sub">PROJECT DECISION SYSTEM</div>
   </div>
   <div class="sidebar-user">
     <div class="su-name" id="sidebarName">—</div>
@@ -495,33 +412,39 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
   </div>
   <nav class="nav-list">
     <div class="nav-group">工作台</div>
-    <button class="nav-btn active" onclick="nav('timelog',this)">
+    <button data-page="decision" class="nav-btn active" onclick="nav('decision',this)">
+      <span class="icon">🎯</span>今天要处理
+    </button>
+    <button data-page="timelog" class="nav-btn" onclick="nav('timelog',this)" style="display:none">
       <span class="icon">⏱</span>工时记录
     </button>
-    <button class="nav-btn" onclick="nav('project',this)">
-      <span class="icon">📁</span>项目管理
-    </button>
-    <button class="nav-btn admin-nav admin-only" onclick="nav('preplan',this)">
-      <span class="icon">🗓</span>预排期
-    </button>
+    <button data-page="project" class="nav-btn" onclick="nav('project',this)">
+      <span class="icon">📁</span>项目状态</button>
+    <button data-page="preplan" class="nav-btn admin-nav admin-only" onclick="nav('preplan',this)">
+      <span class="icon">🗓</span>人员安排</button>
     <div class="nav-group admin-nav admin-only">管理者工具</div>
-    <button class="nav-btn admin-nav admin-only" onclick="nav('dashboard',this)">
-      <span class="icon">📊</span>经营看板
+    <button data-page="dashboard" class="nav-btn admin-nav admin-only" onclick="nav('dashboard',this)" style="display:none">
+      <span class="icon">📊</span>经营数据
     </button>
-    <button class="nav-btn admin-nav admin-only" onclick="nav('quote',this)">
+    <button data-page="automation" class="nav-btn admin-nav admin-only" onclick="nav('automation',this)" style="display:none">
+      <span class="icon">⚙</span>待我判断
+    </button>
+    <button data-page="assignment" class="nav-btn admin-nav admin-only" onclick="nav('assignment',this)">
+      <span class="icon">👤</span>谁来做</button>
+    <button data-page="quote" class="nav-btn admin-nav admin-only" onclick="nav('quote',this)" style="display:none">
       <span class="icon">🧮</span>报价参考
     </button>
-    <button class="nav-btn admin-nav admin-only" onclick="nav('tasklib',this)">
+    <button data-page="tasklib" class="nav-btn admin-nav admin-only" onclick="nav('tasklib',this)" style="display:none">
       <span class="icon">📚</span>任务工时库
     </button>
-    <button class="nav-btn admin-nav admin-only" onclick="nav('team',this)">
+    <button data-page="team" class="nav-btn admin-nav admin-only" onclick="nav('team',this)" style="display:none">
       <span class="icon">👥</span>团队管理
     </button>
-    <button class="nav-btn admin-nav admin-only" onclick="nav('bonus',this)">
+    <button data-page="bonus" class="nav-btn admin-nav admin-only" onclick="nav('bonus',this)" style="display:none">
       <span class="icon">💰</span>绩效管理
     </button>
     <div class="nav-group">个人</div>
-    <button class="nav-btn" onclick="nav('profile',this)">
+    <button data-page="profile" class="nav-btn" onclick="nav('profile',this)">
       <span class="icon">👤</span>我的档案
     </button>
   </nav>
@@ -542,14 +465,64 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
     </div>
     <div class="topbar">
       <div>
-        <div class="topbar-title" id="pageTitle">工时记录</div>
-        <div style="font-size:12px;color:var(--text-sub)" id="pageSubtitle">主管分派制</div>
+        <div class="topbar-title" id="pageTitle">今天要处理</div>
+        <div style="font-size:12px;color:var(--text-sub)" id="pageSubtitle">系统先给建议，你只做判断</div>
       </div>
     </div>
     <div class="content">
 
+
+<!-- PAGE: 今天要处理 -->
+<div class="page active" id="page-decision">
+  <div class="employee-only" style="padding:60px 0;text-align:center;color:var(--text-sub)">
+    <div style="font-size:48px;margin-bottom:16px">🔒</div>
+    <div style="font-size:15px;font-weight:600">今天要处理仅管理者可见</div>
+  </div>
+  <div class="admin-only">
+    <div style="max-width:920px;margin:0 auto">
+      <div style="margin-bottom:22px">
+        <div style="font-family:'Noto Serif SC',serif;font-size:30px;font-weight:800;letter-spacing:.02em">今天要处理什么？</div>
+        <div style="font-size:13px;color:var(--text-sub);margin-top:6px">系统不展示所有数据，只把最值得你处理的事推到前面。</div>
+      </div>
+      <div class="card" style="border:1px solid var(--border);box-shadow:0 8px 32px rgba(31,35,41,.08)">
+        <div class="card-hd">
+          <div class="card-title">来自系统助理的建议</div>
+          <div class="card-action" onclick="renderDecisionPage()">刷新</div>
+        </div>
+        <div id="decisionMessageFeed" style="padding:4px 0 8px"></div>
+      </div>
+      <div class="section-hd">
+        <div class="section-title">背景状态</div>
+        <div style="font-size:12px;color:var(--text-sub)">展开看原因，不抢主视线</div>
+      </div>
+      <div id="decisionHero" class="stat-grid"></div>
+      <div class="two-col">
+        <div>
+          <div class="section-hd">
+            <div class="section-title">人员安排</div>
+            <div class="section-action" onclick="gotoPage('assignment')">去看谁来做</div>
+          </div>
+          <div class="card"><div id="decisionPeople" style="padding:4px 0 8px"></div></div>
+        </div>
+        <div>
+          <div class="section-hd">
+            <div class="section-title">项目状态</div>
+            <div class="section-action" onclick="gotoPage('project')">查看全部项目</div>
+          </div>
+          <div class="card"><div id="decisionRisks" style="padding:4px 0 8px"></div></div>
+        </div>
+      </div>
+      <div style="display:none">
+        <div id="decisionTopThree"></div>
+        <div id="decisionMustDo"></div>
+        <div id="decisionActions"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- PAGE: 工时 -->
-<div class="page active" id="page-timelog">
+<div class="page" id="page-timelog">
   <!-- 员工视图 -->
   <div class="employee-only">
     <div class="notice">📌 工时以飞书导入和主管核对结果为准。执行层人效统计仅基于已锁定/已导入数据。</div>
@@ -631,14 +604,14 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
 </div>
 
 
-<!-- PAGE: 预排期 -->
+<!-- PAGE: 人员安排 -->
 <div class="page" id="page-preplan">
   <div class="employee-only" style="padding:60px 0;text-align:center;color:var(--text-sub)">
     <div style="font-size:48px;margin-bottom:16px">🔒</div>
-    <div style="font-size:15px;font-weight:600">预排期仅管理者可见</div>
+    <div style="font-size:15px;font-weight:600">人员安排仅管理者可见</div>
   </div>
   <div class="admin-only">
-    <div class="notice">📌 预排期按预计开业 / 接铺时间倒排。所有项目都可预排，未签约项目作为浅色占用显示，可拖动时间与负责人。</div>
+    <div class="notice">📌 人员安排按预计开业 / 接铺时间倒排。所有项目都可预排，未签约项目作为浅色占用显示，可拖动时间与负责人。</div>
     <div class="preplan-layout">
       <div>
         <div class="preplan-card" style="margin-bottom:16px">
@@ -707,7 +680,7 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
             <div id="ppRecoBox" style="font-size:12px;color:var(--text-sub);line-height:1.7;margin:-2px 0 8px"></div>
             <div id="ppRecoCards" style="display:grid;gap:10px;margin:0 0 12px"></div>
             <div id="ppCreateHint" style="display:none;font-size:12px;border-radius:10px;padding:10px 12px;margin-bottom:12px"></div>
-            <button class="btn-primary" onclick="createPreplan()">加入预排期</button>
+            <button class="btn-primary" onclick="createPreplan()">加入人员安排</button>
           </div>
         </div>
         <div class="preplan-card">
@@ -789,6 +762,7 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
         <button class="btn-sm" style="background:var(--ink);color:var(--paper)" onclick="openModal('assignModal')">＋ 分派工时</button>
         <button class="btn-sm btn-blue" onclick="openModal('newProjModal')">＋ 新建项目</button>
         <button class="btn-sm btn-green" onclick="openModal('paymentModal')">＋ 录入回款</button>
+        <button class="btn-sm" style="background:#eef6ff;color:#245bdb" onclick="gotoPage('automation')">查看自动化</button>
         <button class="btn-sm" style="background:var(--gold-soft);color:var(--gold)" onclick="gotoPage('project')">查看项目</button>
         <button class="btn-sm" style="background:#f3f0ff;color:#6c5ce7" onclick="gotoPage('team')">查看团队</button>
       </div>
@@ -832,6 +806,92 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
     </details>
   </div>
 </div>
+
+<!-- PAGE: 待我判断 -->
+<div class="page" id="page-automation">
+  <div class="employee-only" style="padding:60px 0;text-align:center;color:var(--text-sub)">
+    <div style="font-size:48px;margin-bottom:16px">🔒</div>
+    <div style="font-size:15px;font-weight:600">待我判断仅管理者可见</div>
+  </div>
+  <div class="admin-only">
+    <div class="notice" style="margin-bottom:18px">⚙ 这里统一管理自动识别、人员安排联动、节点补齐和今日待处理队列。写入工时、项目、回款后，系统会自动刷新这里的建议与联动状态。</div>
+    <div id="automationSummary" class="stat-grid"></div>
+    <div class="two-col">
+      <div>
+        <div class="section-hd">
+          <div class="section-title">自动处理队列</div>
+          <div class="section-action" onclick="manualRefreshAutomation()">重新分析</div>
+        </div>
+        <div class="card"><div class="card-body" id="automationQueue"></div></div>
+      </div>
+      <div>
+        <div class="section-hd"><div class="section-title">联动建议</div></div>
+        <div class="card"><div class="card-body" id="automationLinks"></div></div>
+      </div>
+    </div>
+    <div class="section-hd"><div class="section-title">任务分类待确认</div></div>
+    <div class="card"><div class="card-body" id="automationTaskReview"></div></div>
+    <div class="section-hd"><div class="section-title">人员安排同步建议</div></div>
+    <div class="card"><div class="card-body" id="automationPreplanSync"></div></div>
+  </div>
+</div>
+
+
+<!-- PAGE: 谁来做 -->
+<div class="page" id="page-assignment">
+  <div class="employee-only" style="padding:60px 0;text-align:center;color:var(--text-sub)">
+    <div style="font-size:48px;margin-bottom:16px">🔒</div>
+    <div style="font-size:15px;font-weight:600">谁来做仅管理者可见</div>
+  </div>
+  <div class="admin-only">
+    <div class="notice">
+      🎯 谁来做基于“设计师项目经验标签表”计算，并区分方案线与深化线：方案任务优先方案设计经验，施工图/后期经验只作辅助；同品牌/同系列项目会额外加分。结果用于辅助决策，不直接替代主管判断。
+    </div>
+    <div class="two-col">
+      <div>
+        <div class="section-hd"><div class="section-title">项目信息输入</div></div>
+        <div class="card"><div class="card-body">
+          <div class="form-group">
+            <label class="form-label">项目名称</label>
+            <input class="form-input" id="assignProjectName" placeholder="例如：某某法式烘焙店" oninput="suggestAssignmentTags()">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">推荐阶段</label>
+              <select class="form-select" id="assignStage" onchange="renderAssignmentRecommend()">
+                <option value="方案">方案</option>
+                <option value="施工图">施工图</option>
+                <option value="后期对接">后期对接</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">项目模式</label>
+              <select class="form-select" id="assignMode" onchange="renderAssignmentRecommend()">
+                <option value="">不确定</option>
+                <option value="创新店">创新店</option>
+                <option value="复制店">复制店</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">项目标签（可多选）</label>
+            <div id="assignmentTagPool" class="chip-row" style="flex-wrap:wrap;overflow:visible"></div>
+          </div>
+          <div id="assignmentAutoHint" class="notice green" style="display:none"></div>
+          <button class="btn-primary" onclick="renderAssignmentRecommend()">生成推荐</button>
+        </div></div>
+      </div>
+      <div>
+        <div class="section-hd"><div class="section-title">推荐结果</div></div>
+        <div id="assignmentResult"></div>
+      </div>
+    </div>
+
+    <div class="section-hd"><div class="section-title">经验数据概览</div></div>
+    <div class="card"><div class="card-body" id="assignmentExperienceSummary"></div></div>
+  </div>
+</div>
+
 
 <!-- PAGE: 报价 -->
 <div class="page" id="page-quote">
@@ -1210,7 +1270,7 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
 </div>
 
 <!-- TOAST -->
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <!-- MODALS -->
 <div class="modal-overlay" id="assignModal" onclick="closeModalOutside(event,'assignModal')">
@@ -1560,6 +1620,7 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
     </div></div></div>
 
 <script>
+// 最终交付版 · 修复自动节点按首条任务日期打点
 // ══════════════════════════════════════════════════════════════
 // ⚙️  配置区域 — 部署时替换这两个值
 // ══════════════════════════════════════════════════════════════
@@ -1590,6 +1651,170 @@ let allPayments = [];
 let allMembers = [];   // project_members
 let allScores  = [];   // project_scores
 let allProjectNodes = []; // project_nodes
+let allTaskRules = [];
+let allTaskClassifications = [];
+let pendingTaskClassifications = [];
+let activeModalId = null;
+let lastFocusedElement = null;
+let toastTimer = null;
+const SOURCE_TYPES = Object.freeze({
+  MANUAL: 'manual',
+  TASK_AUTO: 'task_auto',
+  TASK_SUGGEST: 'task_suggest',
+  SYSTEM: 'system',
+});
+const TASK_REVIEW_STATUS = Object.freeze({
+  AUTO_CONFIRMED: 'auto_confirmed',
+  PENDING_REVIEW: 'pending_review',
+  IGNORED: 'ignored',
+});
+const AUTO_NODE_CATEGORIES = Object.freeze({
+  concept: 'concept_started',
+  technical: 'technical_started',
+  docking: 'docking_started',
+});
+const AUTO_CREATE_NODE_TYPES = new Set(Object.values(AUTO_NODE_CATEGORIES));
+const SUGGEST_ONLY_NODE_TYPES = new Set([
+  'submitted_to_client',
+  'client_feedback_received',
+  'revision_started',
+  'revision_completed',
+  'technical_completed',
+  'docking_completed',
+]);
+const PREPLAN_STORAGE_KEY = 'worktime_preplans_cache_v3';
+const TASK_CLASS_KEY = 'worktime_task_class_cache_v3';
+const PREPLAN_TABLE = 'automation_preplans';
+const TASK_OVERRIDE_TABLE = 'task_class_overrides';
+const AUTOMATION_EVENT_TABLE = 'automation_events';
+const AUTO_CLASSIFICATION_THRESHOLD = 18;
+const AUTO_CLASSIFICATION_MARGIN = 6;
+function createEmptyAutomationState(){
+  return {
+    generatedAt: '',
+    summary: { urgent: 0, pendingClassifications: 0, preplanGaps: 0, projectLinks: 0 },
+    queue: [],
+    links: [],
+    preplanSync: [],
+    pendingReviews: [],
+  };
+}
+let automationState = createEmptyAutomationState();
+function getModalDialog(modal){
+  return modal?.querySelector('.modal-box, .modal') || null;
+}
+
+function getFocusableElements(root){
+  if(!root) return [];
+  return [...root.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')]
+    .filter(el=>!el.disabled && el.offsetParent !== null);
+}
+
+function syncModalA11y(modal){
+  if(!modal) return;
+  const dialog = getModalDialog(modal);
+  if(!dialog) return;
+  const title = modal.querySelector('.modal-title');
+  if(title && !title.id){
+    title.id = `${modal.id || 'modal'}Title`;
+  }
+  dialog.setAttribute('role', 'dialog');
+  dialog.setAttribute('aria-modal', 'true');
+  dialog.setAttribute('tabindex', '-1');
+  if(title){
+    dialog.setAttribute('aria-labelledby', title.id);
+  }
+  modal.setAttribute('aria-hidden', modal.classList.contains('open') ? 'false' : 'true');
+  modal.querySelectorAll('.modal-close').forEach(btn=>{
+    btn.setAttribute('type', 'button');
+    btn.setAttribute('aria-label', '关闭弹窗');
+  });
+  modal.querySelectorAll('.form-group').forEach(group=>{
+    const label = group.querySelector('.form-label');
+    const field = group.querySelector('input,select,textarea');
+    if(label && field){
+      if(!field.id){
+        field.id = `field_${Math.random().toString(36).slice(2,10)}`;
+      }
+      label.setAttribute('for', field.id);
+    }
+  });
+}
+
+function initAccessibility(){
+  document.querySelectorAll('.modal-overlay').forEach(syncModalA11y);
+  const toastEl = document.getElementById('toast');
+  if(toastEl){
+    toastEl.setAttribute('role', 'status');
+    toastEl.setAttribute('aria-live', 'polite');
+    toastEl.setAttribute('aria-atomic', 'true');
+  }
+}
+
+function syncBodyScrollLock(){
+  document.body.style.overflow = document.querySelector('.modal-overlay.open') ? 'hidden' : '';
+}
+
+function focusModal(id){
+  const dialog = getModalDialog(document.getElementById(id));
+  if(!dialog) return;
+  const [firstFocusable] = getFocusableElements(dialog);
+  (firstFocusable || dialog).focus();
+}
+
+function handleModalKeydown(event){
+  if(!activeModalId) return;
+  if(event.key === 'Escape'){
+    event.preventDefault();
+    closeModal(activeModalId);
+    return;
+  }
+  if(event.key !== 'Tab') return;
+  const dialog = getModalDialog(document.getElementById(activeModalId));
+  const focusable = getFocusableElements(dialog);
+  if(!focusable.length){
+    event.preventDefault();
+    dialog?.focus();
+    return;
+  }
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if(event.shiftKey && document.activeElement === first){
+    event.preventDefault();
+    last.focus();
+  }else if(!event.shiftKey && document.activeElement === last){
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+function rafThrottle(fn){
+  let scheduled = false;
+  let lastArgs = [];
+  return (...args)=>{
+    lastArgs = args;
+    if(scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(()=>{
+      scheduled = false;
+      fn(...lastArgs);
+    });
+  };
+}
+
+function renderSelectOptions(selectEl, options=[], placeholder=''){
+  if(!selectEl) return;
+  const rows = [];
+  if(placeholder){
+    rows.push(`<option value="">${escapeHtml(placeholder)}</option>`);
+  }
+  selectEl.innerHTML = rows.concat(options.map(option=>{
+    const value = option?.value == null ? '' : String(option.value).replace(/"/g,'&quot;');
+    const label = escapeHtml(option?.label ?? '');
+    const selected = option?.selected ? ' selected' : '';
+    return `<option value="${value}"${selected}>${label}</option>`;
+  })).join('');
+}
 let _trackingProjId = null; // 当前正在追踪的项目ID
 
 // ── 日期工具（使用本地时区，避免 UTC 日期导致统计偏移）────────────────
@@ -1603,6 +1828,12 @@ function formatLocalDate(date=new Date()){
 function formatLocalMonth(date=new Date()){
   const d = date instanceof Date ? date : new Date(date);
   return `${d.getFullYear()}-${pad2(d.getMonth()+1)}`;
+}
+function parseDateSafe(str){
+  if(!str) return null;
+  const [y, m, d] = String(str).split('-').map(Number);
+  if(!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
 }
 
 // ── 算法常量 ──────────────────────────────────────────────────
@@ -1624,6 +1855,7 @@ function getMonthlyCapForMonth(yearMonth){
 }
 // 当月工时上限（动态）
 const MONTHLY_CAP = getMonthlyCapForMonth(formatLocalMonth());
+function getCurrentMonthlyCap(){ return getMonthlyCapForMonth(formatLocalMonth()); }
 const TYPE_H = {residential:0.70,commercial:0.90,office:0.85,hotel:1.10};
 const LVL_M  = {standard:1.0,premium:1.35,luxury:1.80};
 
@@ -1735,7 +1967,8 @@ function showApp(){
 // 数据加载
 // ══════════════════════════════════════════════════════════════
 async function loadAllData(){
-  await Promise.all([loadProjects(),loadEmployees(),loadLogs(),loadPayments(),loadMembersAndScores(),loadProjectNodes()]);
+  await Promise.all([loadProjects(),loadEmployees(),loadLogs(),loadPayments(),loadMembersAndScores(),loadProjectNodes(),loadTaskClassOverrides()]);
+  await initAutomation({ classifyLogs: true });
   renderAll();
 }
 
@@ -1820,24 +2053,28 @@ function populateProjSelects(){
   ids.forEach(id=>{
     const el=document.getElementById(id);
     if(!el)return;
-    el.innerHTML=allProjects.filter(p=>p.status!=='done')
-      .map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+    renderSelectOptions(el, allProjects
+      .filter(p=>p.status!=='done')
+      .map(p=>({ value: p.id, label: p.name })));
   });
 }
 
 function populateEmpSelects(){
-  // 填充负责总监下拉（只显示admin角色）
-  const dirSel = document.getElementById('npDirector');
-  if(dirSel){
+  const dirSelSafe = document.getElementById('npDirector');
+  if(dirSelSafe){
     const admins = allEmployees.filter(e=>e.role==='admin');
-    dirSel.innerHTML = '<option value="">请选择总监</option>' +
-      admins.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+    renderSelectOptions(dirSelSafe, admins.map(e=>({ value: e.id, label: e.name })), '请选择总监');
   }
-  const el=document.getElementById('aEmp');
-  if(!el)return;
-  const assignable = getWorkloadEmployees();
-  const list = assignable.length ? assignable : allEmployees.filter(e=>e.is_active!==false);
-  el.innerHTML=list.map(e=>`<option value="${e.id}">${e.name}（${e.job_title||'员工'}）</option>`).join('');
+  const assignEl = document.getElementById('aEmp');
+  if(assignEl){
+    const assignable = getWorkloadEmployees();
+    const list = assignable.length ? assignable : allEmployees.filter(e=>e.is_active!==false);
+    renderSelectOptions(assignEl, list.map(e=>({
+      value: e.id,
+      label: `${e.name}（${e.job_title || '员工'}）`,
+    })));
+  }
+  return;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1861,8 +2098,7 @@ async function submitAssign(){
   if(error){toast('分派失败：'+error.message);return}
   closeModal('assignModal');
   toast('✓ 工时已分派');
-  await loadLogs();
-  renderAll();
+  await reloadAndRender(['logs']);
 }
 
 async function createProject(){
@@ -1892,8 +2128,7 @@ async function createProject(){
   if(error){toast('创建失败：'+error.message);return}
   closeModal('newProjModal');
   toast(`✓ 项目「${name.slice(0,10)}」已创建`);
-  await loadProjects();
-  renderAll();
+  await reloadAndRender(['projects']);
 }
 
 function editProject(id){
@@ -1953,38 +2188,32 @@ async function saveEditProject(){
   if(error){toast('保存失败：'+error.message);return}
   closeModal('newProjModal');
   toast('✓ 项目信息已更新');
-  await loadProjects();
-  renderAll();
+  await reloadAndRender(['projects']);
 }
 
-// 关闭弹窗时重置状态
-const _origCloseModal = closeModal;
-function closeModal(id){
-  if(id==='newProjModal'){
-    document.getElementById('npEditId').value='';
-    document.getElementById('npModalTitle').textContent='新建项目';
-    document.getElementById('createProjBtn').style.display='block';
-    document.getElementById('saveProjBtn').style.display='none';
-    document.getElementById('npMembersSection').style.display='none';
-    document.getElementById('npMembersList').innerHTML='';
-    document.getElementById('npAddMemberRow').style.display='none';
-    document.getElementById('npName').value='';
-    document.getElementById('npClient').value='';
-    document.getElementById('npContract').value='';
-    document.getElementById('npArea').value='';
-    document.getElementById('npBudget').value='';
-    document.getElementById('npBudget').readOnly=true;
-    document.getElementById('npBudget').style.background='var(--cream)';
-    document.getElementById('npBudget').style.color='var(--text-sub)';
-    document.getElementById('npStart').value='';
-    document.getElementById('npDeadline').value='';
-    document.getElementById('npPeople').value='1';
-    const h=document.getElementById('npBudgetHint');if(h)h.textContent='';
-    const ds=document.getElementById('npDirector');if(ds)ds.value='';
-    const st=document.getElementById('npStatus');if(st)st.value='active';
-    const cp=document.getElementById('npCompletion');if(cp)cp.value='';
-  }
-  _origCloseModal(id);
+function resetNewProjectModalState(){
+  document.getElementById('npEditId').value='';
+  document.getElementById('npModalTitle').textContent='新建项目';
+  document.getElementById('createProjBtn').style.display='block';
+  document.getElementById('saveProjBtn').style.display='none';
+  document.getElementById('npMembersSection').style.display='none';
+  document.getElementById('npMembersList').innerHTML='';
+  document.getElementById('npAddMemberRow').style.display='none';
+  document.getElementById('npName').value='';
+  document.getElementById('npClient').value='';
+  document.getElementById('npContract').value='';
+  document.getElementById('npArea').value='';
+  document.getElementById('npBudget').value='';
+  document.getElementById('npBudget').readOnly=true;
+  document.getElementById('npBudget').style.background='var(--cream)';
+  document.getElementById('npBudget').style.color='var(--text-sub)';
+  document.getElementById('npStart').value='';
+  document.getElementById('npDeadline').value='';
+  document.getElementById('npPeople').value='1';
+  const h=document.getElementById('npBudgetHint'); if(h) h.textContent='';
+  const ds=document.getElementById('npDirector'); if(ds) ds.value='';
+  const st=document.getElementById('npStatus'); if(st) st.value='active';
+  const cp=document.getElementById('npCompletion'); if(cp) cp.value='';
 }
 
 async function submitPayment(){
@@ -2003,8 +2232,7 @@ async function submitPayment(){
   if(error){toast('录入失败：'+error.message);return}
   closeModal('paymentModal');
   toast('✓ 回款已录入');
-  await Promise.all([loadProjects(),loadPayments()]);
-  renderAll();
+  await reloadAndRender(['projects','payments']);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2212,12 +2440,16 @@ function renderImportPreview(rows, warns, fileStats){
       p.name===r.project || p.name.includes(r.project) || r.project.includes(p.name)
     );
     const rowStyle = matched ? '' : 'background:#fff8e1';
+    const safePerson = escapeHtml(r.person || '—');
+    const safeProject = escapeHtml(r.project || '—');
+    const safeDate = escapeHtml(r.date || '—');
+    const safeTaskText = escapeHtml(String(r.task || ''));
     const safeTask = String(r.task || '—').replace(/"/g,'&quot;');
     return `<tr style="${rowStyle}">
-      <td>${r.person}</td>
-      <td style="color:${matched?'inherit':'#e65100'}">${r.project}${matched?'':' ⚠'}</td>
-      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${safeTask}">${r.task||'—'}</td>
-      <td>${r.date}</td>
+      <td>${safePerson}</td>
+      <td style="color:${matched?'inherit':'#e65100'}">${escapeHtml(r.project)}${matched?'':' ⚠'}</td>
+      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escapeHtml(r.task || '—')}">${escapeHtml(r.task || '—')}</td>
+      <td>${safeDate}</td>
       <td>${r.hours}h</td>
       <td>${r.revision}次</td>
       <td>${r.undone?'<span style="color:var(--accent);font-weight:600">未完成</span>':'<span style="color:var(--green);font-weight:600">已完成</span>'}</td>
@@ -2283,7 +2515,7 @@ async function previewFixAmount(){
   const preview = document.getElementById('fixAmountPreview');
   preview.innerHTML = '加载中…';
   const { data: projects } = await sb.from('projects').select('id,name,contract_amount').order('name');
-  const { data: payments } = await sb.from('payments').select('id,project_id,amount,type,pay_date');
+  const { data: payments } = await sb.from('payments').select('id,project_id,amount,type,payment_date');
   let html = '<div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:8px">';
   html += '<div style="font-weight:600;margin-bottom:6px">合同金额修正预览：</div>';
   (projects||[]).forEach(p=>{
@@ -2293,7 +2525,7 @@ async function previewFixAmount(){
   html += '<div style="font-weight:600;margin:8px 0 4px">回款金额修正预览：</div>';
   (payments||[]).forEach(p=>{
     if(!p.amount || p.amount < 10000) return;
-    html += `<div>${p.type} ${p.pay_date}：${p.amount} → <strong>${(p.amount/10000).toFixed(4)}</strong> 万</div>`;
+    html += `<div>${p.type} ${p.payment_date}：${p.amount} → <strong>${(p.amount/10000).toFixed(4)}</strong> 万</div>`;
   });
   html += '</div>';
   preview.innerHTML = html;
@@ -2322,7 +2554,7 @@ async function doFixAmount(){
   btn.disabled = false; btn.textContent = '⚡ 确认执行修正';
   toast(`修正完成：${ok} 条成功，${err} 条失败`);
   if(ok > 0){
-    await loadAllData();
+    await reloadAndRender(['projects','payments']);
     document.getElementById('fixAmountPreview').innerHTML = '<div style="color:var(--green);font-weight:600">✅ 修正已完成，数据已刷新</div>';
   }
 }
@@ -2434,7 +2666,7 @@ async function doImport(){
   if(fail > 0) parts.push(`失败 ${fail} 条`);
   toast(`导入完成：${parts.join('，')}`);
   if(success>0 || duplicated>0 || skippedUnmatched>0){
-    await loadAllData();
+    await reloadAndRender(['logs','projects']);
     closeModal('importModal');
     resetImportPreview();
     document.getElementById('importFileInput').value='';
@@ -2504,8 +2736,7 @@ async function saveEditEmp(){
   if(error){toast('保存失败：'+error.message);return}
   closeModal('editEmpModal');
   toast('✓ 员工信息已更新');
-  await loadEmployees();
-  renderAll();
+  await reloadAndRender(['employees']);
 }
 
 async function inviteEmployee(){
@@ -2529,8 +2760,7 @@ async function inviteEmployee(){
   document.getElementById('inviteTitle').value='';
   document.getElementById('inviteCost').value='';
   toast('✓ 员工已添加');
-  await loadEmployees();
-  renderAll();
+  await reloadAndRender(['employees']);
 }
 
 async function deleteProject(id, name){
@@ -2543,8 +2773,7 @@ async function deleteProject(id, name){
   const {error} = await sb.from('projects').delete().eq('id',id);
   if(error){toast('删除失败：'+error.message);return}
   toast('✓ 项目已删除');
-  await loadProjects();
-  renderAll();
+  await reloadAndRender(['projects']);
 }
 
 async function deleteLog(id){
@@ -2552,8 +2781,7 @@ async function deleteLog(id){
   if(!confirm('确认删除此条工时记录？'))return;
   await sb.from('time_logs').delete().eq('id',id);
   toast('已删除');
-  await loadLogs();
-  renderAll();
+  await reloadAndRender(['logs']);
 }
 
 // ── 编辑工时 ──────────────────────────────────────────────────
@@ -2588,8 +2816,7 @@ async function saveEditLog(){
   if(error){toast('保存失败：'+error.message);return}
   closeModal('editLogModal');
   toast('✓ 工时记录已更新');
-  await loadLogs();
-  renderAll();
+  await reloadAndRender(['logs']);
 }
 
 // ── 编辑/删除回款 ─────────────────────────────────────────────
@@ -2621,8 +2848,7 @@ async function saveEditPayment(){
   if(error){toast('保存失败：'+error.message);return}
   closeModal('editPayModal');
   toast('✓ 回款记录已更新');
-  await loadPayments();
-  renderAll();
+  await reloadAndRender(['projects','payments']);
 }
 
 async function deletePayment(id){
@@ -2630,8 +2856,7 @@ async function deletePayment(id){
   const {error} = await sb.from('payments').delete().eq('id',id);
   if(error){toast('删除失败：'+error.message);return}
   toast('✓ 已删除');
-  await loadPayments();
-  renderAll();
+  await reloadAndRender(['projects','payments']);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2675,7 +2900,7 @@ async function openProjectTrack(projId){
   renderProjectTrack();
 }
 
-async function markNode(nodeType, note='', source='manual'){
+async function markNode(nodeType, note='', source=SOURCE_TYPES.MANUAL){
   if(!_trackingProjId) return;
   const today = formatLocalDate();
   const now = new Date().toISOString();
@@ -2707,7 +2932,7 @@ async function markNode(nodeType, note='', source='manual'){
   if(noteEl) noteEl.value = '';
 
   toast(`✓ 已标记节点：${NODE_NAMES[nodeType]}`);
-  await loadProjectNodes();
+  await reloadAndRender(['nodes']);
   renderProjectTrack();
 }
 
@@ -2729,7 +2954,7 @@ async function deleteNode(nodeId){
   const {error} = await sb.from('project_nodes').delete().eq('id', nodeId);
   if(error){ toast('删除失败'); return; }
   toast('已撤销');
-  await loadProjectNodes();
+  await reloadAndRender(['nodes']);
   renderProjectTrack();
 }
 
@@ -2796,7 +3021,7 @@ function renderProjectTrack(){
     if(suggestNode){
       html += `<div class="notice blue" style="margin-top:20px;font-size:11px">
         💡 系统根据近期任务「${lastLogs[0]?.note?.slice(0,15)}...」建议标记节点：<strong>${NODE_NAMES[suggestNode]}</strong>
-        <button class="btn-sm" style="margin-left:8px;padding:2px 8px;background:var(--blue);color:#fff" onclick="markNode('${suggestNode}', '系统建议确认', 'task_suggest')">确认打点</button>
+        <button class="btn-sm" style="margin-left:8px;padding:2px 8px;background:var(--blue);color:#fff" onclick="markNode('${suggestNode}', '待我判断确认', 'task_suggest')">确认打点</button>
       </div>`;
     }
 
@@ -2864,13 +3089,14 @@ function renderInlineMembers(projId){
     const score = allScores.find(s=>s.project_id===projId&&s.employee_id===m.employee_id&&s.score_type==='project');
     const scoreVal = score ? parseFloat(score.score) : null;
     const payable  = scoreVal!=null ? Math.round(bonus*(0.5+0.4*scoreVal)) : null;
+    const safeEmpName = escapeHtml(emp?.name || '—');
     return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--cream);border-radius:8px;margin-bottom:6px">
       <div style="width:30px;height:30px;border-radius:50%;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">
         ${emp?.name?.slice(0,1)||'?'}
       </div>
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:600">${emp?.name||'—'}</div>
-        <div style="font-size:11px;color:var(--text-sub)">${m.job_role}</div>
+        <div style="font-size:11px;color:var(--text-sub)">${escapeHtml(m.job_role)}</div>
       </div>
       <div style="text-align:right;flex-shrink:0">
         <div style="font-size:12px;font-weight:600;color:var(--green)">¥${bonus.toLocaleString()}</div>
@@ -2886,10 +3112,16 @@ function openInlineAddMember(){
   if(!projId){ toast('请先保存项目'); return; }
   // 显示全部在职员工（同一人可以不同岗位多次添加）
   const sel = document.getElementById('inlineAddEmp');
-  sel.innerHTML = allEmployees
+  renderSelectOptions(sel, allEmployees
+    .filter(e=>e.is_active!==false)
+    .map(e=>({
+      value: e.id,
+      label: `${e.name}（${e.job_title || '员工'}）`,
+    })));
+  /* sel.innerHTML = allEmployees
     .filter(e=>e.is_active!==false)
     .map(e=>`<option value="${e.id}">${e.name}（${e.job_title||'员工'}）</option>`)
-    .join('');
+    .join(''); */
   if(!sel.options.length){ toast('暂无在职员工'); return; }
   document.getElementById('npAddMemberRow').style.display='block';
 }
@@ -3133,7 +3365,7 @@ function switchBonusTab(n){
 function renderBonus(){
   if(!isAdmin) return;
   // 填充项目下拉
-  const projs = allProjects.filter(p=>p.status!=='done'||true); // 含已完结
+  const projs = allProjects; // 含已完结
   ['memberProjSel','scoreProjSel','bonusSumProjSel'].forEach(selId=>{
     const sel = document.getElementById(selId);
     if(!sel) return;
@@ -3590,17 +3822,74 @@ function doSaveAnnualScore(){
   renderAnnualBonus();
 }
 
+function renderModules(modules=[]){
+  const handlers = {
+    time: renderTimePage,
+    project: renderProjectPage,
+    preplan: renderPreplanPage,
+    dashboard: renderDashboard,
+    automation: renderAutomationPage,
+    quote: renderQuote,
+    tasklib: renderTaskLibrary,
+    profile: renderProfile,
+    team: renderTeam,
+    bonus: renderBonus,
+    cost: initCostAnalysisSel,
+    track: ()=>{
+      const trackModal = document.getElementById('projectTrackModal');
+      if(trackModal?.classList.contains('open')){
+        renderProjectTrack();
+      }
+    },
+  };
+  [...new Set(modules)].forEach(module=>{
+    handlers[module]?.();
+  });
+}
+function getRenderModulesForKeys(keys=[]){
+  if(!keys.length){
+    return ['time','project','preplan','dashboard','automation','quote','tasklib','profile','team','bonus','cost','track'];
+  }
+  const modules = new Set(['track']);
+  keys.forEach(key=>{
+    if(key === 'projects'){
+      ['project','preplan','dashboard','automation','quote','tasklib','cost'].forEach(item=>modules.add(item));
+    }
+    if(key === 'logs'){
+      ['time','project','dashboard','automation','tasklib','profile'].forEach(item=>modules.add(item));
+    }
+    if(key === 'payments'){
+      ['project','dashboard','quote','cost'].forEach(item=>modules.add(item));
+    }
+    if(key === 'employees'){
+      ['time','preplan','dashboard','tasklib','team','profile','bonus'].forEach(item=>modules.add(item));
+    }
+    if(key === 'members'){
+      ['project','bonus'].forEach(item=>modules.add(item));
+    }
+    if(key === 'nodes'){
+      ['project','dashboard','automation'].forEach(item=>modules.add(item));
+    }
+    if(key === 'preplans'){
+      ['preplan','dashboard','automation'].forEach(item=>modules.add(item));
+    }
+    if(key === 'task-classifications'){
+      ['automation','tasklib','dashboard','project'].forEach(item=>modules.add(item));
+    }
+    if(key === 'task-overrides'){
+      ['tasklib'].forEach(item=>modules.add(item));
+    }
+    if(key === 'automation'){
+      ['automation','dashboard','project'].forEach(item=>modules.add(item));
+    }
+  });
+  return [...modules];
+}
+function renderPartial(keys=[]){
+  renderModules(getRenderModulesForKeys(keys));
+}
 function renderAll(){
-  renderTimePage();
-  renderProjectPage();
-  renderPreplanPage();
-  renderDashboard();
-  renderQuote();
-  renderTaskLibrary();
-  renderProfile();
-  renderTeam();
-  renderBonus();
-  initCostAnalysisSel();
+  renderModules(getRenderModulesForKeys());
 }
 
 // ── 工时页 ────────────────────────────────────────────────────
@@ -3707,19 +3996,39 @@ function filterProj(s,el){
   el.classList.add('active'); projFilter=s; renderProjectPage();
 }
 
+
+function compareLocalDate(a, b){
+  const da = (typeof parseDateSafe === 'function') ? parseDateSafe(a) : new Date(a);
+  const db = (typeof parseDateSafe === 'function') ? parseDateSafe(b) : new Date(b);
+  if(!da || !db || isNaN(da) || isNaN(db)) return 0;
+  const aa = new Date(da.getFullYear(), da.getMonth(), da.getDate()).getTime();
+  const bb = new Date(db.getFullYear(), db.getMonth(), db.getDate()).getTime();
+  return aa === bb ? 0 : (aa < bb ? -1 : 1);
+}
+
+function isProjectRiskProject(p){
+  if(!p) return false;
+  if(p.status === 'risk') return true;
+  const adjHours = calcAdjustedHours(p.hours_used || 0);
+  const hourPct = p.hours_budget > 0 ? adjHours / p.hours_budget : 0;
+  if(hourPct > 0.85) return true;
+  if(p.contract_amount > 0 && (p.labor_cost || 0) / p.contract_amount > 0.7) return true;
+  if(p.deadline && compareLocalDate(p.deadline, formatLocalDate()) < 0 && p.status === 'active') return true;
+  const nodes = (typeof allProjectNodes !== 'undefined' ? allProjectNodes : []).filter(n=>n.project_id===p.id);
+  const revCount = nodes.filter(n=>n.node_type==='revision_started').length;
+  if(revCount >= 3) return true;
+  return false;
+}
+
 function renderProjectPage(){
   if(!isAdmin){renderEmpProjTable();return}
-  const list=projFilter==='all'?allProjects:allProjects.filter(p=>p.status===projFilter);
+  const list=projFilter==='all'?allProjects:(projFilter==='risk'?allProjects.filter(isProjectRiskProject):allProjects.filter(p=>p.status===projFilter));
   // 风险预警
   const ra=document.getElementById('riskAlerts');
   if(ra){
     const risky=allProjects.filter(p=>{
       if(p.status==='done' || p.status==='paused') return false;
-      const hb = parseFloat(p.hours_budget)||0;
-      const hu = parseFloat(p.hours_used)||0;
-      const ca = parseFloat(p.contract_amount)||0;
-      const lc = parseFloat(p.labor_cost)||0;
-      return (hb>0 && hu/hb>0.85) || (ca>0 && lc/ca>0.7);
+      return isProjectRiskProject(p);
     });
     ra.innerHTML=risky.map(p=>{
       const hb = parseFloat(p.hours_budget)||0;
@@ -3756,7 +4065,7 @@ function renderProjectPage(){
         </div></td>
         <td>
           <span class="badge badge-${p.status}">${p.status==='active'?'进行中':p.status==='construction'?'🏗施工跟踪':p.status==='paused'?'⏸暂停':p.status==='risk'?'⚠预警':'已完结'}</span>
-          ${p.deadline&&p.status==='active'&&new Date(p.deadline)<new Date()?'<div style="font-size:10px;color:var(--accent);margin-top:2px">⚠施工图已超期</div>':''}
+          ${p.deadline&&p.status==='active'&&compareLocalDate(p.deadline, formatLocalDate()) < 0?'<div style="font-size:10px;color:var(--accent);margin-top:2px">⚠施工图已超期</div>':''}
           ${p.status==='construction'&&p.completion_date?`<div style="font-size:10px;color:var(--text-sub);margin-top:2px">预计竣工：${p.completion_date}</div>`:''}
         </td>
         <td style="display:flex;gap:4px">
@@ -4100,7 +4409,7 @@ function renderProjectNodeAlerts(info){
   const alerts = [];
 
   activeProjs.forEach(p=>{
-    const nodes = allProjectNodes.filter(n=>n.project_id===p.id);
+    const nodes = (typeof allProjectNodes !== 'undefined' ? allProjectNodes : []).filter(n=>n.project_id===p.id);
     const logs  = allLogs.filter(l=>l.project_id===p.id);
     const metrics = calculateProjectMetrics(p.id, nodes, logs);
     
@@ -4219,37 +4528,13 @@ function renderBusinessSummary(info, metrics){
 function renderTodayTodoList(info){
   const el=document.getElementById('todayTodoList');
   if(!el)return;
-  const today=new Date();
-  const todayStr=formatLocalDate(today);
-  const in7Days=new Date(today);
-  in7Days.setDate(in7Days.getDate()+7);
-  const health = getDataHealthMetrics(info);
-
-  const items=[];
-  if(health.lagDays!=null && health.lagDays>4){
-    items.push({name:`${info.label} 工时数据滞后`,meta:`最近导入 ${health.latestImportDate||'—'} · 建议先导入飞书工时`,badge:'先导入',cls:'badge-risk',action:"openModal('importModal')"});
-  }
-  if(health.missingEmployees.length){
-    items.push({name:`${health.missingEmployees.length} 名执行层同事在 ${info.label} 暂无记录`,meta:`建议核对是否未导入、未分派或未开始任务`,badge:'补齐记录',cls:'badge-warn',action:"gotoPage('timelog')"});
-  }
-  allProjects.filter(p=>p.status==='active' && p.deadline && new Date(p.deadline) < today).forEach(p=>{
-    items.push({name:`${p.name} 已超施工图交付日`,meta:`截止 ${p.deadline} · 建议今天确认实际交付时间`,badge:'立即处理',cls:'badge-risk',action:"gotoPage('project')"});
-  });
-  allProjects.filter(p=>p.status==='active' && p.deadline && new Date(p.deadline) >= today && new Date(p.deadline) <= in7Days).forEach(p=>{
-    const diff=Math.ceil((new Date(p.deadline)-today)/86400000);
-    items.push({name:`${p.name} 即将到期`,meta:`剩余 ${diff} 天 · 建议今天确认图纸完成度`,badge:'本周跟进',cls:'badge-warn',action:"gotoPage('project')"});
-  });
-  allProjects.filter(p=>p.status!=='done' && p.contract_amount>0 && ((p.paid_amount||0) / p.contract_amount) < 0.4).forEach(p=>{
-    const paidPct=Math.round(((p.paid_amount||0) / p.contract_amount) * 100);
-    items.push({name:`${p.name} 回款偏低`,meta:`当前回款 ${paidPct}% · 建议今天催款`,badge:'催回款',cls:'badge-warn',action:"gotoPage('project')"});
-  });
-  const noLogEmployees = getWorkloadEmployees().filter(e=>{
-    const h = allLogs.filter(l=>l.employee_id===e.id && l.log_date===todayStr).reduce((s,l)=>s+safeNum(l.hours),0);
-    return h===0;
-  });
-  if(noLogEmployees.length){
-    items.push({name:`${noLogEmployees.length} 名执行层同事今天暂未录入/分派工时`,meta:`建议核对是否未分派或未开始任务`,badge:'核对分工',cls:'badge-active',action:"gotoPage('timelog')"});
-  }
+  const items = automationState.queue.slice(0,6).map(item=>({
+    name:item.title,
+    meta:item.meta,
+    badge:item.badge,
+    cls:item.severity==='high' ? 'badge-risk' : item.severity==='medium' ? 'badge-warn' : 'badge-active',
+    action:item.action,
+  }));
 
   if(!items.length){
     el.innerHTML='<div class="list-item"><div style="font-size:20px">✅</div><div class="li-info"><div class="li-name">当前没有紧急待办</div><div class="li-meta">数据和项目节奏基本正常</div></div></div>';
@@ -4736,16 +5021,119 @@ function renderGantt(){
 }
 
 
-// ── 预排期（本地存储 MVP） ───────────────────────────────
-const PREPLAN_STORAGE_KEY = 'worktime_preplans_v2';
+// ── 人员安排（本地存储 MVP） ───────────────────────────────
 let preplanItems = [];
 let preplanRecommendations = [];
+let taskClassMap = {};
 
-function loadPreplans(){
-  try{ preplanItems = JSON.parse(localStorage.getItem(PREPLAN_STORAGE_KEY)||'[]') || []; }catch(_){ preplanItems = []; }
+function readJsonCache(key, fallback){
+  try{
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  }catch(_){
+    return fallback;
+  }
 }
-function savePreplans(){
-  localStorage.setItem(PREPLAN_STORAGE_KEY, JSON.stringify(preplanItems));
+function writeJsonCache(key, value){
+  try{
+    localStorage.setItem(key, JSON.stringify(value));
+  }catch(_){}
+}
+function normalizePreplanItem(item={}){
+  return {
+    ...item,
+    status: item.status || 'pre',
+    source: item.source || SOURCE_TYPES.SYSTEM,
+    weeks: safeNum(item.weeks) || 1,
+    created_at: item.created_at || new Date().toISOString(),
+    updated_at: item.updated_at || new Date().toISOString(),
+    created_by: item.created_by || currentUser?.id || null,
+  };
+}
+function normalizeTaskClassification(row={}){
+  const reviewStatus = [TASK_REVIEW_STATUS.AUTO_CONFIRMED, TASK_REVIEW_STATUS.PENDING_REVIEW, TASK_REVIEW_STATUS.IGNORED].includes(row.review_status)
+    ? row.review_status
+    : (row.is_confirmed ? TASK_REVIEW_STATUS.AUTO_CONFIRMED : (row.category === 'ignore' ? TASK_REVIEW_STATUS.IGNORED : TASK_REVIEW_STATUS.PENDING_REVIEW));
+  return {
+    ...row,
+    review_status: reviewStatus,
+    source: row.source || SOURCE_TYPES.SYSTEM,
+    is_confirmed: reviewStatus === TASK_REVIEW_STATUS.AUTO_CONFIRMED,
+  };
+}
+function refreshPendingTaskClassifications(){
+  pendingTaskClassifications = allTaskClassifications.filter(item=>item.review_status === TASK_REVIEW_STATUS.PENDING_REVIEW);
+}
+function getTaskClassificationRecord(logId){
+  return allTaskClassifications.find(item=>String(item.log_id)===String(logId)) || null;
+}
+async function loadPreplans(){
+  try{
+    const { data, error } = await sb.from(PREPLAN_TABLE).select('*').order('created_at', {ascending: true});
+    if(error) throw error;
+    preplanItems = (data || []).map(normalizePreplanItem);
+    writeJsonCache(PREPLAN_STORAGE_KEY, preplanItems);
+  }catch(error){
+    console.warn('loadPreplans fallback to cache', error);
+    preplanItems = readJsonCache(PREPLAN_STORAGE_KEY, preplanItems) || [];
+  }
+  return preplanItems;
+}
+async function savePreplans(previousItems=[]){
+  const snapshot = (previousItems || []).map(normalizePreplanItem);
+  const rows = preplanItems.map(normalizePreplanItem);
+  const previousIds = new Set(snapshot.map(item=>String(item.id)));
+  const currentIds = new Set(rows.map(item=>String(item.id)));
+  const deletedIds = [...previousIds].filter(id=>!currentIds.has(id));
+  try{
+    if(rows.length){
+      const { error: upsertError } = await sb.from(PREPLAN_TABLE).upsert(rows, { onConflict: 'id' });
+      if(upsertError) throw upsertError;
+    }
+    if(deletedIds.length){
+      const { error: deleteError } = await sb.from(PREPLAN_TABLE).delete().in('id', deletedIds);
+      if(deleteError) throw deleteError;
+    }
+    preplanItems = rows;
+    writeJsonCache(PREPLAN_STORAGE_KEY, preplanItems);
+    return true;
+  }catch(error){
+    console.error('savePreplans failed', error);
+    preplanItems = snapshot;
+    writeJsonCache(PREPLAN_STORAGE_KEY, preplanItems);
+    return false;
+  }
+}
+async function loadTaskClassOverrides(){
+  try{
+    const { data, error } = await sb.from(TASK_OVERRIDE_TABLE).select('*');
+    if(error) throw error;
+    taskClassMap = Object.fromEntries((data || []).map(item=>[item.log_id, item.category]));
+    writeJsonCache(TASK_CLASS_KEY, taskClassMap);
+  }catch(error){
+    console.warn('loadTaskClassOverrides fallback to cache', error);
+    loadTaskClassMap();
+  }
+  return taskClassMap;
+}
+async function saveTaskClassOverride(logId, category){
+  const payload = {
+    log_id: logId,
+    category,
+    updated_at: new Date().toISOString(),
+    created_by: currentUser?.id || null,
+  };
+  const { error } = await sb.from(TASK_OVERRIDE_TABLE).upsert(payload, { onConflict: 'log_id' });
+  if(error) throw error;
+  taskClassMap[logId] = category;
+  saveTaskClassMap();
+  await recordAutomationEvent({
+    event_type: 'task_override_saved',
+    log_id: logId,
+    related_id: category,
+    source: SOURCE_TYPES.MANUAL,
+    note: `tasklib:${category}`,
+  });
 }
 function uid(prefix='pp'){ return `${prefix}_${Math.random().toString(36).slice(2,10)}`; }
 function startOfWeek(date){
@@ -5070,8 +5458,7 @@ function normalizePreplanEmployeeId(val){
   if(!val) return '';
   return val;
 }
-function createPreplan(){
-  loadPreplans();
+async function createPreplan(){
   const name = document.getElementById('ppName')?.value.trim();
   const area = safeNum(document.getElementById('ppArea')?.value);
   const type = document.getElementById('ppType')?.value || 'innovation';
@@ -5097,6 +5484,7 @@ function createPreplan(){
   if(!cAssignee){ toast('请选择方案负责人'); return; }
   if(!outsource && !tAssignee){ toast('请选择深化负责人或勾选外包'); return; }
 
+  const previousItems = preplanItems.map(item=>({ ...item }));
   const group_id = uid(); // 用于关联方案和深化阶段
   const createdAt = new Date().toISOString();
   
@@ -5112,7 +5500,10 @@ function createPreplan(){
     employee_title: empC?.job_title || '',
     status, phase: 'concept',
     director_id: directorId || null,
-    created_at: createdAt
+    source: SOURCE_TYPES.MANUAL,
+    created_at: createdAt,
+    updated_at: createdAt,
+    created_by: currentUser?.id || null,
   };
   preplanItems.push(conceptItem);
 
@@ -5129,7 +5520,10 @@ function createPreplan(){
       employee_title: '外包',
       status, phase: 'outsource',
       director_id: directorId || null,
-      created_at: createdAt
+      source: SOURCE_TYPES.MANUAL,
+      created_at: createdAt,
+      updated_at: createdAt,
+      created_by: currentUser?.id || null,
     };
     preplanItems.push(outsourceItem);
   } else {
@@ -5144,23 +5538,36 @@ function createPreplan(){
       employee_title: empT?.job_title || '',
       status, phase: 'technical',
       director_id: directorId || null,
-      created_at: createdAt
+      source: SOURCE_TYPES.MANUAL,
+      created_at: createdAt,
+      updated_at: createdAt,
+      created_by: currentUser?.id || null,
     };
     preplanItems.push(technicalItem);
   }
 
-  savePreplans();
-  renderPreplanPage();
+  const saved = await savePreplans(previousItems);
+  if(!saved){
+    toast('人员安排保存失败，请稍后重试');
+    return;
+  }
+  await recordAutomationEvent({
+    event_type: 'preplan_created',
+    source: SOURCE_TYPES.MANUAL,
+    note: `manual_preplan:${name}`,
+    metadata: { group_id, phase_count: preplanItems.filter(item=>item.group_id===group_id).length },
+  });
+  await refreshLocalAutomationState(['preplans']);
   
   if(hint){ 
     hint.style.display='block'; 
     hint.style.background='#eef9ef'; 
     hint.style.color='#136c2e'; 
-    hint.textContent='已成功拆分为方案和深化阶段加入预排期。'; 
+    hint.textContent='已成功拆分为方案和深化阶段加入人员安排。'; 
   }
   
   document.getElementById('ppName').value='';
-  toast('✓ 已加入预排期 (分段)');
+  toast('✓ 已加入人员安排 (分段)');
 }
 function renderPreplanList(){
   const el = document.getElementById('preplanList');
@@ -5222,13 +5629,6 @@ function renderPreplanGantt(){
     return `<div class="gantt-header-week">${d.getMonth()+1}/${d.getDate()}</div>`;
   }).join('');
 
-  // 辅助函数：解析 YYYY-MM-DD 为本地日期对象，避免时区偏差
-  function parseDateSafe(str) {
-    if(!str) return null;
-    const [y, m, d] = str.split('-').map(Number);
-    return new Date(y, m - 1, d);
-  }
-
   const rows = people.map(person=>{
     const blocks = getPersonBlocks(person.id);
     
@@ -5282,15 +5682,15 @@ function renderPreplanGantt(){
         isConflict ? 'conflict' : ''
       ].filter(Boolean).join(' ');
       
-      const title = `${block.name}\n${block.start_date} · ${block.weeks}周${isConflict ? '\n⚠️ 存在时间冲突' : ''}`;
+      const title = `${escapeHtml(block.name)}\n${block.start_date} · ${block.weeks}周${isConflict ? '\n⚠️ 存在时间冲突' : ''}`;
       const style = `left:${leftPx}px;width:${Math.max(40, widthPx)}px;top:10px`;
-      const attrs = (block.formal || block.employee_id === 'outsource') ? '' : `draggable="true" ondragstart="preplanDragStart(event,'${block.id}')"`;
+      const attrs = (block.formal || block.employee_id === 'outsource') ? '' : `draggable="true" ondragstart="preplanDragStart(event,'${safeInlineId(block.id)}')"`;
       
-      return `<div class="${cl}" style="${style}" title="${title}" ${attrs}>${block.name}</div>`;
+      return `<div class="${cl}" style="${style}" title="${title}" ${attrs}>${escapeHtml(block.name)}</div>`;
     }).join('');
 
-    return `<div class="gantt-row" ondragover="preplanDragOver(event)" ondrop="preplanDrop(event,'${person.id}')">
-      <div class="gantt-person">${person.name}<div style="font-size:10px;color:var(--text-sub);font-weight:400">${person.job_title||''}</div></div>
+    return `<div class="gantt-row" ondragover="preplanDragOver(event)" ondrop="preplanDrop(event,'${safeInlineId(person.id)}')">
+      <div class="gantt-person">${escapeHtml(person.name)}<div style="font-size:10px;color:var(--text-sub);font-weight:400">${escapeHtml(person.job_title||'')}</div></div>
       <div class="gantt-track">${Array.from({length:weeks},()=>'<div class="gantt-cell"></div>').join('')}${blocksHtml}</div>
     </div>`;
   }).join('');
@@ -5299,9 +5699,10 @@ function renderPreplanGantt(){
 let draggedPreplanId = null;
 function preplanDragStart(ev, id){ draggedPreplanId = id; }
 function preplanDragOver(ev){ ev.preventDefault(); }
-function preplanDrop(ev, employeeId){
+async function preplanDrop(ev, employeeId){
   ev.preventDefault();
   if(!draggedPreplanId) return;
+  const previousItems = preplanItems.map(item=>({ ...item }));
   const item = preplanItems.find(x=>x.id===draggedPreplanId);
   if(!item) return;
   const track = ev.currentTarget.querySelector('.gantt-track');
@@ -5315,39 +5716,61 @@ function preplanDrop(ev, employeeId){
   item.employee_name = emp?.name || item.employee_name;
   item.employee_title = emp?.job_title || item.employee_title;
   item.start_date = toISODate(start);
-  savePreplans();
-  renderPreplanPage();
-  toast('✓ 已更新预排期');
+  item.updated_at = new Date().toISOString();
+  const saved = await savePreplans(previousItems);
+  if(!saved){
+    toast('人员安排更新失败，请稍后重试');
+    draggedPreplanId = null;
+    return;
+  }
+  await refreshLocalAutomationState(['preplans']);
+  toast('✓ 已更新人员安排');
   draggedPreplanId = null;
 }
-function shiftPreplan(id, weeks){
+async function shiftPreplan(id, weeks){
+  const previousItems = preplanItems.map(item=>({ ...item }));
   const item = preplanItems.find(x=>x.id===id); if(!item) return;
   
-  function parseDateSafe(str) {
-    if(!str) return null;
-    const [y, m, d] = str.split('-').map(Number);
-    return new Date(y, m - 1, d);
-  }
-
   const currentStart = parseDateSafe(item.start_date);
   if(!currentStart) return;
   
   const d = addDays(currentStart, weeks * 7);
   item.start_date = toISODate(d);
-  savePreplans(); renderPreplanPage(); toast(`✓ 已顺延 ${weeks} 周`);
+  item.updated_at = new Date().toISOString();
+  const saved = await savePreplans(previousItems);
+  if(!saved){
+    toast('人员安排顺延失败，请稍后重试');
+    return;
+  }
+  await refreshLocalAutomationState(['preplans']);
+  toast(`✓ 已顺延 ${weeks} 周`);
 }
-function deletePreplan(id){
+async function deletePreplan(id){
+  const previousItems = preplanItems.map(item=>({ ...item }));
   preplanItems = preplanItems.filter(x=>x.id!==id);
-  savePreplans(); renderPreplanPage(); toast('✓ 已删除预排项目');
+  const saved = await savePreplans(previousItems);
+  if(!saved){
+    toast('删除预排项目失败，请稍后重试');
+    return;
+  }
+  await refreshLocalAutomationState(['preplans']);
+  toast('✓ 已删除预排项目');
 }
-function togglePreplanCancel(id){
+async function togglePreplanCancel(id){
+  const previousItems = preplanItems.map(item=>({ ...item }));
   const item = preplanItems.find(x=>x.id===id); if(!item) return;
   item.status = item.status==='cancelled' ? 'pre' : 'cancelled';
-  savePreplans(); renderPreplanPage(); toast(item.status==='cancelled'?'✓ 已取消预排':'✓ 已恢复预排');
+  item.updated_at = new Date().toISOString();
+  const saved = await savePreplans(previousItems);
+  if(!saved){
+    toast('预排状态更新失败，请稍后重试');
+    return;
+  }
+  await refreshLocalAutomationState(['preplans']);
+  toast(item.status==='cancelled'?'✓ 已取消预排':'✓ 已恢复预排');
 }
 
 function renderPreplanPage(){
-  loadPreplans();
   ensurePreplanWiring();
   renderPreplanFormHelpers();
   renderPreplanList();
@@ -5355,13 +5778,12 @@ function renderPreplanPage(){
 }
 
 // ── 任务工时库（本地修正分类） ───────────────────────────────
-const TASK_CLASS_KEY = 'worktime_task_class_map_v2';
-let taskClassMap = {};
 const TASK_CATEGORIES = ['平面方案初稿','平面方案调整','动线优化','功能分区调整','效果图建模','效果图渲染','方案文本/PPT','汇报后修改','平面施工图','天花施工图','地面铺装图','立面施工图','节点大样','家具定制图','门头/招牌图','机电条件配合','图纸校对/出图整理','材料筛选','材料整理成册','样板确认/调整','套店调整','复制店图纸替换','老店资料复用整理','客户修改','内部返工','会议沟通','现场问题处理','资料整理/归档'];
 function loadTaskClassMap(){
-  try{ taskClassMap = JSON.parse(localStorage.getItem(TASK_CLASS_KEY)||'{}') || {}; }catch(_){ taskClassMap = {}; }
+  taskClassMap = readJsonCache(TASK_CLASS_KEY, taskClassMap || {}) || {};
+  return taskClassMap;
 }
-function saveTaskClassMap(){ localStorage.setItem(TASK_CLASS_KEY, JSON.stringify(taskClassMap)); }
+function saveTaskClassMap(){ writeJsonCache(TASK_CLASS_KEY, taskClassMap); }
 function inferTaskCategory(text){
   const s = String(text||'').toLowerCase();
   if(/建模/.test(s)) return '效果图建模';
@@ -5452,23 +5874,27 @@ function showTaskLibDetail(task){
   const rows = getTaskLibRows().filter(r=>r.task===task).slice(0,40);
   const el = document.getElementById('taskLibDetail');
   if(!el) return;
-  el.innerHTML = `<div style="font-size:15px;font-weight:700;margin-bottom:10px">${task} · 明细样本</div>
-    <div style="font-size:12px;color:var(--text-sub);margin-bottom:12px">可直接修正分类，修正后会写入本浏览器本地记录并实时刷新统计。</div>
+  el.innerHTML = `<div style="font-size:15px;font-weight:700;margin-bottom:10px">${escapeHtml(task)} · 明细样本</div>
+    <div style="font-size:12px;color:var(--text-sub);margin-bottom:12px">可直接修正分类，修正后会写入 Supabase，并同步刷新本地缓存与统计。</div>
     <div style="display:flex;flex-direction:column;gap:10px">${
       rows.map(r=>`<div style="border:1px solid var(--border);border-radius:12px;padding:12px">
-        <div style="font-size:13px;font-weight:600">${r.project} · ${r.employee}</div>
-        <div style="font-size:12px;color:var(--text-sub);line-height:1.7;margin:4px 0 8px">${r.date} · ${r.raw||'—'} · ${r.hours.toFixed(1)}h</div>
-        <select class="form-select" onchange="updateTaskClass('${r.id}', this.value)">
-          ${TASK_CATEGORIES.map(c=>`<option value="${c}"${r.task===c?' selected':''}>${c}</option>`).join('')}
+        <div style="font-size:13px;font-weight:600">${escapeHtml(r.project)} · ${escapeHtml(r.employee)}</div>
+        <div style="font-size:12px;color:var(--text-sub);line-height:1.7;margin:4px 0 8px">${escapeHtml(r.date)} · ${escapeHtml(r.raw||'—')} · ${Number(r.hours||0).toFixed(1)}h</div>
+        <select class="form-select" onchange="updateTaskClass('${escapeHtml(r.id)}', this.value)">
+          ${TASK_CATEGORIES.map(c=>`<option value="${escapeHtml(c)}"${r.task===c?' selected':''}>${escapeHtml(c)}</option>`).join('')}
         </select>
       </div>`).join('')
     }</div>`;
 }
-function updateTaskClass(logId, val){
-  taskClassMap[logId] = val;
-  saveTaskClassMap();
-  renderTaskLibrary();
-  showTaskLibDetail(val);
+async function updateTaskClass(logId, val){
+  try{
+    await saveTaskClassOverride(logId, val);
+    renderPartial(['task-overrides']);
+    showTaskLibDetail(val);
+  }catch(error){
+    console.error('updateTaskClass failed', error);
+    toast(`保存失败：${error.message}`);
+  }
 }
 
 
@@ -5476,10 +5902,13 @@ function updateTaskClass(logId, val){
 // UI工具函数
 // ══════════════════════════════════════════════════════════════
 const pageInfo={
+  decision:{title:'今天要处理',sub:'系统先给建议，你只做判断'},
   timelog:{title:'工时记录',sub:'飞书导入核对 · 执行层负荷与人效'},
-  project:{title:'项目管理',sub:'项目经营数据与风险评估'},
-  preplan:{title:'预排期',sub:'倒排时间 · 人员推荐 · 可拖拽甘特图'},
-  dashboard:{title:'经营看板',sub:'数据可信度 · 人效概览 · 风险待办'},
+  project:{title:'项目状态',sub:'项目经营数据与风险评估'},
+  preplan:{title:'人员安排',sub:'倒排时间 · 人员推荐 · 可拖拽甘特图'},
+  dashboard:{title:'经营数据',sub:'数据可信度 · 人效概览 · 风险待办'},
+  automation:{title:'待我判断',sub:'统一处理任务识别 · 节点补齐 · 预排联动'},
+  assignment:{title:'谁来做',sub:'项目标签 · 经验匹配 · 负责人推荐'},
   quote:{title:'报价参考',sub:'工装报价区间 · 历史案例 · 图纸交付节奏'},
   tasklib:{title:'任务工时库',sub:'单条任务工时基线 · 人工修正归类'},
   team:{title:'团队管理',sub:'员工账号与权限管理'},
@@ -5505,11 +5934,8 @@ function nav(page,el,type='sidebar'){
   closeSidebar();
 }
 
-function gotoPage(page){
-  const btn = document.querySelector(`.nav-btn[onclick*="nav('${page}'"]`) || document.querySelector(`.bnav-btn[onclick*="nav('${page}'"]`);
-  if(!btn){ return; }
-  nav(page, btn, btn.classList.contains('bnav-btn') ? 'bnav' : 'sidebar');
-}
+
+
 
 function toggleSidebar(){
   document.getElementById('sidebar').classList.toggle('open');
@@ -5522,18 +5948,32 @@ function closeSidebar(){
 function openModal(id){
   const modal = document.getElementById(id);
   if(!modal) return;
+  initAccessibility();
+  lastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  activeModalId = id;
   modal.classList.add('open');
-  const box = modal.querySelector('.modal-box');
+  modal.setAttribute('aria-hidden', 'false');
+  const box = getModalDialog(modal);
   if(box && window.innerWidth<=768 && id==='newProjModal') box.classList.add('mobile-full');
-  document.body.style.overflow='hidden';
+  syncBodyScrollLock();
+  requestAnimationFrame(()=>focusModal(id));
 }
 function closeModal(id){
+  if(id==='newProjModal'){
+    resetNewProjectModalState();
+  }
   const modal = document.getElementById(id);
   if(!modal) return;
   modal.classList.remove('open');
-  const box = modal.querySelector('.modal-box');
+  modal.setAttribute('aria-hidden', 'true');
+  const box = getModalDialog(modal);
   if(box) box.classList.remove('mobile-full');
-  document.body.style.overflow='';
+  activeModalId = activeModalId === id ? null : activeModalId;
+  syncBodyScrollLock();
+  if(lastFocusedElement && typeof lastFocusedElement.focus === 'function'){
+    lastFocusedElement.focus();
+    lastFocusedElement = null;
+  }
 }
 function closeModalOutside(e,id){if(e.target===document.getElementById(id))closeModal(id);}
 function changeH(d){
@@ -5542,10 +5982,29 @@ function changeH(d){
 }
 function toast(msg){
   const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2400);
+  if(!t) return;
+  t.textContent=msg;
+  t.classList.add('show');
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{
+    t.classList.remove('show');
+    toastTimer = null;
+  },2400);
 }
-window.addEventListener('resize', ()=>{ renderProjectPage(); renderPreplanPage(); });
+const handleResponsiveResize = rafThrottle(()=>{
+  const activePageId = document.querySelector('.page.active')?.id;
+  if(activePageId === 'page-project'){
+    renderProjectPage();
+  }else if(activePageId === 'page-preplan'){
+    renderPreplanPage();
+  }else if(activePageId === 'page-automation'){
+    renderAutomationPage();
+  }else if(activePageId === 'page-dashboard'){
+    renderDashboard();
+  }
+});
+window.addEventListener('resize', handleResponsiveResize);
+document.addEventListener('keydown', handleModalKeydown);
 
 function isThisWeek(dateStr){
   if(!dateStr)return false;
@@ -5561,90 +6020,1245 @@ function isThisWeek(dateStr){
 
 
 /* ===== 自动任务识别模块（新增） ===== */
-let allTaskRules = [];
-let allTaskClassifications = [];
-let pendingTaskClassifications = [];
 
+function getTaskText(log){
+  return `${log?.note || ''} ${log?.stage || ''}`.trim();
+}
+function getAutomationSnippet(text='', maxLength=36){
+  const raw = String(text || '').replace(/\s+/g, ' ').trim();
+  if(raw.length <= maxLength) return raw;
+  return `${raw.slice(0, maxLength)}...`;
+}
+async function recordAutomationEvent({ event_type, project_id=null, log_id=null, related_id=null, source=SOURCE_TYPES.SYSTEM, note='', metadata=null } = {}){
+  try{
+    const { error } = await sb.from(AUTOMATION_EVENT_TABLE).insert({
+      event_type,
+      project_id,
+      log_id,
+      related_id,
+      source,
+      note,
+      metadata,
+      created_at: new Date().toISOString(),
+      created_by: currentUser?.id || null,
+    });
+    if(error) throw error;
+  }catch(error){
+    console.warn('recordAutomationEvent skipped', error);
+  }
+}
 async function loadTaskRules(){
-  const { data } = await sb.from('task_rules').select('*').eq('is_active', true);
+  const { data, error } = await sb.from('task_rules').select('*').eq('is_active', true);
+  if(error) throw error;
   allTaskRules = data || [];
 }
 
 async function loadTaskClassifications(){
-  const { data } = await sb.from('task_classifications').select('*');
-  allTaskClassifications = data || [];
-  pendingTaskClassifications = allTaskClassifications.filter(x => !x.is_confirmed);
+  try{
+    const { data, error } = await sb.from('task_classifications').select('*');
+    if(error) throw error;
+    allTaskClassifications = (data || []).map(normalizeTaskClassification);
+    refreshPendingTaskClassifications();
+  }catch(error){
+    console.error('loadTaskClassifications fallback to cache', error);
+    allTaskClassifications = [];
+    refreshPendingTaskClassifications();
+  }
 }
 
 function classifyTaskText(text){
-  const raw = String(text || '');
-  let score = {};
-  allTaskRules.forEach(r=>{
-    if(raw.includes(r.keyword)){
-      score[r.category] = (score[r.category]||0) + (r.weight||10);
+  const raw = String(text || '').trim();
+  const score = {};
+  allTaskRules.forEach(rule=>{
+    if(raw.includes(rule.keyword)){
+      score[rule.category] = (score[rule.category] || 0) + (rule.weight || 10);
     }
   });
-  const best = Object.entries(score).sort((a,b)=>b[1]-a[1])[0] || ['ignore',0];
-  return {category: best[0], confidence: best[1]};
+  const ranked = Object.entries(score).sort((a,b)=>b[1]-a[1]);
+  const [category='ignore', confidence=0] = ranked[0] || [];
+  const secondScore = ranked[1]?.[1] || 0;
+  const margin = confidence - secondScore;
+  const review_status = category === 'ignore'
+    ? TASK_REVIEW_STATUS.IGNORED
+    : (AUTO_NODE_CATEGORIES[category] && confidence >= AUTO_CLASSIFICATION_THRESHOLD && margin >= AUTO_CLASSIFICATION_MARGIN
+      ? TASK_REVIEW_STATUS.AUTO_CONFIRMED
+      : TASK_REVIEW_STATUS.PENDING_REVIEW);
+  return { category, confidence, margin, review_status };
 }
 
 async function classifyAllLogs(){
   if(!allLogs.length) return;
-  const rows = allLogs.map(log=>{
-    const r = classifyTaskText(log.note || '');
-    return {
+  const existingMap = new Map(allTaskClassifications.map(item=>[String(item.log_id), normalizeTaskClassification(item)]));
+  const now = new Date().toISOString();
+  const rows = allLogs.reduce((list, log)=>{
+    const existing = existingMap.get(String(log.id));
+    if(existing?.source === SOURCE_TYPES.MANUAL && existing.review_status !== TASK_REVIEW_STATUS.PENDING_REVIEW){
+      return list;
+    }
+    const result = classifyTaskText(getTaskText(log));
+    list.push({
       log_id: log.id,
       project_id: log.project_id,
-      raw_text: log.note || '',
-      category: r.category,
-      confidence: r.confidence,
-      is_confirmed: r.confidence > 10 && r.category !== 'revision'
-    };
-  });
-  await sb.from('task_classifications').upsert(rows, { onConflict: 'log_id' });
+      raw_text: getTaskText(log),
+      category: result.category,
+      confidence: result.confidence,
+      review_status: result.review_status,
+      is_confirmed: result.review_status === TASK_REVIEW_STATUS.AUTO_CONFIRMED,
+      source: SOURCE_TYPES.SYSTEM,
+      note: `margin:${result.margin}`,
+      updated_at: now,
+      confirmed_at: result.review_status === TASK_REVIEW_STATUS.AUTO_CONFIRMED ? now : null,
+    });
+    return list;
+  }, []);
+  if(!rows.length) return;
+  const { error } = await sb.from('task_classifications').upsert(rows, { onConflict: 'log_id' });
+  if(error) throw error;
 }
 
 async function autoCreateStartNodes(){
   const grouped = {};
-  allTaskClassifications.forEach(c=>{
-    if(!c.is_confirmed) return;
-    if(!grouped[c.project_id]) grouped[c.project_id]=[];
+
+  allTaskClassifications.forEach(c => {
+    if (!c.is_confirmed) return;
+    if (!grouped[c.project_id]) grouped[c.project_id] = [];
     grouped[c.project_id].push(c);
   });
 
-  for(const pid in grouped){
-    const has = allProjectNodes.filter(n=>n.project_id===pid).map(n=>n.node_type);
-    const types = [
-      {cat:'concept', node:'concept_started'},
-      {cat:'technical', node:'technical_started'},
-      {cat:'docking', node:'docking_started'}
-    ];
-    for(const t of types){
-      if(has.includes(t.node)) continue;
-      const first = grouped[pid].find(x=>x.category===t.cat);
-      if(!first) continue;
-      await sb.from('project_nodes').insert({
-        project_id: pid,
-        node_type: t.node,
-        node_date: new Date().toISOString().slice(0,10),
-        node_at: new Date().toISOString(),
-        source: 'task_auto',
-        note: '自动识别'
-      });
+  const types = [
+    { cat: 'concept', node: 'concept_started' },
+    { cat: 'technical', node: 'technical_started' },
+    { cat: 'docking', node: 'docking_started' }
+  ];
+
+  for (const pid in grouped){
+    const projNodes = allProjectNodes.filter(n => n.project_id === pid);
+
+    for (const t of types){
+      const candidates = grouped[pid]
+        .filter(x => x.category === t.cat)
+        .sort((a, b) => {
+          const logA = allLogs.find(l => String(l.id) === String(a.log_id));
+          const logB = allLogs.find(l => String(l.id) === String(b.log_id));
+          const da = new Date(logA?.log_date || a.task_date || a.log_date || a.created_at || 0);
+          const db = new Date(logB?.log_date || b.task_date || b.log_date || b.created_at || 0);
+          return da - db;
+        });
+
+      const first = candidates[0];
+      if (!first) continue;
+
+      const firstLog = allLogs.find(l => String(l.id) === String(first.log_id));
+      const rawDate = firstLog?.log_date || first.task_date || first.log_date || (first.created_at ? String(first.created_at).slice(0, 10) : null);
+      if (!rawDate) continue;
+
+      const nodeDate = String(rawDate).slice(0, 10);
+      const nodeAt = `${nodeDate}T09:00:00`;
+
+      const existing = projNodes.find(n => n.node_type === t.node);
+
+      if (!existing){
+        await sb.from('project_nodes').insert({
+          project_id: pid,
+          node_type: t.node,
+          node_date: nodeDate,
+          node_at: nodeAt,
+          source: 'task_auto',
+          note: `自动识别（首条${getTaskCategoryLabel(t.cat)}任务）`
+        });
+        continue;
+      }
+
+      if (existing.source && existing.source !== 'task_auto') continue;
+
+      const existingDate = String(existing.node_date || '').slice(0, 10);
+      if (existingDate !== nodeDate){
+        await sb.from('project_nodes')
+          .update({
+            node_date: nodeDate,
+            node_at: nodeAt,
+            note: `自动修正（首条${getTaskCategoryLabel(t.cat)}任务）`
+          })
+          .eq('id', existing.id);
+      }
     }
   }
 }
 
-async function initTaskAI(){
-  await loadTaskRules();
-  await classifyAllLogs();
-  await loadTaskClassifications();
-  await autoCreateStartNodes();
+async function saveTaskClassificationDecision(log, { category, reviewStatus, source, note='' }){
+  const now = new Date().toISOString();
+  const payload = normalizeTaskClassification({
+    ...(getTaskClassificationRecord(log.id) || {}),
+    log_id: log.id,
+    project_id: log.project_id,
+    raw_text: getTaskText(log),
+    category,
+    confidence: reviewStatus === TASK_REVIEW_STATUS.AUTO_CONFIRMED ? 100 : 0,
+    review_status: reviewStatus,
+    is_confirmed: reviewStatus === TASK_REVIEW_STATUS.AUTO_CONFIRMED,
+    source,
+    note,
+    updated_at: now,
+    confirmed_at: reviewStatus === TASK_REVIEW_STATUS.AUTO_CONFIRMED ? now : null,
+  });
+  const { error } = await sb.from('task_classifications').upsert(payload, { onConflict: 'log_id' });
+  if(error) throw error;
+  const currentIndex = allTaskClassifications.findIndex(item=>String(item.log_id)===String(log.id));
+  if(currentIndex >= 0) allTaskClassifications[currentIndex] = payload;
+  else allTaskClassifications.push(payload);
+  refreshPendingTaskClassifications();
+  await recordAutomationEvent({
+    event_type: 'task_classification_saved',
+    project_id: log.project_id,
+    log_id: log.id,
+    related_id: category,
+    source,
+    note: note || `${reviewStatus}:${category}`,
+    metadata: { review_status: reviewStatus },
+  });
+  return payload;
 }
 
-setTimeout(()=>{initTaskAI();}, 2000);
+async function initTaskAI(options={}){
+  return initAutomation(options);
+}
+
+function escapeHtml(value){
+  if(value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function safeInlineId(value){
+  return String(value || '').replace(/[^a-zA-Z0-9_-]/g, '');
+}
 
 
+function normalizeProjectName(name=''){
+  return String(name || '')
+    .replace(/\s+/g, '')
+    .replace(/[（(](方案|深化|深化外包)[）)]/g, '')
+    .replace(/[-—_](方案|深化|深化外包)$/g, '')
+    .toLowerCase();
+}
+
+function getPreplanBaseName(item){
+  return normalizeProjectName(
+    String(item?.name || '')
+      .replace(/\s*[（(](方案|深化|深化外包)[）)]\s*$/g, '')
+      .replace(/\s*-\s*(方案|深化|深化外包)\s*$/g, '')
+  );
+}
+
+function findProjectPreplans(project){
+  const projectKey = normalizeProjectName(project?.name || '');
+  return preplanItems.filter(item=>{
+    if(item.project_id && String(item.project_id) === String(project?.id)) return true;
+    const itemKey = getPreplanBaseName(item);
+    return itemKey && projectKey && (itemKey === projectKey || itemKey.includes(projectKey) || projectKey.includes(itemKey));
+  });
+}
+
+function getEmployeeLoadRows(info=getSelectedPeriodInfo()){
+  const cap = getPeriodCap(info);
+  const periodLogs = filterLogsForPeriod(allLogs, info);
+  return getWorkloadEmployees().map(emp=>{
+    const hours = periodLogs
+      .filter(log=>log.employee_id===emp.id)
+      .reduce((sum, log)=>sum + safeNum(log.hours), 0);
+    const projectCount = new Set(periodLogs.filter(log=>log.employee_id===emp.id).map(log=>log.project_id)).size;
+    return {
+      ...emp,
+      hours,
+      cap,
+      pct: cap > 0 ? hours / cap : 0,
+      projectCount,
+    };
+  });
+}
+
+function buildAutomationState(info=getSelectedPeriodInfo()){
+  const health = getDataHealthMetrics(info);
+  const loads = getEmployeeLoadRows(info);
+  const activeProjects = allProjects.filter(project=>project.status !== 'done');
+  const today = new Date();
+  const queue = [];
+  const links = [];
+  const preplanSync = [];
+
+  if(health.lagDays != null && health.lagDays > 4){
+    queue.push({
+      severity: 'high',
+      badge: '先导入',
+      title: `${info.label} 工时数据滞后 ${health.lagDays} 天`,
+      meta: `最近导入：${health.latestImportDate || '暂无'}，建议先同步飞书数据再看经营指标。`,
+      action: "openModal('importModal')",
+      cta: '导入工时',
+    });
+  }
+
+  if(health.missingEmployees?.length){
+    queue.push({
+      severity: 'medium',
+      badge: '补记录',
+      title: `${health.missingEmployees.length} 名执行层成员在 ${info.label} 没有记录`,
+      meta: '可能是未导入、未分派或未开始任务，建议先核对分派与导入。',
+      action: "gotoPage('timelog')",
+      cta: '去核对',
+    });
+  }
+
+  loads.filter(row=>row.pct > 1).forEach(row=>{
+    queue.push({
+      severity: 'high',
+      badge: '超载',
+      title: `${row.name} 当前负荷超限`,
+      meta: `${info.label} 已录入 ${row.hours.toFixed(1)}h / 容量 ${row.cap.toFixed(1)}h，可优先转移任务或调整预排。`,
+      action: "gotoPage('automation')",
+      cta: '查看联动',
+    });
+  });
+
+  loads.filter(row=>row.pct < 0.35 && row.projectCount <= 2).forEach(row=>{
+    links.push({
+      badge: '可补位',
+      title: `${row.name} 有承接空间`,
+      meta: `${info.label} 仅占用 ${Math.round(row.pct * 100)}%，可承接新的方案/深化任务。`,
+      action: "gotoPage('preplan')",
+      cta: '去排期',
+    });
+  });
+
+  activeProjects.forEach(project=>{
+    const relatedPreplans = findProjectPreplans(project);
+    const projectNodes = allProjectNodes.filter(node=>node.project_id===project.id);
+    const projectLogs = allLogs.filter(log=>log.project_id===project.id);
+    const confirmedClasses = allTaskClassifications.filter(item=>item.project_id===project.id && item.review_status === TASK_REVIEW_STATUS.AUTO_CONFIRMED);
+    const hasConceptSignal = confirmedClasses.some(item=>item.category === 'concept') || projectLogs.some(log=>/方案|平面|概念|汇报/.test(`${log.note || ''}${log.stage || ''}`));
+    const hasTechnicalSignal = confirmedClasses.some(item=>item.category === 'technical') || projectLogs.some(log=>/深化|施工图|节点|立面|CAD/.test(`${log.note || ''}${log.stage || ''}`));
+    const hasDockingSignal = confirmedClasses.some(item=>item.category === 'docking') || projectLogs.some(log=>/对接|配合|材料|现场|跟进/.test(`${log.note || ''}${log.stage || ''}`));
+    const hasConceptNode = projectNodes.some(node=>node.node_type === 'concept_started');
+    const hasTechnicalNode = projectNodes.some(node=>node.node_type === 'technical_started');
+    const hasDockingNode = projectNodes.some(node=>node.node_type === 'docking_started');
+    const dueDate = project.deadline || project.completion_date || '';
+
+    if(!relatedPreplans.length && (project.status === 'active' || dueDate)){
+      preplanSync.push({
+        projectId: project.id,
+        title: `${project.name} 尚未进入人员安排`,
+        meta: `截止：${dueDate || '未填写'} · 面积：${safeNum(project.area || project.area_sqm).toFixed(0)}㎡`,
+        action: `generatePreplanFromProject('${project.id}')`,
+        cta: '生成草稿',
+      });
+    }
+
+    if(hasConceptSignal && !hasConceptNode){
+      links.push({
+        badge: '节点待补',
+        title: `${project.name} 已出现方案信号`,
+        meta: '系统识别到方案类日志，但项目节点还没有“方案开始”。',
+        action: "gotoPage('automation')",
+        cta: '确认分类',
+      });
+    }
+
+    if(hasTechnicalSignal && !hasTechnicalNode){
+      links.push({
+        badge: '节点待补',
+        title: `${project.name} 已出现深化信号`,
+        meta: '系统识别到深化类日志，确认后可自动补齐“深化开始”节点。',
+        action: "gotoPage('automation')",
+        cta: '确认分类',
+      });
+    }
+
+    if(hasDockingSignal && !hasDockingNode){
+      links.push({
+        badge: '节点待补',
+        title: `${project.name} 已出现对接信号`,
+        meta: '系统识别到对接类日志，但项目节点还没有“对接开始”，仅进入建议池，不会自动落库结果节点。',
+        action: "gotoPage('automation')",
+        cta: '确认分类',
+      });
+    }
+
+    if(project.status === 'active' && project.deadline && new Date(project.deadline) < today){
+      queue.push({
+        severity: 'high',
+        badge: '超期',
+        title: `${project.name} 已超过施工图交付日期`,
+        meta: `截止日期：${project.deadline}，建议先检查节点和交付状态。`,
+        action: `openProjectTrack('${project.id}')`,
+        cta: '查看节点',
+      });
+    }
+
+    if(project.status !== 'done' && safeNum(project.contract_amount) > 0){
+      const paidPct = Math.round((safeNum(project.paid_amount) / safeNum(project.contract_amount || 1)) * 100);
+      if(paidPct < 40){
+        queue.push({
+          severity: 'medium',
+          badge: '催回款',
+          title: `${project.name} 当前回款偏低`,
+          meta: `已回款 ${paidPct}% ，建议结合节点确认催款节奏。`,
+          action: "gotoPage('project')",
+          cta: '查看项目',
+        });
+      }
+    }
+  });
+
+  automationState = {
+    generatedAt: new Date().toISOString(),
+    summary: {
+      urgent: queue.filter(item=>item.severity === 'high').length,
+      pendingClassifications: pendingTaskClassifications.length,
+      preplanGaps: preplanSync.length,
+      projectLinks: links.length,
+    },
+    queue: queue.sort((a,b)=>{
+      const weight = { high: 3, medium: 2, low: 1 };
+      return (weight[b.severity] || 0) - (weight[a.severity] || 0);
+    }),
+    links: links.slice(0, 8),
+    preplanSync: preplanSync.slice(0, 8),
+    pendingReviews: pendingTaskClassifications,
+  };
+}
+
+async function reloadAutomationState({ classifyLogs = false } = {}){
+  if(!isAdmin){
+    automationState = createEmptyAutomationState();
+    return;
+  }
+  try{
+    await loadPreplans();
+    await loadTaskRules();
+    await loadTaskClassifications();
+    if(classifyLogs){
+      await classifyAllLogs();
+      await loadTaskClassifications();
+    }
+    await autoCreateStartNodes();
+    await loadProjectNodes();
+  }catch(error){
+    console.error('reloadAutomationState failed', error);
+  }
+  buildAutomationState();
+}
+
+async function initAutomation(options={}){
+  return reloadAutomationState(options);
+}
+
+async function reloadAndRender(keys=[]){
+  const loaderMap = {
+    projects: loadProjects,
+    employees: loadEmployees,
+    logs: loadLogs,
+    payments: loadPayments,
+    members: loadMembersAndScores,
+    nodes: loadProjectNodes,
+    preplans: loadPreplans,
+    'task-classifications': loadTaskClassifications,
+    'task-overrides': loadTaskClassOverrides,
+  };
+  const uniqueKeys = [...new Set(keys)];
+  await Promise.all(uniqueKeys.map(key=>loaderMap[key] ? loaderMap[key]() : Promise.resolve()));
+  await reloadAutomationState({
+    classifyLogs: uniqueKeys.includes('logs') || uniqueKeys.includes('projects'),
+  });
+  renderPartial(uniqueKeys);
+}
+
+async function refreshLocalAutomationState(keys=['automation']){
+  await reloadAutomationState({ classifyLogs: false });
+  renderPartial(keys);
+}
+
+async function manualRefreshAutomation(){
+  await reloadAutomationState({ classifyLogs: true });
+  renderPartial(['automation']);
+  toast('✓ 自动化分析已刷新');
+}
+
+async function confirmTaskClassification(logId, category){
+  const log = allLogs.find(item=>String(item.id)===String(logId));
+  if(!log){ toast('未找到对应日志'); return; }
+  try{
+    await saveTaskClassificationDecision(log, {
+      category,
+      reviewStatus: category === 'ignore' ? TASK_REVIEW_STATUS.IGNORED : TASK_REVIEW_STATUS.AUTO_CONFIRMED,
+      source: SOURCE_TYPES.MANUAL,
+      note: 'automation_center_confirm',
+    });
+    await reloadAutomationState({ classifyLogs: false });
+    renderPartial(['task-classifications','nodes']);
+    toast('✓ 已确认分类并刷新联动');
+  }catch(error){
+    console.error('confirmTaskClassification failed', error);
+    toast(`确认失败：${error.message}`);
+  }
+}
+
+async function ignoreTaskClassification(logId){
+  const log = allLogs.find(item=>String(item.id)===String(logId));
+  if(!log){ toast('未找到对应日志'); return; }
+  try{
+    await saveTaskClassificationDecision(log, {
+      category: 'ignore',
+      reviewStatus: TASK_REVIEW_STATUS.IGNORED,
+      source: SOURCE_TYPES.MANUAL,
+      note: 'automation_center_ignore',
+    });
+    await reloadAutomationState({ classifyLogs: false });
+    renderPartial(['task-classifications']);
+    toast('✓ 已忽略该条任务');
+  }catch(error){
+    console.error('ignoreTaskClassification failed', error);
+    toast(`忽略失败：${error.message}`);
+  }
+}
+
+async function generatePreplanFromProject(projectId){
+  const project = allProjects.find(item=>String(item.id)===String(projectId));
+  if(!project){ toast('未找到项目'); return; }
+  if(findProjectPreplans(project).length){
+    toast('该项目已存在人员安排草稿');
+    return;
+  }
+  const area = safeNum(project.area || project.area_sqm);
+  const type = project.is_chain ? 'copy' : 'innovation';
+  const openDate = project.deadline || project.completion_date || '';
+  const takeoverDate = project.start_date || '';
+  if(!area || (!openDate && !takeoverDate)){
+    toast('项目缺少面积或关键日期，暂时无法自动生成');
+    return;
+  }
+
+  const recData = computeRecommendations({
+    area,
+    type,
+    openDate,
+    takeoverDate,
+    reuse: Boolean(project.is_chain),
+    directorId: project.director_id || '',
+  });
+
+  const conceptAssignee = recData.recommendations[0];
+  const technicalAssignee = recData.recommendations.find(item=>item.id !== conceptAssignee?.id) || recData.recommendations[0];
+  if(!conceptAssignee || !technicalAssignee){
+    toast('当前没有可用负责人，无法自动生成人员安排');
+    return;
+  }
+
+  const previousItems = preplanItems.map(item=>({ ...item }));
+  const groupId = uid('sync');
+  const createdAt = new Date().toISOString();
+  const conceptWeeks = recData.weekData.concept;
+  const technicalWeeks = recData.weekData.technical;
+  const technicalStart = toISODate(addDays(new Date(recData.startDate), conceptWeeks * 7));
+
+  preplanItems.push({
+    id: uid(),
+    group_id: groupId,
+    name: `${project.name} (方案)`,
+    area,
+    type,
+    open_date: openDate,
+    takeover_date: takeoverDate,
+    start_date: recData.startDate,
+    weeks: conceptWeeks,
+    employee_id: conceptAssignee.id,
+    employee_name: conceptAssignee.name,
+    employee_title: conceptAssignee.title || '',
+    status: 'pre',
+    phase: 'concept',
+    director_id: project.director_id || null,
+    project_id: project.id,
+    source: SOURCE_TYPES.SYSTEM,
+    created_at: createdAt,
+    updated_at: createdAt,
+    created_by: currentUser?.id || null,
+  });
+
+  preplanItems.push({
+    id: uid(),
+    group_id: groupId,
+    name: `${project.name} (深化)`,
+    area,
+    type,
+    open_date: openDate,
+    takeover_date: takeoverDate,
+    start_date: technicalStart,
+    weeks: technicalWeeks,
+    employee_id: technicalAssignee.id,
+    employee_name: technicalAssignee.name,
+    employee_title: technicalAssignee.title || '',
+    status: 'pre',
+    phase: 'technical',
+    director_id: project.director_id || null,
+    project_id: project.id,
+    source: SOURCE_TYPES.SYSTEM,
+    created_at: createdAt,
+    updated_at: createdAt,
+    created_by: currentUser?.id || null,
+  });
+
+  const saved = await savePreplans(previousItems);
+  if(!saved){
+    toast('人员安排草稿保存失败，请稍后重试');
+    return;
+  }
+  await recordAutomationEvent({
+    event_type: 'preplan_generated',
+    project_id: project.id,
+    related_id: groupId,
+    source: SOURCE_TYPES.SYSTEM,
+    note: `project_preplan:${project.name}`,
+    metadata: { concept_weeks: conceptWeeks, technical_weeks: technicalWeeks },
+  });
+  await refreshLocalAutomationState(['preplans']);
+  toast('✓ 已从项目自动生成人员安排草稿');
+}
+
+
+const TASK_CATEGORY_LABELS_CN = {
+  concept: '方案阶段',
+  submit: '提交甲方',
+  feedback: '甲方反馈',
+  revision: '修改阶段',
+  technical: '施工图阶段',
+  docking: '施工配合',
+  ignore: '忽略'
+};
+
+function getTaskCategoryLabel(category){
+  return TASK_CATEGORY_LABELS_CN[category] || category || '待确认';
+}
+
+function getTaskCategoryOptions(){
+  return ['concept','submit','feedback','revision','technical','docking','ignore'];
+}
+
+function renderAutomationPage(){
+  const summaryEl = document.getElementById('automationSummary');
+  const queueEl = document.getElementById('automationQueue');
+  const linksEl = document.getElementById('automationLinks');
+  const reviewEl = document.getElementById('automationTaskReview');
+  const preplanEl = document.getElementById('automationPreplanSync');
+  if(!summaryEl || !queueEl || !linksEl || !reviewEl || !preplanEl) return;
+
+  if(!isAdmin){
+    summaryEl.innerHTML = '';
+    queueEl.innerHTML = '';
+    linksEl.innerHTML = '';
+    reviewEl.innerHTML = '';
+    preplanEl.innerHTML = '';
+    return;
+  }
+
+  summaryEl.innerHTML = `
+    <div class="stat-card ${automationState.summary.urgent ? 'red' : 'green'}">
+      <div class="s-label">高优先级事项</div>
+      <div class="s-val">${automationState.summary.urgent}<span class="s-unit">项</span></div>
+      <div class="s-change neutral">来自工时、节点、回款和交付信号</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="s-label">待确认分类</div>
+      <div class="s-val">${automationState.summary.pendingClassifications}<span class="s-unit">条</span></div>
+      <div class="s-change neutral">确认后可自动补节点</div>
+    </div>
+    <div class="stat-card gold">
+      <div class="s-label">缺少预排项目</div>
+      <div class="s-val">${automationState.summary.preplanGaps}<span class="s-unit">个</span></div>
+      <div class="s-change neutral">支持一键生成预排草稿</div>
+    </div>
+    <div class="stat-card">
+      <div class="s-label">联动建议</div>
+      <div class="s-val">${automationState.summary.projectLinks}<span class="s-unit">条</span></div>
+      <div class="s-change neutral">识别到负荷补位和节点缺口</div>
+    </div>
+  `;
+
+  queueEl.innerHTML = automationState.queue.length
+    ? automationState.queue.slice(0, 8).map(item=>`
+      <div class="list-item">
+        <div class="li-info">
+          <div class="li-name">${escapeHtml(item.title)}</div>
+          <div class="li-meta">${escapeHtml(item.meta)}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="badge ${item.severity === 'high' ? 'badge-risk' : item.severity === 'medium' ? 'badge-warn' : 'badge-active'}">${escapeHtml(item.badge)}</span>
+          <button class="btn-sm btn-blue" onclick="${item.action}">${escapeHtml(item.cta || '处理')}</button>
+        </div>
+      </div>`).join('')
+    : '<div class="empty">当前没有高优先级自动化队列，说明数据和交付节奏基本正常。</div>';
+
+  linksEl.innerHTML = automationState.links.length
+    ? automationState.links.map(item=>`
+      <div class="list-item">
+        <div class="li-info">
+          <div class="li-name">${escapeHtml(item.title)}</div>
+          <div class="li-meta">${escapeHtml(item.meta)}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="badge badge-active">${escapeHtml(item.badge)}</span>
+          <button class="btn-sm" style="background:var(--ink);color:var(--paper)" onclick="${item.action}">${escapeHtml(item.cta || '查看')}</button>
+        </div>
+      </div>`).join('')
+    : '<div class="empty">目前没有新的联动建议，负荷与节点分布比较均衡。</div>';
+
+  reviewEl.innerHTML = automationState.pendingReviews.length
+    ? automationState.pendingReviews.map(item=>{
+      const project = allProjects.find(projectItem=>projectItem.id === item.project_id);
+      const suggestedCategory = item.category || 'concept';
+      const confidenceText = Number.isFinite(Number(item.confidence)) ? `${Number(item.confidence)} 分` : '待确认';
+      return `
+        <div style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+            <div>
+              <div style="font-size:13px;font-weight:700">${escapeHtml(project?.name || '未匹配项目')}</div>
+              <div style="font-size:12px;color:var(--text-sub);line-height:1.7;margin-top:4px">${escapeHtml(item.raw_text || '无日志说明')}</div>
+              <div style="font-size:11px;color:var(--text-sub);margin-top:6px">待我判断：${escapeHtml(getTaskCategoryLabel(suggestedCategory))} · 置信度：${escapeHtml(confidenceText)}</div>
+            </div>
+            <span class="badge badge-warn">待确认</span>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px">
+            <select class="form-select" id="automationClass_${item.log_id}" style="max-width:180px">
+              ${getTaskCategoryOptions().map(option=>`<option value="${option}"${suggestedCategory===option?' selected':''}>${getTaskCategoryLabel(option)}</option>`).join('')}
+            </select>
+            <button class="btn-sm btn-blue" onclick="confirmTaskClassification('${item.log_id}', document.getElementById('automationClass_${item.log_id}').value)">确认并联动</button>
+            <button class="btn-sm" style="background:var(--cream);color:var(--ink)" onclick="ignoreTaskClassification('${item.log_id}')">忽略</button>
+          </div>
+        </div>`;
+    }).join('')
+    : '<div class="empty">当前没有待确认的任务分类，自动节点联动已基本完成。</div>';
+
+  preplanEl.innerHTML = automationState.preplanSync.length
+    ? automationState.preplanSync.map(item=>`
+      <div class="list-item">
+        <div class="li-info">
+          <div class="li-name">${escapeHtml(item.title)}</div>
+          <div class="li-meta">${escapeHtml(item.meta)}</div>
+        </div>
+        <button class="btn-sm btn-green" onclick="${item.action}">${escapeHtml(item.cta)}</button>
+      </div>`).join('')
+    : '<div class="empty">所有进行中项目都已经有预排草稿或不满足自动生成条件。</div>';
+}
+
+
+
+// ===== 谁来做模块（由设计师经验标签表生成） =====
+const DESIGNER_EXPERIENCE_ROWS = [{"project": "Flour&Flutter-泰国曼谷", "designer": "吕萌", "tag": "烘焙", "stage": "方案"}, {"project": "Flour&Flutter-泰国曼谷", "designer": "吕萌", "tag": "法式", "stage": "方案"}, {"project": "Flour&Flutter-泰国曼谷", "designer": "吕萌", "tag": "商场", "stage": "方案"}, {"project": "Flour&Flutter-泰国曼谷", "designer": "吕萌", "tag": "创新店", "stage": "方案"}, {"project": "Flour&Flutter-泰国曼谷", "designer": "陈志鹏", "tag": "烘焙", "stage": "施工图"}, {"project": "Flour&Flutter-泰国曼谷", "designer": "陈志鹏", "tag": "烘焙", "stage": "后期对接"}, {"project": "Flour&Flutter-泰国曼谷", "designer": "陈志鹏", "tag": "法式", "stage": "施工图"}, {"project": "Flour&Flutter-泰国曼谷", "designer": "陈志鹏", "tag": "法式", "stage": "后期对接"}, {"project": "Flour&Flutter-泰国曼谷", "designer": "陈志鹏", "tag": "商场", "stage": "施工图"}, {"project": "Flour&Flutter-泰国曼谷", "designer": "陈志鹏", "tag": "商场", "stage": "后期对接"}, {"project": "Flour&Flutter-泰国曼谷", "designer": "陈志鹏", "tag": "创新店", "stage": "施工图"}, {"project": "Flour&Flutter-泰国曼谷", "designer": "陈志鹏", "tag": "创新店", "stage": "后期对接"}, {"project": "社科别墅-北京西路", "designer": "汤洁", "tag": "咖啡", "stage": "施工图"}, {"project": "社科别墅-北京西路", "designer": "汤洁", "tag": "咖啡", "stage": "后期对接"}, {"project": "社科别墅-北京西路", "designer": "汤洁", "tag": "展陈", "stage": "施工图"}, {"project": "社科别墅-北京西路", "designer": "汤洁", "tag": "展陈", "stage": "后期对接"}, {"project": "社科别墅-北京西路", "designer": "汤洁", "tag": "文保", "stage": "施工图"}, {"project": "社科别墅-北京西路", "designer": "汤洁", "tag": "文保", "stage": "后期对接"}, {"project": "社科别墅-北京西路", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "社科别墅-北京西路", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "帽总小红帽-南京IFXC店", "designer": "佘骏达", "tag": "快餐", "stage": "方案"}, {"project": "帽总小红帽-南京IFXC店", "designer": "佘骏达", "tag": "商场", "stage": "方案"}, {"project": "帽总小红帽-南京IFXC店", "designer": "佘骏达", "tag": "复制店", "stage": "方案"}, {"project": "帽总小红帽-南京IFXC店", "designer": "佘骏达", "tag": "餐饮", "stage": "方案"}, {"project": "帽总小红帽-南京IFXC店", "designer": "严威", "tag": "快餐", "stage": "后期对接"}, {"project": "帽总小红帽-南京IFXC店", "designer": "严威", "tag": "商场", "stage": "后期对接"}, {"project": "帽总小红帽-南京IFXC店", "designer": "严威", "tag": "复制店", "stage": "后期对接"}, {"project": "帽总小红帽-南京IFXC店", "designer": "严威", "tag": "餐饮", "stage": "后期对接"}, {"project": "潮CTANG Maree-上海新嘉中心", "designer": "佘骏达", "tag": "餐饮", "stage": "方案"}, {"project": "潮CTANG Maree-上海新嘉中心", "designer": "佘骏达", "tag": "商场", "stage": "方案"}, {"project": "潮CTANG Maree-上海新嘉中心", "designer": "佘骏达", "tag": "中式", "stage": "方案"}, {"project": "潮CTANG Maree-上海新嘉中心", "designer": "佘骏达", "tag": "创新店", "stage": "方案"}, {"project": "潮CTANG Maree-上海新嘉中心", "designer": "严威", "tag": "餐饮", "stage": "后期对接"}, {"project": "潮CTANG Maree-上海新嘉中心", "designer": "严威", "tag": "商场", "stage": "后期对接"}, {"project": "潮CTANG Maree-上海新嘉中心", "designer": "严威", "tag": "中式", "stage": "后期对接"}, {"project": "潮CTANG Maree-上海新嘉中心", "designer": "严威", "tag": "创新店", "stage": "后期对接"}, {"project": "楽楽茶-西安源创Oya街区店", "designer": "严威", "tag": "奶茶", "stage": "方案"}, {"project": "楽楽茶-西安源创Oya街区店", "designer": "严威", "tag": "奶茶", "stage": "施工图"}, {"project": "楽楽茶-西安源创Oya街区店", "designer": "严威", "tag": "奶茶", "stage": "后期对接"}, {"project": "楽楽茶-西安源创Oya街区店", "designer": "严威", "tag": "街边", "stage": "方案"}, {"project": "楽楽茶-西安源创Oya街区店", "designer": "严威", "tag": "街边", "stage": "施工图"}, {"project": "楽楽茶-西安源创Oya街区店", "designer": "严威", "tag": "街边", "stage": "后期对接"}, {"project": "楽楽茶-西安源创Oya街区店", "designer": "严威", "tag": "复制店", "stage": "方案"}, {"project": "楽楽茶-西安源创Oya街区店", "designer": "严威", "tag": "复制店", "stage": "施工图"}, {"project": "楽楽茶-西安源创Oya街区店", "designer": "严威", "tag": "复制店", "stage": "后期对接"}, {"project": "帽总小红帽-上海东台里店", "designer": "佘骏达", "tag": "快餐", "stage": "方案"}, {"project": "帽总小红帽-上海东台里店", "designer": "佘骏达", "tag": "商场", "stage": "方案"}, {"project": "帽总小红帽-上海东台里店", "designer": "佘骏达", "tag": "创新店", "stage": "方案"}, {"project": "帽总小红帽-上海东台里店", "designer": "汤洁", "tag": "快餐", "stage": "后期对接"}, {"project": "帽总小红帽-上海东台里店", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "帽总小红帽-上海东台里店", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "帽总小红帽-北京王府井店", "designer": "严威", "tag": "快餐", "stage": "后期对接"}, {"project": "帽总小红帽-北京王府井店", "designer": "严威", "tag": "快餐", "stage": "施工图"}, {"project": "帽总小红帽-北京王府井店", "designer": "严威", "tag": "商场", "stage": "后期对接"}, {"project": "帽总小红帽-北京王府井店", "designer": "严威", "tag": "商场", "stage": "施工图"}, {"project": "帽总小红帽-北京王府井店", "designer": "严威", "tag": "创新店", "stage": "后期对接"}, {"project": "帽总小红帽-北京王府井店", "designer": "严威", "tag": "创新店", "stage": "施工图"}, {"project": "岺读-南京", "designer": "汤洁", "tag": "咖啡", "stage": "施工图"}, {"project": "岺读-南京", "designer": "汤洁", "tag": "咖啡", "stage": "后期对接"}, {"project": "岺读-南京", "designer": "汤洁", "tag": "展陈", "stage": "施工图"}, {"project": "岺读-南京", "designer": "汤洁", "tag": "展陈", "stage": "后期对接"}, {"project": "岺读-南京", "designer": "汤洁", "tag": "文保", "stage": "施工图"}, {"project": "岺读-南京", "designer": "汤洁", "tag": "文保", "stage": "后期对接"}, {"project": "岺读-南京", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "岺读-南京", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "嗨牛改造-武汉店", "designer": "严威", "tag": "火锅", "stage": "方案"}, {"project": "嗨牛改造-武汉店", "designer": "严威", "tag": "火锅", "stage": "施工图"}, {"project": "嗨牛改造-武汉店", "designer": "严威", "tag": "餐饮", "stage": "方案"}, {"project": "嗨牛改造-武汉店", "designer": "严威", "tag": "餐饮", "stage": "施工图"}, {"project": "嗨牛改造-武汉店", "designer": "严威", "tag": "商场", "stage": "方案"}, {"project": "嗨牛改造-武汉店", "designer": "严威", "tag": "商场", "stage": "施工图"}, {"project": "嗨牛改造-武汉店", "designer": "严威", "tag": "日式", "stage": "方案"}, {"project": "嗨牛改造-武汉店", "designer": "严威", "tag": "日式", "stage": "施工图"}, {"project": "嗨牛改造-武汉店", "designer": "严威", "tag": "复制店", "stage": "方案"}, {"project": "嗨牛改造-武汉店", "designer": "严威", "tag": "复制店", "stage": "施工图"}, {"project": "叁食-南京天时国际商贸中心", "designer": "吕萌", "tag": "餐饮", "stage": "方案"}, {"project": "叁食-南京天时国际商贸中心", "designer": "吕萌", "tag": "日料", "stage": "方案"}, {"project": "叁食-南京天时国际商贸中心", "designer": "吕萌", "tag": "商场", "stage": "方案"}, {"project": "叁食-南京天时国际商贸中心", "designer": "吕萌", "tag": "日式", "stage": "方案"}, {"project": "叁食-南京天时国际商贸中心", "designer": "吕萌", "tag": "创新店", "stage": "方案"}, {"project": "叁食-南京天时国际商贸中心", "designer": "陈志鹏", "tag": "餐饮", "stage": "施工图"}, {"project": "叁食-南京天时国际商贸中心", "designer": "陈志鹏", "tag": "日料", "stage": "施工图"}, {"project": "叁食-南京天时国际商贸中心", "designer": "陈志鹏", "tag": "商场", "stage": "施工图"}, {"project": "叁食-南京天时国际商贸中心", "designer": "陈志鹏", "tag": "日式", "stage": "施工图"}, {"project": "叁食-南京天时国际商贸中心", "designer": "陈志鹏", "tag": "创新店", "stage": "施工图"}, {"project": "mars vava-南京集庆门", "designer": "汤洁", "tag": "餐饮", "stage": "施工图"}, {"project": "mars vava-南京集庆门", "designer": "汤洁", "tag": "西餐", "stage": "施工图"}, {"project": "mars vava-南京集庆门", "designer": "汤洁", "tag": "商场", "stage": "施工图"}, {"project": "mars vava-南京集庆门", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "mars vava-南京集庆门", "designer": "汤洁", "tag": "南洋", "stage": "施工图"}, {"project": "乐乐茶-上海来福士店", "designer": "汤洁", "tag": "奶茶", "stage": "后期对接"}, {"project": "乐乐茶-上海来福士店", "designer": "汤洁", "tag": "街边", "stage": "后期对接"}, {"project": "乐乐茶-上海来福士店", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "FARMER WOOD-上海静安嘉里中心", "designer": "陈志鹏", "tag": "烘焙", "stage": "施工图"}, {"project": "FARMER WOOD-上海静安嘉里中心", "designer": "陈志鹏", "tag": "零食", "stage": "施工图"}, {"project": "FARMER WOOD-上海静安嘉里中心", "designer": "陈志鹏", "tag": "商场", "stage": "施工图"}, {"project": "FARMER WOOD-上海静安嘉里中心", "designer": "陈志鹏", "tag": "创新店", "stage": "施工图"}, {"project": "楢鸟围炉居酒屋四店-宁波", "designer": "吕萌", "tag": "餐饮", "stage": "方案"}, {"project": "楢鸟围炉居酒屋四店-宁波", "designer": "吕萌", "tag": "日料", "stage": "方案"}, {"project": "楢鸟围炉居酒屋四店-宁波", "designer": "吕萌", "tag": "日式", "stage": "方案"}, {"project": "楢鸟围炉居酒屋四店-宁波", "designer": "吕萌", "tag": "复制店", "stage": "方案"}, {"project": "楢鸟围炉居酒屋四店-宁波", "designer": "汤洁", "tag": "餐饮", "stage": "施工图"}, {"project": "楢鸟围炉居酒屋四店-宁波", "designer": "汤洁", "tag": "餐饮", "stage": "后期对接"}, {"project": "楢鸟围炉居酒屋四店-宁波", "designer": "汤洁", "tag": "日料", "stage": "施工图"}, {"project": "楢鸟围炉居酒屋四店-宁波", "designer": "汤洁", "tag": "日料", "stage": "后期对接"}, {"project": "楢鸟围炉居酒屋四店-宁波", "designer": "汤洁", "tag": "日式", "stage": "施工图"}, {"project": "楢鸟围炉居酒屋四店-宁波", "designer": "汤洁", "tag": "日式", "stage": "后期对接"}, {"project": "楢鸟围炉居酒屋四店-宁波", "designer": "汤洁", "tag": "复制店", "stage": "施工图"}, {"project": "楢鸟围炉居酒屋四店-宁波", "designer": "汤洁", "tag": "复制店", "stage": "后期对接"}, {"project": "胶东小馆-上海环宇城", "designer": "吕萌", "tag": "餐饮", "stage": "方案"}, {"project": "胶东小馆-上海环宇城", "designer": "吕萌", "tag": "商场", "stage": "方案"}, {"project": "胶东小馆-上海环宇城", "designer": "吕萌", "tag": "中式", "stage": "方案"}, {"project": "胶东小馆-上海环宇城", "designer": "吕萌", "tag": "创新店", "stage": "方案"}, {"project": "胶东小馆-上海环宇城", "designer": "严威", "tag": "餐饮", "stage": "施工图"}, {"project": "胶东小馆-上海环宇城", "designer": "严威", "tag": "餐饮", "stage": "后期对接"}, {"project": "胶东小馆-上海环宇城", "designer": "严威", "tag": "商场", "stage": "施工图"}, {"project": "胶东小馆-上海环宇城", "designer": "严威", "tag": "商场", "stage": "后期对接"}, {"project": "胶东小馆-上海环宇城", "designer": "严威", "tag": "中式", "stage": "施工图"}, {"project": "胶东小馆-上海环宇城", "designer": "严威", "tag": "中式", "stage": "后期对接"}, {"project": "胶东小馆-上海环宇城", "designer": "严威", "tag": "创新店", "stage": "施工图"}, {"project": "胶东小馆-上海环宇城", "designer": "严威", "tag": "创新店", "stage": "后期对接"}, {"project": "ripple-新街口", "designer": "汤洁", "tag": "酒吧", "stage": "后期对接"}, {"project": "ripple-新街口", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "月见肌语-龙江里", "designer": "吕萌", "tag": "美容院", "stage": "方案"}, {"project": "沸氏香铺-田子坊", "designer": "汤洁", "tag": "街边", "stage": "施工图"}, {"project": "沸氏香铺-田子坊", "designer": "汤洁", "tag": "街边", "stage": "后期对接"}, {"project": "沸氏香铺-田子坊", "designer": "汤洁", "tag": "零售", "stage": "施工图"}, {"project": "沸氏香铺-田子坊", "designer": "汤洁", "tag": "零售", "stage": "后期对接"}, {"project": "楢鸟围炉居酒屋三店-宁波", "designer": "严威", "tag": "餐饮", "stage": "施工图"}, {"project": "楢鸟围炉居酒屋三店-宁波", "designer": "严威", "tag": "餐饮", "stage": "后期对接"}, {"project": "楢鸟围炉居酒屋三店-宁波", "designer": "严威", "tag": "日料", "stage": "施工图"}, {"project": "楢鸟围炉居酒屋三店-宁波", "designer": "严威", "tag": "日料", "stage": "后期对接"}, {"project": "楢鸟围炉居酒屋三店-宁波", "designer": "严威", "tag": "日式", "stage": "施工图"}, {"project": "楢鸟围炉居酒屋三店-宁波", "designer": "严威", "tag": "日式", "stage": "后期对接"}, {"project": "楢鸟围炉居酒屋三店-宁波", "designer": "严威", "tag": "复制店", "stage": "施工图"}, {"project": "楢鸟围炉居酒屋三店-宁波", "designer": "严威", "tag": "复制店", "stage": "后期对接"}, {"project": "之外-温州万象城", "designer": "严威", "tag": "餐饮", "stage": "施工图"}, {"project": "之外-温州万象城", "designer": "严威", "tag": "餐饮", "stage": "后期对接"}, {"project": "之外-温州万象城", "designer": "严威", "tag": "西餐", "stage": "施工图"}, {"project": "之外-温州万象城", "designer": "严威", "tag": "西餐", "stage": "后期对接"}, {"project": "之外-温州万象城", "designer": "严威", "tag": "商场", "stage": "施工图"}, {"project": "之外-温州万象城", "designer": "严威", "tag": "商场", "stage": "后期对接"}, {"project": "之外-温州万象城", "designer": "严威", "tag": "创新店", "stage": "施工图"}, {"project": "之外-温州万象城", "designer": "严威", "tag": "创新店", "stage": "后期对接"}, {"project": "之外-温州万象城", "designer": "严威", "tag": "法式", "stage": "施工图"}, {"project": "之外-温州万象城", "designer": "严威", "tag": "法式", "stage": "后期对接"}, {"project": "蓝色香蕉-吾悦广场", "designer": "陈志鹏", "tag": "酒吧", "stage": "施工图"}, {"project": "蓝色香蕉-吾悦广场", "designer": "陈志鹏", "tag": "创新店", "stage": "施工图"}, {"project": "沸氏香铺-熙南里", "designer": "吕萌", "tag": "街边", "stage": "方案"}, {"project": "沸氏香铺-熙南里", "designer": "吕萌", "tag": "零售", "stage": "方案"}, {"project": "楢鸟围炉居酒屋-宁波", "designer": "严威", "tag": "餐饮", "stage": "施工图"}, {"project": "楢鸟围炉居酒屋-宁波", "designer": "严威", "tag": "餐饮", "stage": "后期对接"}, {"project": "楢鸟围炉居酒屋-宁波", "designer": "严威", "tag": "日料", "stage": "施工图"}, {"project": "楢鸟围炉居酒屋-宁波", "designer": "严威", "tag": "日料", "stage": "后期对接"}, {"project": "楢鸟围炉居酒屋-宁波", "designer": "严威", "tag": "日式", "stage": "施工图"}, {"project": "楢鸟围炉居酒屋-宁波", "designer": "严威", "tag": "日式", "stage": "后期对接"}, {"project": "楢鸟围炉居酒屋-宁波", "designer": "严威", "tag": "创新店", "stage": "施工图"}, {"project": "楢鸟围炉居酒屋-宁波", "designer": "严威", "tag": "创新店", "stage": "后期对接"}, {"project": "七欣天快闪店-南京新街口", "designer": "陈志鹏", "tag": "商场", "stage": "方案"}, {"project": "七欣天快闪店-南京新街口", "designer": "陈志鹏", "tag": "创新店", "stage": "方案"}, {"project": "七欣天快闪店-南京新街口", "designer": "陈志鹏", "tag": "快闪", "stage": "方案"}, {"project": "金陵茶叙-金陵天地店", "designer": "陈志鹏", "tag": "茶馆", "stage": "方案"}, {"project": "金陵茶叙-金陵天地店", "designer": "陈志鹏", "tag": "茶馆", "stage": "施工图"}, {"project": "金陵茶叙-金陵天地店", "designer": "陈志鹏", "tag": "茶馆", "stage": "后期对接"}, {"project": "金陵茶叙-金陵天地店", "designer": "陈志鹏", "tag": "商场", "stage": "方案"}, {"project": "金陵茶叙-金陵天地店", "designer": "陈志鹏", "tag": "商场", "stage": "施工图"}, {"project": "金陵茶叙-金陵天地店", "designer": "陈志鹏", "tag": "商场", "stage": "后期对接"}, {"project": "金陵茶叙-金陵天地店", "designer": "陈志鹏", "tag": "中式", "stage": "方案"}, {"project": "金陵茶叙-金陵天地店", "designer": "陈志鹏", "tag": "中式", "stage": "施工图"}, {"project": "金陵茶叙-金陵天地店", "designer": "陈志鹏", "tag": "中式", "stage": "后期对接"}, {"project": "金陵茶叙-金陵天地店", "designer": "陈志鹏", "tag": "创新店", "stage": "方案"}, {"project": "金陵茶叙-金陵天地店", "designer": "陈志鹏", "tag": "创新店", "stage": "施工图"}, {"project": "金陵茶叙-金陵天地店", "designer": "陈志鹏", "tag": "创新店", "stage": "后期对接"}, {"project": "绿杨春地摊排挡-南京下关", "designer": "汤洁", "tag": "餐饮", "stage": "施工图"}, {"project": "绿杨春地摊排挡-南京下关", "designer": "汤洁", "tag": "餐饮", "stage": "后期对接"}, {"project": "绿杨春地摊排挡-南京下关", "designer": "汤洁", "tag": "街边", "stage": "施工图"}, {"project": "绿杨春地摊排挡-南京下关", "designer": "汤洁", "tag": "街边", "stage": "后期对接"}, {"project": "绿杨春地摊排挡-南京下关", "designer": "汤洁", "tag": "中式", "stage": "施工图"}, {"project": "绿杨春地摊排挡-南京下关", "designer": "汤洁", "tag": "中式", "stage": "后期对接"}, {"project": "绿杨春地摊排挡-南京下关", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "绿杨春地摊排挡-南京下关", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "沉香鸭馆-阿里中心", "designer": "汤洁", "tag": "餐饮", "stage": "施工图"}, {"project": "沉香鸭馆-阿里中心", "designer": "汤洁", "tag": "餐饮", "stage": "后期对接"}, {"project": "沉香鸭馆-阿里中心", "designer": "汤洁", "tag": "商场", "stage": "施工图"}, {"project": "沉香鸭馆-阿里中心", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "沉香鸭馆-阿里中心", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "沉香鸭馆-阿里中心", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "嗨牛-武汉武昌", "designer": "严威", "tag": "餐饮", "stage": "施工图"}, {"project": "嗨牛-武汉武昌", "designer": "严威", "tag": "餐饮", "stage": "后期对接"}, {"project": "嗨牛-武汉武昌", "designer": "严威", "tag": "商场", "stage": "施工图"}, {"project": "嗨牛-武汉武昌", "designer": "严威", "tag": "商场", "stage": "后期对接"}, {"project": "嗨牛-武汉武昌", "designer": "严威", "tag": "日式", "stage": "施工图"}, {"project": "嗨牛-武汉武昌", "designer": "严威", "tag": "日式", "stage": "后期对接"}, {"project": "嗨牛-武汉武昌", "designer": "严威", "tag": "复制店", "stage": "施工图"}, {"project": "嗨牛-武汉武昌", "designer": "严威", "tag": "复制店", "stage": "后期对接"}, {"project": "粮仓网球场", "designer": "严威", "tag": "创新店", "stage": "施工图"}, {"project": "粮仓网球场", "designer": "严威", "tag": "创新店", "stage": "后期对接"}, {"project": "粮仓网球场", "designer": "严威", "tag": "球馆", "stage": "施工图"}, {"project": "粮仓网球场", "designer": "严威", "tag": "球馆", "stage": "后期对接"}, {"project": "赛拉维-西安龙首印象城", "designer": "汤洁", "tag": "烘焙", "stage": "施工图"}, {"project": "赛拉维-西安龙首印象城", "designer": "汤洁", "tag": "烘焙", "stage": "后期对接"}, {"project": "赛拉维-西安龙首印象城", "designer": "汤洁", "tag": "商场", "stage": "施工图"}, {"project": "赛拉维-西安龙首印象城", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "赛拉维-西安龙首印象城", "designer": "汤洁", "tag": "法式", "stage": "施工图"}, {"project": "赛拉维-西安龙首印象城", "designer": "汤洁", "tag": "法式", "stage": "后期对接"}, {"project": "赛拉维-西安龙首印象城", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "赛拉维-西安龙首印象城", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "海底捞-东莞民盈国贸城店", "designer": "汤洁", "tag": "餐饮", "stage": "施工图"}, {"project": "海底捞-东莞民盈国贸城店", "designer": "汤洁", "tag": "餐饮", "stage": "后期对接"}, {"project": "海底捞-东莞民盈国贸城店", "designer": "汤洁", "tag": "火锅", "stage": "施工图"}, {"project": "海底捞-东莞民盈国贸城店", "designer": "汤洁", "tag": "火锅", "stage": "后期对接"}, {"project": "海底捞-东莞民盈国贸城店", "designer": "汤洁", "tag": "商场", "stage": "施工图"}, {"project": "海底捞-东莞民盈国贸城店", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "海底捞-东莞民盈国贸城店", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "海底捞-东莞民盈国贸城店", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "六六面馆-北京国贸", "designer": "严威", "tag": "餐饮", "stage": "施工图"}, {"project": "六六面馆-北京国贸", "designer": "严威", "tag": "餐饮", "stage": "后期对接"}, {"project": "六六面馆-北京国贸", "designer": "严威", "tag": "快餐", "stage": "施工图"}, {"project": "六六面馆-北京国贸", "designer": "严威", "tag": "快餐", "stage": "后期对接"}, {"project": "六六面馆-北京国贸", "designer": "严威", "tag": "商场", "stage": "施工图"}, {"project": "六六面馆-北京国贸", "designer": "严威", "tag": "商场", "stage": "后期对接"}, {"project": "六六面馆-北京国贸", "designer": "严威", "tag": "中式", "stage": "施工图"}, {"project": "六六面馆-北京国贸", "designer": "严威", "tag": "中式", "stage": "后期对接"}, {"project": "六六面馆-北京国贸", "designer": "严威", "tag": "创新店", "stage": "施工图"}, {"project": "六六面馆-北京国贸", "designer": "严威", "tag": "创新店", "stage": "后期对接"}, {"project": "胡集酒肆-金陵中环", "designer": "陈志鹏", "tag": "餐饮", "stage": "方案"}, {"project": "胡集酒肆-金陵中环", "designer": "陈志鹏", "tag": "商场", "stage": "方案"}, {"project": "胡集酒肆-金陵中环", "designer": "陈志鹏", "tag": "中式", "stage": "方案"}, {"project": "胡集酒肆-金陵中环", "designer": "陈志鹏", "tag": "创新店", "stage": "方案"}, {"project": "胡集酒肆-金陵中环", "designer": "严威", "tag": "餐饮", "stage": "施工图"}, {"project": "胡集酒肆-金陵中环", "designer": "严威", "tag": "餐饮", "stage": "后期对接"}, {"project": "胡集酒肆-金陵中环", "designer": "严威", "tag": "商场", "stage": "施工图"}, {"project": "胡集酒肆-金陵中环", "designer": "严威", "tag": "商场", "stage": "后期对接"}, {"project": "胡集酒肆-金陵中环", "designer": "严威", "tag": "中式", "stage": "施工图"}, {"project": "胡集酒肆-金陵中环", "designer": "严威", "tag": "中式", "stage": "后期对接"}, {"project": "胡集酒肆-金陵中环", "designer": "严威", "tag": "创新店", "stage": "施工图"}, {"project": "胡集酒肆-金陵中环", "designer": "严威", "tag": "创新店", "stage": "后期对接"}, {"project": "德风园书房-南师大", "designer": "汤洁", "tag": "咖啡", "stage": "施工图"}, {"project": "德风园书房-南师大", "designer": "汤洁", "tag": "咖啡", "stage": "后期对接"}, {"project": "德风园书房-南师大", "designer": "汤洁", "tag": "展陈", "stage": "施工图"}, {"project": "德风园书房-南师大", "designer": "汤洁", "tag": "展陈", "stage": "后期对接"}, {"project": "德风园书房-南师大", "designer": "汤洁", "tag": "文保", "stage": "施工图"}, {"project": "德风园书房-南师大", "designer": "汤洁", "tag": "文保", "stage": "后期对接"}, {"project": "德风园书房-南师大", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "德风园书房-南师大", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "前门清真菜-北京坊", "designer": "陈志鹏", "tag": "餐饮", "stage": "方案"}, {"project": "前门清真菜-北京坊", "designer": "陈志鹏", "tag": "餐饮", "stage": "施工图"}, {"project": "前门清真菜-北京坊", "designer": "陈志鹏", "tag": "餐饮", "stage": "后期对接"}, {"project": "前门清真菜-北京坊", "designer": "陈志鹏", "tag": "商场", "stage": "方案"}, {"project": "前门清真菜-北京坊", "designer": "陈志鹏", "tag": "商场", "stage": "施工图"}, {"project": "前门清真菜-北京坊", "designer": "陈志鹏", "tag": "商场", "stage": "后期对接"}, {"project": "前门清真菜-北京坊", "designer": "陈志鹏", "tag": "中式", "stage": "方案"}, {"project": "前门清真菜-北京坊", "designer": "陈志鹏", "tag": "中式", "stage": "施工图"}, {"project": "前门清真菜-北京坊", "designer": "陈志鹏", "tag": "中式", "stage": "后期对接"}, {"project": "前门清真菜-北京坊", "designer": "陈志鹏", "tag": "创新店", "stage": "方案"}, {"project": "前门清真菜-北京坊", "designer": "陈志鹏", "tag": "创新店", "stage": "施工图"}, {"project": "前门清真菜-北京坊", "designer": "陈志鹏", "tag": "创新店", "stage": "后期对接"}, {"project": "MarsVaVa-南京华茂广场店", "designer": "汤洁", "tag": "餐饮", "stage": "施工图"}, {"project": "MarsVaVa-南京华茂广场店", "designer": "汤洁", "tag": "餐饮", "stage": "后期对接"}, {"project": "MarsVaVa-南京华茂广场店", "designer": "汤洁", "tag": "西餐", "stage": "施工图"}, {"project": "MarsVaVa-南京华茂广场店", "designer": "汤洁", "tag": "西餐", "stage": "后期对接"}, {"project": "MarsVaVa-南京华茂广场店", "designer": "汤洁", "tag": "商场", "stage": "施工图"}, {"project": "MarsVaVa-南京华茂广场店", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "MarsVaVa-南京华茂广场店", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "MarsVaVa-南京华茂广场店", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "MarsVaVa-南京华茂广场店", "designer": "汤洁", "tag": "南洋", "stage": "施工图"}, {"project": "MarsVaVa-南京华茂广场店", "designer": "汤洁", "tag": "南洋", "stage": "后期对接"}, {"project": "赛拉维-西安中贸店", "designer": "陈志鹏", "tag": "烘焙", "stage": "方案"}, {"project": "赛拉维-西安中贸店", "designer": "陈志鹏", "tag": "商场", "stage": "方案"}, {"project": "赛拉维-西安中贸店", "designer": "陈志鹏", "tag": "法式", "stage": "方案"}, {"project": "赛拉维-西安中贸店", "designer": "陈志鹏", "tag": "创新店", "stage": "方案"}, {"project": "赛拉维-西安中贸店", "designer": "汤洁", "tag": "烘焙", "stage": "施工图"}, {"project": "赛拉维-西安中贸店", "designer": "汤洁", "tag": "烘焙", "stage": "后期对接"}, {"project": "赛拉维-西安中贸店", "designer": "汤洁", "tag": "商场", "stage": "施工图"}, {"project": "赛拉维-西安中贸店", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "赛拉维-西安中贸店", "designer": "汤洁", "tag": "法式", "stage": "施工图"}, {"project": "赛拉维-西安中贸店", "designer": "汤洁", "tag": "法式", "stage": "后期对接"}, {"project": "赛拉维-西安中贸店", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "赛拉维-西安中贸店", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "肉肉米力-南昌T16", "designer": "严威", "tag": "餐饮", "stage": "施工图"}, {"project": "肉肉米力-南昌T16", "designer": "严威", "tag": "餐饮", "stage": "后期对接"}, {"project": "肉肉米力-南昌T16", "designer": "严威", "tag": "商场", "stage": "施工图"}, {"project": "肉肉米力-南昌T16", "designer": "严威", "tag": "商场", "stage": "后期对接"}, {"project": "肉肉米力-南昌T16", "designer": "严威", "tag": "日式", "stage": "施工图"}, {"project": "肉肉米力-南昌T16", "designer": "严威", "tag": "日式", "stage": "后期对接"}, {"project": "肉肉米力-南昌T16", "designer": "严威", "tag": "复制店", "stage": "施工图"}, {"project": "肉肉米力-南昌T16", "designer": "严威", "tag": "复制店", "stage": "后期对接"}, {"project": "驸马巷-合肥店", "designer": "陈志鹏", "tag": "餐饮", "stage": "方案"}, {"project": "驸马巷-合肥店", "designer": "陈志鹏", "tag": "商场", "stage": "方案"}, {"project": "驸马巷-合肥店", "designer": "陈志鹏", "tag": "中式", "stage": "方案"}, {"project": "驸马巷-合肥店", "designer": "陈志鹏", "tag": "创新店", "stage": "方案"}, {"project": "爱在西元前咖啡-南京金鹰店", "designer": "严威", "tag": "烘焙", "stage": "施工图"}, {"project": "爱在西元前咖啡-南京金鹰店", "designer": "严威", "tag": "烘焙", "stage": "后期对接"}, {"project": "爱在西元前咖啡-南京金鹰店", "designer": "严威", "tag": "咖啡", "stage": "施工图"}, {"project": "爱在西元前咖啡-南京金鹰店", "designer": "严威", "tag": "咖啡", "stage": "后期对接"}, {"project": "爱在西元前咖啡-南京金鹰店", "designer": "严威", "tag": "奶茶", "stage": "施工图"}, {"project": "爱在西元前咖啡-南京金鹰店", "designer": "严威", "tag": "奶茶", "stage": "后期对接"}, {"project": "爱在西元前咖啡-南京金鹰店", "designer": "严威", "tag": "商场", "stage": "施工图"}, {"project": "爱在西元前咖啡-南京金鹰店", "designer": "严威", "tag": "商场", "stage": "后期对接"}, {"project": "爱在西元前咖啡-南京金鹰店", "designer": "严威", "tag": "创新店", "stage": "施工图"}, {"project": "爱在西元前咖啡-南京金鹰店", "designer": "严威", "tag": "创新店", "stage": "后期对接"}, {"project": "庄吧-天一广场店", "designer": "汤洁", "tag": "酒吧", "stage": "施工图"}, {"project": "庄吧-天一广场店", "designer": "汤洁", "tag": "酒吧", "stage": "后期对接"}, {"project": "庄吧-天一广场店", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "庄吧-天一广场店", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "庄吧-天一广场店", "designer": "汤洁", "tag": "商场", "stage": "施工图"}, {"project": "庄吧-天一广场店", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "鸟焱-景枫店", "designer": "汤洁", "tag": "餐饮", "stage": "施工图"}, {"project": "鸟焱-景枫店", "designer": "汤洁", "tag": "餐饮", "stage": "后期对接"}, {"project": "鸟焱-景枫店", "designer": "汤洁", "tag": "日料", "stage": "施工图"}, {"project": "鸟焱-景枫店", "designer": "汤洁", "tag": "日料", "stage": "后期对接"}, {"project": "鸟焱-景枫店", "designer": "汤洁", "tag": "日式", "stage": "施工图"}, {"project": "鸟焱-景枫店", "designer": "汤洁", "tag": "日式", "stage": "后期对接"}, {"project": "鸟焱-景枫店", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "鸟焱-景枫店", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "乐乐茶-无锡店", "designer": "陈志鹏", "tag": "奶茶", "stage": "方案"}, {"project": "乐乐茶-无锡店", "designer": "陈志鹏", "tag": "奶茶", "stage": "施工图"}, {"project": "乐乐茶-无锡店", "designer": "陈志鹏", "tag": "奶茶", "stage": "后期对接"}, {"project": "乐乐茶-无锡店", "designer": "陈志鹏", "tag": "街边", "stage": "方案"}, {"project": "乐乐茶-无锡店", "designer": "陈志鹏", "tag": "街边", "stage": "施工图"}, {"project": "乐乐茶-无锡店", "designer": "陈志鹏", "tag": "街边", "stage": "后期对接"}, {"project": "乐乐茶-无锡店", "designer": "陈志鹏", "tag": "创新店", "stage": "方案"}, {"project": "乐乐茶-无锡店", "designer": "陈志鹏", "tag": "创新店", "stage": "施工图"}, {"project": "乐乐茶-无锡店", "designer": "陈志鹏", "tag": "创新店", "stage": "后期对接"}, {"project": "B&C-武汉SKP店", "designer": "陈志鹏", "tag": "烘焙", "stage": "施工图"}, {"project": "B&C-武汉SKP店", "designer": "陈志鹏", "tag": "烘焙", "stage": "后期对接"}, {"project": "B&C-武汉SKP店", "designer": "陈志鹏", "tag": "法式", "stage": "施工图"}, {"project": "B&C-武汉SKP店", "designer": "陈志鹏", "tag": "法式", "stage": "后期对接"}, {"project": "B&C-武汉SKP店", "designer": "陈志鹏", "tag": "复制店", "stage": "施工图"}, {"project": "B&C-武汉SKP店", "designer": "陈志鹏", "tag": "复制店", "stage": "后期对接"}, {"project": "金陵style-原点烹小鲜", "designer": "陈志鹏", "tag": "餐饮", "stage": "施工图"}, {"project": "金陵style-原点烹小鲜", "designer": "陈志鹏", "tag": "餐饮", "stage": "后期对接"}, {"project": "金陵style-原点烹小鲜", "designer": "陈志鹏", "tag": "中式", "stage": "施工图"}, {"project": "金陵style-原点烹小鲜", "designer": "陈志鹏", "tag": "中式", "stage": "后期对接"}, {"project": "金陵style-原点烹小鲜", "designer": "陈志鹏", "tag": "商场", "stage": "施工图"}, {"project": "金陵style-原点烹小鲜", "designer": "陈志鹏", "tag": "商场", "stage": "后期对接"}, {"project": "金陵style-原点烹小鲜", "designer": "陈志鹏", "tag": "创新店", "stage": "施工图"}, {"project": "金陵style-原点烹小鲜", "designer": "陈志鹏", "tag": "创新店", "stage": "后期对接"}, {"project": "靛阁买手店-南京国创园", "designer": "严威", "tag": "创新店", "stage": "施工图"}, {"project": "靛阁买手店-南京国创园", "designer": "严威", "tag": "创新店", "stage": "后期对接"}, {"project": "靛阁买手店-南京国创园", "designer": "严威", "tag": "服装", "stage": "施工图"}, {"project": "靛阁买手店-南京国创园", "designer": "严威", "tag": "服装", "stage": "后期对接"}, {"project": "晶丽自助餐-南京IFCX店", "designer": "严威", "tag": "餐饮", "stage": "施工图"}, {"project": "晶丽自助餐-南京IFCX店", "designer": "严威", "tag": "餐饮", "stage": "后期对接"}, {"project": "晶丽自助餐-南京IFCX店", "designer": "严威", "tag": "商场", "stage": "施工图"}, {"project": "晶丽自助餐-南京IFCX店", "designer": "严威", "tag": "商场", "stage": "后期对接"}, {"project": "晶丽自助餐-南京IFCX店", "designer": "严威", "tag": "创新店", "stage": "施工图"}, {"project": "晶丽自助餐-南京IFCX店", "designer": "严威", "tag": "创新店", "stage": "后期对接"}, {"project": "西安大兴善寺展陈设计", "designer": "严威", "tag": "创新店", "stage": "施工图"}, {"project": "西安大兴善寺展陈设计", "designer": "严威", "tag": "创新店", "stage": "后期对接"}, {"project": "西安大兴善寺展陈设计", "designer": "严威", "tag": "展陈", "stage": "施工图"}, {"project": "西安大兴善寺展陈设计", "designer": "严威", "tag": "展陈", "stage": "后期对接"}, {"project": "西安大兴善寺展陈设计", "designer": "严威", "tag": "文保", "stage": "施工图"}, {"project": "西安大兴善寺展陈设计", "designer": "严威", "tag": "文保", "stage": "后期对接"}, {"project": "沉香鸭馆-夫子庙贡院街店", "designer": "汤洁", "tag": "餐饮", "stage": "施工图"}, {"project": "沉香鸭馆-夫子庙贡院街店", "designer": "汤洁", "tag": "餐饮", "stage": "后期对接"}, {"project": "沉香鸭馆-夫子庙贡院街店", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "沉香鸭馆-夫子庙贡院街店", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "沉香鸭馆-夫子庙贡院街店", "designer": "汤洁", "tag": "街边", "stage": "施工图"}, {"project": "沉香鸭馆-夫子庙贡院街店", "designer": "汤洁", "tag": "街边", "stage": "后期对接"}, {"project": "澪燒日料店-南京江山中心店", "designer": "汤洁", "tag": "餐饮", "stage": "施工图"}, {"project": "澪燒日料店-南京江山中心店", "designer": "汤洁", "tag": "餐饮", "stage": "后期对接"}, {"project": "澪燒日料店-南京江山中心店", "designer": "汤洁", "tag": "日料", "stage": "施工图"}, {"project": "澪燒日料店-南京江山中心店", "designer": "汤洁", "tag": "日料", "stage": "后期对接"}, {"project": "澪燒日料店-南京江山中心店", "designer": "汤洁", "tag": "商场", "stage": "施工图"}, {"project": "澪燒日料店-南京江山中心店", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "澪燒日料店-南京江山中心店", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "澪燒日料店-南京江山中心店", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "澪燒日料店-南京江山中心店", "designer": "汤洁", "tag": "日式", "stage": "施工图"}, {"project": "澪燒日料店-南京江山中心店", "designer": "汤洁", "tag": "日式", "stage": "后期对接"}, {"project": "南昌T16城市市集", "designer": "严威", "tag": "商场", "stage": "施工图"}, {"project": "南昌T16城市市集", "designer": "严威", "tag": "商场", "stage": "后期对接"}, {"project": "南昌T16城市市集", "designer": "严威", "tag": "创新店", "stage": "施工图"}, {"project": "南昌T16城市市集", "designer": "严威", "tag": "创新店", "stage": "后期对接"}, {"project": "南昌T16城市市集", "designer": "严威", "tag": "美食街", "stage": "施工图"}, {"project": "南昌T16城市市集", "designer": "严威", "tag": "美食街", "stage": "后期对接"}, {"project": "逆鳞-无锡南长街店", "designer": "陈志鹏", "tag": "餐饮", "stage": "方案"}, {"project": "逆鳞-无锡南长街店", "designer": "陈志鹏", "tag": "餐饮", "stage": "施工图"}, {"project": "逆鳞-无锡南长街店", "designer": "陈志鹏", "tag": "餐饮", "stage": "后期对接"}, {"project": "逆鳞-无锡南长街店", "designer": "陈志鹏", "tag": "日料", "stage": "方案"}, {"project": "逆鳞-无锡南长街店", "designer": "陈志鹏", "tag": "日料", "stage": "施工图"}, {"project": "逆鳞-无锡南长街店", "designer": "陈志鹏", "tag": "日料", "stage": "后期对接"}, {"project": "逆鳞-无锡南长街店", "designer": "陈志鹏", "tag": "街边", "stage": "方案"}, {"project": "逆鳞-无锡南长街店", "designer": "陈志鹏", "tag": "街边", "stage": "施工图"}, {"project": "逆鳞-无锡南长街店", "designer": "陈志鹏", "tag": "街边", "stage": "后期对接"}, {"project": "逆鳞-无锡南长街店", "designer": "陈志鹏", "tag": "日式", "stage": "方案"}, {"project": "逆鳞-无锡南长街店", "designer": "陈志鹏", "tag": "日式", "stage": "施工图"}, {"project": "逆鳞-无锡南长街店", "designer": "陈志鹏", "tag": "日式", "stage": "后期对接"}, {"project": "逆鳞-无锡南长街店", "designer": "陈志鹏", "tag": "创新店", "stage": "方案"}, {"project": "逆鳞-无锡南长街店", "designer": "陈志鹏", "tag": "创新店", "stage": "施工图"}, {"project": "逆鳞-无锡南长街店", "designer": "陈志鹏", "tag": "创新店", "stage": "后期对接"}, {"project": "晶丽自助餐-百家湖1912店", "designer": "陈志鹏", "tag": "餐饮", "stage": "施工图"}, {"project": "晶丽自助餐-百家湖1912店", "designer": "陈志鹏", "tag": "餐饮", "stage": "后期对接"}, {"project": "晶丽自助餐-百家湖1912店", "designer": "陈志鹏", "tag": "商场", "stage": "施工图"}, {"project": "晶丽自助餐-百家湖1912店", "designer": "陈志鹏", "tag": "商场", "stage": "后期对接"}, {"project": "晶丽自助餐-百家湖1912店", "designer": "陈志鹏", "tag": "创新店", "stage": "施工图"}, {"project": "晶丽自助餐-百家湖1912店", "designer": "陈志鹏", "tag": "创新店", "stage": "后期对接"}, {"project": "义乌酒饕", "designer": "汤洁", "tag": "酒吧", "stage": "施工图"}, {"project": "义乌酒饕", "designer": "汤洁", "tag": "酒吧", "stage": "后期对接"}, {"project": "义乌酒饕", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "义乌酒饕", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "义乌酒饕", "designer": "汤洁", "tag": "商场", "stage": "施工图"}, {"project": "义乌酒饕", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "江宁龙湖-晋家门", "designer": "汤洁", "tag": "餐饮", "stage": "施工图"}, {"project": "江宁龙湖-晋家门", "designer": "汤洁", "tag": "餐饮", "stage": "后期对接"}, {"project": "江宁龙湖-晋家门", "designer": "汤洁", "tag": "商场", "stage": "施工图"}, {"project": "江宁龙湖-晋家门", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "江宁龙湖-晋家门", "designer": "汤洁", "tag": "中式", "stage": "施工图"}, {"project": "江宁龙湖-晋家门", "designer": "汤洁", "tag": "中式", "stage": "后期对接"}, {"project": "江宁龙湖-晋家门", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "江宁龙湖-晋家门", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "芽笼芽笼-凯德广场店", "designer": "汤洁", "tag": "餐饮", "stage": "施工图"}, {"project": "芽笼芽笼-凯德广场店", "designer": "汤洁", "tag": "餐饮", "stage": "后期对接"}, {"project": "芽笼芽笼-凯德广场店", "designer": "汤洁", "tag": "南洋", "stage": "施工图"}, {"project": "芽笼芽笼-凯德广场店", "designer": "汤洁", "tag": "南洋", "stage": "后期对接"}, {"project": "芽笼芽笼-凯德广场店", "designer": "汤洁", "tag": "复制店", "stage": "施工图"}, {"project": "芽笼芽笼-凯德广场店", "designer": "汤洁", "tag": "复制店", "stage": "后期对接"}, {"project": "芽笼芽笼-凯德广场店", "designer": "汤洁", "tag": "商场", "stage": "施工图"}, {"project": "芽笼芽笼-凯德广场店", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "芽笼芽笼-中庚漫游城", "designer": "严威", "tag": "餐饮", "stage": "施工图"}, {"project": "芽笼芽笼-中庚漫游城", "designer": "严威", "tag": "餐饮", "stage": "后期对接"}, {"project": "芽笼芽笼-中庚漫游城", "designer": "严威", "tag": "南洋", "stage": "施工图"}, {"project": "芽笼芽笼-中庚漫游城", "designer": "严威", "tag": "南洋", "stage": "后期对接"}, {"project": "芽笼芽笼-中庚漫游城", "designer": "严威", "tag": "复制店", "stage": "施工图"}, {"project": "芽笼芽笼-中庚漫游城", "designer": "严威", "tag": "复制店", "stage": "后期对接"}, {"project": "芽笼芽笼-中庚漫游城", "designer": "严威", "tag": "商场", "stage": "施工图"}, {"project": "芽笼芽笼-中庚漫游城", "designer": "严威", "tag": "商场", "stage": "后期对接"}, {"project": "芽笼芽笼-温州万象城店", "designer": "汤洁", "tag": "餐饮", "stage": "施工图"}, {"project": "芽笼芽笼-温州万象城店", "designer": "汤洁", "tag": "餐饮", "stage": "后期对接"}, {"project": "芽笼芽笼-温州万象城店", "designer": "汤洁", "tag": "南洋", "stage": "施工图"}, {"project": "芽笼芽笼-温州万象城店", "designer": "汤洁", "tag": "南洋", "stage": "后期对接"}, {"project": "芽笼芽笼-温州万象城店", "designer": "汤洁", "tag": "复制店", "stage": "施工图"}, {"project": "芽笼芽笼-温州万象城店", "designer": "汤洁", "tag": "复制店", "stage": "后期对接"}, {"project": "芽笼芽笼-温州万象城店", "designer": "汤洁", "tag": "商场", "stage": "施工图"}, {"project": "芽笼芽笼-温州万象城店", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "芽笼芽笼-杭州中心店", "designer": "汤洁", "tag": "餐饮", "stage": "施工图"}, {"project": "芽笼芽笼-杭州中心店", "designer": "汤洁", "tag": "餐饮", "stage": "后期对接"}, {"project": "芽笼芽笼-杭州中心店", "designer": "汤洁", "tag": "南洋", "stage": "施工图"}, {"project": "芽笼芽笼-杭州中心店", "designer": "汤洁", "tag": "南洋", "stage": "后期对接"}, {"project": "芽笼芽笼-杭州中心店", "designer": "汤洁", "tag": "复制店", "stage": "施工图"}, {"project": "芽笼芽笼-杭州中心店", "designer": "汤洁", "tag": "复制店", "stage": "后期对接"}, {"project": "芽笼芽笼-杭州中心店", "designer": "汤洁", "tag": "商场", "stage": "施工图"}, {"project": "芽笼芽笼-杭州中心店", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "太食兽-徐州店", "designer": "汤洁", "tag": "餐饮", "stage": "施工图"}, {"project": "太食兽-徐州店", "designer": "汤洁", "tag": "餐饮", "stage": "后期对接"}, {"project": "太食兽-徐州店", "designer": "汤洁", "tag": "泰餐", "stage": "施工图"}, {"project": "太食兽-徐州店", "designer": "汤洁", "tag": "泰餐", "stage": "后期对接"}, {"project": "太食兽-徐州店", "designer": "汤洁", "tag": "商场", "stage": "施工图"}, {"project": "太食兽-徐州店", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "太食兽-徐州店", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "太食兽-徐州店", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "太食兽-桐乡店", "designer": "严威", "tag": "餐饮", "stage": "施工图"}, {"project": "太食兽-桐乡店", "designer": "严威", "tag": "餐饮", "stage": "后期对接"}, {"project": "太食兽-桐乡店", "designer": "严威", "tag": "泰餐", "stage": "施工图"}, {"project": "太食兽-桐乡店", "designer": "严威", "tag": "泰餐", "stage": "后期对接"}, {"project": "太食兽-桐乡店", "designer": "严威", "tag": "商场", "stage": "施工图"}, {"project": "太食兽-桐乡店", "designer": "严威", "tag": "商场", "stage": "后期对接"}, {"project": "太食兽-桐乡店", "designer": "严威", "tag": "创新店", "stage": "施工图"}, {"project": "太食兽-桐乡店", "designer": "严威", "tag": "创新店", "stage": "后期对接"}, {"project": "太食獣-合肥吾悦店", "designer": "严威", "tag": "餐饮", "stage": "后期对接"}, {"project": "太食獣-合肥吾悦店", "designer": "严威", "tag": "泰餐", "stage": "后期对接"}, {"project": "太食獣-合肥吾悦店", "designer": "严威", "tag": "商场", "stage": "后期对接"}, {"project": "太食獣-合肥吾悦店", "designer": "严威", "tag": "创新店", "stage": "后期对接"}, {"project": "太食兽-贵阳万象城", "designer": "汤洁", "tag": "餐饮", "stage": "施工图"}, {"project": "太食兽-贵阳万象城", "designer": "汤洁", "tag": "餐饮", "stage": "后期对接"}, {"project": "太食兽-贵阳万象城", "designer": "汤洁", "tag": "泰餐", "stage": "施工图"}, {"project": "太食兽-贵阳万象城", "designer": "汤洁", "tag": "泰餐", "stage": "后期对接"}, {"project": "太食兽-贵阳万象城", "designer": "汤洁", "tag": "商场", "stage": "施工图"}, {"project": "太食兽-贵阳万象城", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "太食兽-贵阳万象城", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "太食兽-贵阳万象城", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "太食兽-西安荟聚店", "designer": "陈志鹏", "tag": "餐饮", "stage": "施工图"}, {"project": "太食兽-西安荟聚店", "designer": "陈志鹏", "tag": "餐饮", "stage": "后期对接"}, {"project": "太食兽-西安荟聚店", "designer": "陈志鹏", "tag": "泰餐", "stage": "施工图"}, {"project": "太食兽-西安荟聚店", "designer": "陈志鹏", "tag": "泰餐", "stage": "后期对接"}, {"project": "太食兽-西安荟聚店", "designer": "陈志鹏", "tag": "商场", "stage": "施工图"}, {"project": "太食兽-西安荟聚店", "designer": "陈志鹏", "tag": "商场", "stage": "后期对接"}, {"project": "太食兽-西安荟聚店", "designer": "陈志鹏", "tag": "创新店", "stage": "施工图"}, {"project": "太食兽-西安荟聚店", "designer": "陈志鹏", "tag": "创新店", "stage": "后期对接"}, {"project": "太食兽-苏州昆山店", "designer": "陈志鹏", "tag": "餐饮", "stage": "施工图"}, {"project": "太食兽-苏州昆山店", "designer": "陈志鹏", "tag": "餐饮", "stage": "后期对接"}, {"project": "太食兽-苏州昆山店", "designer": "陈志鹏", "tag": "泰餐", "stage": "施工图"}, {"project": "太食兽-苏州昆山店", "designer": "陈志鹏", "tag": "泰餐", "stage": "后期对接"}, {"project": "太食兽-苏州昆山店", "designer": "陈志鹏", "tag": "商场", "stage": "施工图"}, {"project": "太食兽-苏州昆山店", "designer": "陈志鹏", "tag": "商场", "stage": "后期对接"}, {"project": "太食兽-苏州昆山店", "designer": "陈志鹏", "tag": "创新店", "stage": "施工图"}, {"project": "太食兽-苏州昆山店", "designer": "陈志鹏", "tag": "创新店", "stage": "后期对接"}, {"project": "太食兽-太原万达店", "designer": "严威", "tag": "餐饮", "stage": "施工图"}, {"project": "太食兽-太原万达店", "designer": "严威", "tag": "餐饮", "stage": "后期对接"}, {"project": "太食兽-太原万达店", "designer": "严威", "tag": "泰餐", "stage": "施工图"}, {"project": "太食兽-太原万达店", "designer": "严威", "tag": "泰餐", "stage": "后期对接"}, {"project": "太食兽-太原万达店", "designer": "严威", "tag": "商场", "stage": "施工图"}, {"project": "太食兽-太原万达店", "designer": "严威", "tag": "商场", "stage": "后期对接"}, {"project": "太食兽-太原万达店", "designer": "严威", "tag": "创新店", "stage": "施工图"}, {"project": "太食兽-太原万达店", "designer": "严威", "tag": "创新店", "stage": "后期对接"}, {"project": "太食兽-温州万象城店", "designer": "严威", "tag": "餐饮", "stage": "施工图"}, {"project": "太食兽-温州万象城店", "designer": "严威", "tag": "餐饮", "stage": "后期对接"}, {"project": "太食兽-温州万象城店", "designer": "严威", "tag": "泰餐", "stage": "施工图"}, {"project": "太食兽-温州万象城店", "designer": "严威", "tag": "泰餐", "stage": "后期对接"}, {"project": "太食兽-温州万象城店", "designer": "严威", "tag": "商场", "stage": "施工图"}, {"project": "太食兽-温州万象城店", "designer": "严威", "tag": "商场", "stage": "后期对接"}, {"project": "太食兽-温州万象城店", "designer": "严威", "tag": "创新店", "stage": "施工图"}, {"project": "太食兽-温州万象城店", "designer": "严威", "tag": "创新店", "stage": "后期对接"}, {"project": "太食兽-深圳海雅缤纷城", "designer": "严威", "tag": "餐饮", "stage": "施工图"}, {"project": "太食兽-深圳海雅缤纷城", "designer": "严威", "tag": "餐饮", "stage": "后期对接"}, {"project": "太食兽-深圳海雅缤纷城", "designer": "严威", "tag": "泰餐", "stage": "施工图"}, {"project": "太食兽-深圳海雅缤纷城", "designer": "严威", "tag": "泰餐", "stage": "后期对接"}, {"project": "太食兽-深圳海雅缤纷城", "designer": "严威", "tag": "商场", "stage": "施工图"}, {"project": "太食兽-深圳海雅缤纷城", "designer": "严威", "tag": "商场", "stage": "后期对接"}, {"project": "太食兽-深圳海雅缤纷城", "designer": "严威", "tag": "创新店", "stage": "施工图"}, {"project": "太食兽-深圳海雅缤纷城", "designer": "严威", "tag": "创新店", "stage": "后期对接"}, {"project": "太食兽-昆明万象城店", "designer": "陈志鹏", "tag": "餐饮", "stage": "施工图"}, {"project": "太食兽-昆明万象城店", "designer": "陈志鹏", "tag": "餐饮", "stage": "后期对接"}, {"project": "太食兽-昆明万象城店", "designer": "陈志鹏", "tag": "泰餐", "stage": "施工图"}, {"project": "太食兽-昆明万象城店", "designer": "陈志鹏", "tag": "泰餐", "stage": "后期对接"}, {"project": "太食兽-昆明万象城店", "designer": "陈志鹏", "tag": "商场", "stage": "施工图"}, {"project": "太食兽-昆明万象城店", "designer": "陈志鹏", "tag": "商场", "stage": "后期对接"}, {"project": "太食兽-昆明万象城店", "designer": "陈志鹏", "tag": "创新店", "stage": "施工图"}, {"project": "太食兽-昆明万象城店", "designer": "陈志鹏", "tag": "创新店", "stage": "后期对接"}, {"project": "太食兽-北京蓝港店", "designer": "陈志鹏", "tag": "餐饮", "stage": "方案"}, {"project": "太食兽-北京蓝港店", "designer": "陈志鹏", "tag": "泰餐", "stage": "方案"}, {"project": "太食兽-北京蓝港店", "designer": "陈志鹏", "tag": "商场", "stage": "方案"}, {"project": "太食兽-北京蓝港店", "designer": "陈志鹏", "tag": "创新店", "stage": "方案"}, {"project": "太食兽-北京蓝港店", "designer": "严威", "tag": "餐饮", "stage": "施工图"}, {"project": "太食兽-北京蓝港店", "designer": "严威", "tag": "餐饮", "stage": "后期对接"}, {"project": "太食兽-北京蓝港店", "designer": "严威", "tag": "泰餐", "stage": "施工图"}, {"project": "太食兽-北京蓝港店", "designer": "严威", "tag": "泰餐", "stage": "后期对接"}, {"project": "太食兽-北京蓝港店", "designer": "严威", "tag": "商场", "stage": "施工图"}, {"project": "太食兽-北京蓝港店", "designer": "严威", "tag": "商场", "stage": "后期对接"}, {"project": "太食兽-北京蓝港店", "designer": "严威", "tag": "创新店", "stage": "施工图"}, {"project": "太食兽-北京蓝港店", "designer": "严威", "tag": "创新店", "stage": "后期对接"}, {"project": "太食兽-呼和浩特店", "designer": "陈志鹏", "tag": "餐饮", "stage": "施工图"}, {"project": "太食兽-呼和浩特店", "designer": "陈志鹏", "tag": "餐饮", "stage": "后期对接"}, {"project": "太食兽-呼和浩特店", "designer": "陈志鹏", "tag": "泰餐", "stage": "施工图"}, {"project": "太食兽-呼和浩特店", "designer": "陈志鹏", "tag": "泰餐", "stage": "后期对接"}, {"project": "太食兽-呼和浩特店", "designer": "陈志鹏", "tag": "商场", "stage": "施工图"}, {"project": "太食兽-呼和浩特店", "designer": "陈志鹏", "tag": "商场", "stage": "后期对接"}, {"project": "太食兽-呼和浩特店", "designer": "陈志鹏", "tag": "创新店", "stage": "施工图"}, {"project": "太食兽-呼和浩特店", "designer": "陈志鹏", "tag": "创新店", "stage": "后期对接"}, {"project": "太食兽-郑州三店", "designer": "汤洁", "tag": "餐饮", "stage": "施工图"}, {"project": "太食兽-郑州三店", "designer": "汤洁", "tag": "餐饮", "stage": "后期对接"}, {"project": "太食兽-郑州三店", "designer": "汤洁", "tag": "泰餐", "stage": "施工图"}, {"project": "太食兽-郑州三店", "designer": "汤洁", "tag": "泰餐", "stage": "后期对接"}, {"project": "太食兽-郑州三店", "designer": "汤洁", "tag": "商场", "stage": "施工图"}, {"project": "太食兽-郑州三店", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "太食兽-郑州三店", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "太食兽-郑州三店", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "太食兽-长春万象城店", "designer": "汤洁", "tag": "餐饮", "stage": "施工图"}, {"project": "太食兽-长春万象城店", "designer": "汤洁", "tag": "餐饮", "stage": "后期对接"}, {"project": "太食兽-长春万象城店", "designer": "汤洁", "tag": "泰餐", "stage": "施工图"}, {"project": "太食兽-长春万象城店", "designer": "汤洁", "tag": "泰餐", "stage": "后期对接"}, {"project": "太食兽-长春万象城店", "designer": "汤洁", "tag": "商场", "stage": "施工图"}, {"project": "太食兽-长春万象城店", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "太食兽-长春万象城店", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "太食兽-长春万象城店", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "太食兽-南昌二店", "designer": "严威", "tag": "餐饮", "stage": "施工图"}, {"project": "太食兽-南昌二店", "designer": "严威", "tag": "餐饮", "stage": "后期对接"}, {"project": "太食兽-南昌二店", "designer": "严威", "tag": "泰餐", "stage": "施工图"}, {"project": "太食兽-南昌二店", "designer": "严威", "tag": "泰餐", "stage": "后期对接"}, {"project": "太食兽-南昌二店", "designer": "严威", "tag": "商场", "stage": "施工图"}, {"project": "太食兽-南昌二店", "designer": "严威", "tag": "商场", "stage": "后期对接"}, {"project": "太食兽-南昌二店", "designer": "严威", "tag": "创新店", "stage": "施工图"}, {"project": "太食兽-南昌二店", "designer": "严威", "tag": "创新店", "stage": "后期对接"}, {"project": "太食兽-长沙店", "designer": "汤洁", "tag": "餐饮", "stage": "施工图"}, {"project": "太食兽-长沙店", "designer": "汤洁", "tag": "餐饮", "stage": "后期对接"}, {"project": "太食兽-长沙店", "designer": "汤洁", "tag": "泰餐", "stage": "施工图"}, {"project": "太食兽-长沙店", "designer": "汤洁", "tag": "泰餐", "stage": "后期对接"}, {"project": "太食兽-长沙店", "designer": "汤洁", "tag": "商场", "stage": "施工图"}, {"project": "太食兽-长沙店", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "太食兽-长沙店", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "太食兽-长沙店", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "太食兽-沈阳店", "designer": "陈志鹏", "tag": "餐饮", "stage": "施工图"}, {"project": "太食兽-沈阳店", "designer": "陈志鹏", "tag": "餐饮", "stage": "后期对接"}, {"project": "太食兽-沈阳店", "designer": "陈志鹏", "tag": "泰餐", "stage": "施工图"}, {"project": "太食兽-沈阳店", "designer": "陈志鹏", "tag": "泰餐", "stage": "后期对接"}, {"project": "太食兽-沈阳店", "designer": "陈志鹏", "tag": "商场", "stage": "施工图"}, {"project": "太食兽-沈阳店", "designer": "陈志鹏", "tag": "商场", "stage": "后期对接"}, {"project": "太食兽-沈阳店", "designer": "陈志鹏", "tag": "创新店", "stage": "施工图"}, {"project": "太食兽-沈阳店", "designer": "陈志鹏", "tag": "创新店", "stage": "后期对接"}, {"project": "太食兽-三亚店", "designer": "汤洁", "tag": "餐饮", "stage": "施工图"}, {"project": "太食兽-三亚店", "designer": "汤洁", "tag": "餐饮", "stage": "后期对接"}, {"project": "太食兽-三亚店", "designer": "汤洁", "tag": "泰餐", "stage": "施工图"}, {"project": "太食兽-三亚店", "designer": "汤洁", "tag": "泰餐", "stage": "后期对接"}, {"project": "太食兽-三亚店", "designer": "汤洁", "tag": "商场", "stage": "施工图"}, {"project": "太食兽-三亚店", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "太食兽-三亚店", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "太食兽-三亚店", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "狮王府-南京万象汇店", "designer": "汤洁", "tag": "餐饮", "stage": "施工图"}, {"project": "狮王府-南京万象汇店", "designer": "汤洁", "tag": "餐饮", "stage": "后期对接"}, {"project": "狮王府-南京万象汇店", "designer": "汤洁", "tag": "商场", "stage": "施工图"}, {"project": "狮王府-南京万象汇店", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "狮王府-南京万象汇店", "designer": "汤洁", "tag": "法式", "stage": "施工图"}, {"project": "狮王府-南京万象汇店", "designer": "汤洁", "tag": "法式", "stage": "后期对接"}, {"project": "狮王府-南京万象汇店", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "狮王府-南京万象汇店", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "狮王府-南京老门东店", "designer": "汤洁", "tag": "餐饮", "stage": "施工图"}, {"project": "狮王府-南京老门东店", "designer": "汤洁", "tag": "餐饮", "stage": "后期对接"}, {"project": "狮王府-南京老门东店", "designer": "汤洁", "tag": "商场", "stage": "施工图"}, {"project": "狮王府-南京老门东店", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "狮王府-南京老门东店", "designer": "汤洁", "tag": "法式", "stage": "施工图"}, {"project": "狮王府-南京老门东店", "designer": "汤洁", "tag": "法式", "stage": "后期对接"}, {"project": "狮王府-南京老门东店", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "狮王府-南京老门东店", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "狮王府-上海店", "designer": "陈志鹏", "tag": "餐饮", "stage": "施工图"}, {"project": "狮王府-上海店", "designer": "陈志鹏", "tag": "餐饮", "stage": "后期对接"}, {"project": "狮王府-上海店", "designer": "陈志鹏", "tag": "商场", "stage": "施工图"}, {"project": "狮王府-上海店", "designer": "陈志鹏", "tag": "商场", "stage": "后期对接"}, {"project": "狮王府-上海店", "designer": "陈志鹏", "tag": "法式", "stage": "施工图"}, {"project": "狮王府-上海店", "designer": "陈志鹏", "tag": "法式", "stage": "后期对接"}, {"project": "狮王府-上海店", "designer": "陈志鹏", "tag": "创新店", "stage": "施工图"}, {"project": "狮王府-上海店", "designer": "陈志鹏", "tag": "创新店", "stage": "后期对接"}, {"project": "南京大牌档-南京新百店", "designer": "陈志鹏", "tag": "餐饮", "stage": "方案"}, {"project": "南京大牌档-南京新百店", "designer": "陈志鹏", "tag": "商场", "stage": "方案"}, {"project": "南京大牌档-南京新百店", "designer": "陈志鹏", "tag": "中式", "stage": "方案"}, {"project": "南京大牌档-南京新百店", "designer": "陈志鹏", "tag": "复制店", "stage": "方案"}, {"project": "南京大牌档-南京德基店", "designer": "陈志鹏", "tag": "餐饮", "stage": "方案"}, {"project": "南京大牌档-南京德基店", "designer": "陈志鹏", "tag": "商场", "stage": "方案"}, {"project": "南京大牌档-南京德基店", "designer": "陈志鹏", "tag": "中式", "stage": "方案"}, {"project": "南京大牌档-南京德基店", "designer": "陈志鹏", "tag": "复制店", "stage": "方案"}, {"project": "南京大牌档-南京德基店", "designer": "严威", "tag": "餐饮", "stage": "施工图"}, {"project": "南京大牌档-南京德基店", "designer": "严威", "tag": "商场", "stage": "施工图"}, {"project": "南京大牌档-南京德基店", "designer": "严威", "tag": "中式", "stage": "施工图"}, {"project": "南京大牌档-南京德基店", "designer": "严威", "tag": "复制店", "stage": "施工图"}, {"project": "南京大牌档-广州天河城", "designer": "陈志鹏", "tag": "餐饮", "stage": "方案"}, {"project": "南京大牌档-广州天河城", "designer": "陈志鹏", "tag": "餐饮", "stage": "施工图"}, {"project": "南京大牌档-广州天河城", "designer": "陈志鹏", "tag": "餐饮", "stage": "后期对接"}, {"project": "南京大牌档-广州天河城", "designer": "陈志鹏", "tag": "商场", "stage": "方案"}, {"project": "南京大牌档-广州天河城", "designer": "陈志鹏", "tag": "商场", "stage": "施工图"}, {"project": "南京大牌档-广州天河城", "designer": "陈志鹏", "tag": "商场", "stage": "后期对接"}, {"project": "南京大牌档-广州天河城", "designer": "陈志鹏", "tag": "中式", "stage": "方案"}, {"project": "南京大牌档-广州天河城", "designer": "陈志鹏", "tag": "中式", "stage": "施工图"}, {"project": "南京大牌档-广州天河城", "designer": "陈志鹏", "tag": "中式", "stage": "后期对接"}, {"project": "南京大牌档-广州天河城", "designer": "陈志鹏", "tag": "复制店", "stage": "方案"}, {"project": "南京大牌档-广州天河城", "designer": "陈志鹏", "tag": "复制店", "stage": "施工图"}, {"project": "南京大牌档-广州天河城", "designer": "陈志鹏", "tag": "复制店", "stage": "后期对接"}, {"project": "南京大牌档-南京万象汇店", "designer": "陈志鹏", "tag": "餐饮", "stage": "方案"}, {"project": "南京大牌档-南京万象汇店", "designer": "陈志鹏", "tag": "商场", "stage": "方案"}, {"project": "南京大牌档-南京万象汇店", "designer": "陈志鹏", "tag": "中式", "stage": "方案"}, {"project": "南京大牌档-南京万象汇店", "designer": "陈志鹏", "tag": "创新店", "stage": "方案"}, {"project": "南京大牌档-南京STYLE店", "designer": "陈志鹏", "tag": "餐饮", "stage": "施工图"}, {"project": "南京大牌档-南京STYLE店", "designer": "陈志鹏", "tag": "餐饮", "stage": "后期对接"}, {"project": "南京大牌档-南京STYLE店", "designer": "陈志鹏", "tag": "商场", "stage": "施工图"}, {"project": "南京大牌档-南京STYLE店", "designer": "陈志鹏", "tag": "商场", "stage": "后期对接"}, {"project": "南京大牌档-南京STYLE店", "designer": "陈志鹏", "tag": "中式", "stage": "施工图"}, {"project": "南京大牌档-南京STYLE店", "designer": "陈志鹏", "tag": "中式", "stage": "后期对接"}, {"project": "南京大牌档-南京STYLE店", "designer": "陈志鹏", "tag": "复制店", "stage": "施工图"}, {"project": "南京大牌档-南京STYLE店", "designer": "陈志鹏", "tag": "复制店", "stage": "后期对接"}, {"project": "PLUTO-上海中山公园", "designer": "陈志鹏", "tag": "酒吧", "stage": "施工图"}, {"project": "PLUTO-上海中山公园", "designer": "陈志鹏", "tag": "酒吧", "stage": "后期对接"}, {"project": "PLUTO-上海中山公园", "designer": "陈志鹏", "tag": "商场", "stage": "施工图"}, {"project": "PLUTO-上海中山公园", "designer": "陈志鹏", "tag": "商场", "stage": "后期对接"}, {"project": "PLUTO-上海中山公园", "designer": "陈志鹏", "tag": "创新店", "stage": "施工图"}, {"project": "PLUTO-上海中山公园", "designer": "陈志鹏", "tag": "创新店", "stage": "后期对接"}, {"project": "PLUTO-上海龙湖江湾里", "designer": "汤洁", "tag": "酒吧", "stage": "施工图"}, {"project": "PLUTO-上海龙湖江湾里", "designer": "汤洁", "tag": "酒吧", "stage": "后期对接"}, {"project": "PLUTO-上海龙湖江湾里", "designer": "汤洁", "tag": "商场", "stage": "施工图"}, {"project": "PLUTO-上海龙湖江湾里", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "PLUTO-上海龙湖江湾里", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "PLUTO-上海龙湖江湾里", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "PLUTO-上海环宇荟店", "designer": "陈志鹏", "tag": "酒吧", "stage": "方案"}, {"project": "PLUTO-上海环宇荟店", "designer": "陈志鹏", "tag": "商场", "stage": "方案"}, {"project": "PLUTO-上海环宇荟店", "designer": "陈志鹏", "tag": "创新店", "stage": "方案"}, {"project": "PLUTO-上海环宇荟店", "designer": "汤洁", "tag": "酒吧", "stage": "施工图"}, {"project": "PLUTO-上海环宇荟店", "designer": "汤洁", "tag": "酒吧", "stage": "后期对接"}, {"project": "PLUTO-上海环宇荟店", "designer": "汤洁", "tag": "商场", "stage": "施工图"}, {"project": "PLUTO-上海环宇荟店", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "PLUTO-上海环宇荟店", "designer": "汤洁", "tag": "创新店", "stage": "施工图"}, {"project": "PLUTO-上海环宇荟店", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "PLUTO-南京万象天地店", "designer": "陈志鹏", "tag": "酒吧", "stage": "施工图"}, {"project": "PLUTO-南京万象天地店", "designer": "陈志鹏", "tag": "酒吧", "stage": "后期对接"}, {"project": "PLUTO-南京万象天地店", "designer": "陈志鹏", "tag": "商场", "stage": "施工图"}, {"project": "PLUTO-南京万象天地店", "designer": "陈志鹏", "tag": "商场", "stage": "后期对接"}, {"project": "PLUTO-南京万象天地店", "designer": "陈志鹏", "tag": "创新店", "stage": "施工图"}, {"project": "PLUTO-南京万象天地店", "designer": "陈志鹏", "tag": "创新店", "stage": "后期对接"}, {"project": "PLUTO-上海万象天地店", "designer": "陈志鹏", "tag": "酒吧", "stage": "施工图"}, {"project": "PLUTO-上海万象天地店", "designer": "陈志鹏", "tag": "酒吧", "stage": "后期对接"}, {"project": "PLUTO-上海万象天地店", "designer": "陈志鹏", "tag": "商场", "stage": "施工图"}, {"project": "PLUTO-上海万象天地店", "designer": "陈志鹏", "tag": "商场", "stage": "后期对接"}, {"project": "PLUTO-上海万象天地店", "designer": "陈志鹏", "tag": "创新店", "stage": "施工图"}, {"project": "PLUTO-上海万象天地店", "designer": "陈志鹏", "tag": "创新店", "stage": "后期对接"}, {"project": "PLUTO-成都铁相寺店", "designer": "陈志鹏", "tag": "酒吧", "stage": "方案"}, {"project": "PLUTO-成都铁相寺店", "designer": "陈志鹏", "tag": "酒吧", "stage": "施工图"}, {"project": "PLUTO-成都铁相寺店", "designer": "陈志鹏", "tag": "酒吧", "stage": "后期对接"}, {"project": "PLUTO-成都铁相寺店", "designer": "陈志鹏", "tag": "商场", "stage": "方案"}, {"project": "PLUTO-成都铁相寺店", "designer": "陈志鹏", "tag": "商场", "stage": "施工图"}, {"project": "PLUTO-成都铁相寺店", "designer": "陈志鹏", "tag": "商场", "stage": "后期对接"}, {"project": "PLUTO-成都铁相寺店", "designer": "陈志鹏", "tag": "创新店", "stage": "方案"}, {"project": "PLUTO-成都铁相寺店", "designer": "陈志鹏", "tag": "创新店", "stage": "施工图"}, {"project": "PLUTO-成都铁相寺店", "designer": "陈志鹏", "tag": "创新店", "stage": "后期对接"}, {"project": "onionio-宝安大仟里", "designer": "吕萌", "tag": "餐饮", "stage": "方案"}, {"project": "onionio-宝安大仟里", "designer": "吕萌", "tag": "烘焙", "stage": "方案"}, {"project": "onionio-宝安大仟里", "designer": "吕萌", "tag": "西餐", "stage": "方案"}, {"project": "onionio-宝安大仟里", "designer": "吕萌", "tag": "商场", "stage": "方案"}, {"project": "onionio-宝安大仟里", "designer": "吕萌", "tag": "创新店", "stage": "方案"}, {"project": "onionio-宝安大仟里", "designer": "汤洁", "tag": "餐饮", "stage": "后期对接"}, {"project": "onionio-宝安大仟里", "designer": "汤洁", "tag": "烘焙", "stage": "后期对接"}, {"project": "onionio-宝安大仟里", "designer": "汤洁", "tag": "西餐", "stage": "后期对接"}, {"project": "onionio-宝安大仟里", "designer": "汤洁", "tag": "商场", "stage": "后期对接"}, {"project": "onionio-宝安大仟里", "designer": "汤洁", "tag": "创新店", "stage": "后期对接"}, {"project": "onionio-常州店", "designer": "吕萌", "tag": "餐饮", "stage": "方案"}, {"project": "onionio-常州店", "designer": "吕萌", "tag": "烘焙", "stage": "方案"}, {"project": "onionio-常州店", "designer": "吕萌", "tag": "西餐", "stage": "方案"}, {"project": "onionio-常州店", "designer": "吕萌", "tag": "商场", "stage": "方案"}, {"project": "onionio-常州店", "designer": "吕萌", "tag": "复制店", "stage": "方案"}, {"project": "onionio-济南店", "designer": "严威", "tag": "餐饮", "stage": "方案"}, {"project": "onionio-济南店", "designer": "严威", "tag": "烘焙", "stage": "方案"}, {"project": "onionio-济南店", "designer": "严威", "tag": "西餐", "stage": "方案"}, {"project": "onionio-济南店", "designer": "严威", "tag": "商场", "stage": "方案"}, {"project": "onionio-济南店", "designer": "严威", "tag": "复制店", "stage": "方案"}, {"project": "柴氏-凯德太阳宫", "designer": "严威", "tag": "餐饮", "stage": "方案"}, {"project": "柴氏-凯德太阳宫", "designer": "严威", "tag": "餐饮", "stage": "施工图"}, {"project": "柴氏-凯德太阳宫", "designer": "严威", "tag": "餐饮", "stage": "后期对接"}, {"project": "柴氏-凯德太阳宫", "designer": "严威", "tag": "商场", "stage": "方案"}, {"project": "柴氏-凯德太阳宫", "designer": "严威", "tag": "商场", "stage": "施工图"}, {"project": "柴氏-凯德太阳宫", "designer": "严威", "tag": "商场", "stage": "后期对接"}, {"project": "柴氏-凯德太阳宫", "designer": "严威", "tag": "中式", "stage": "方案"}, {"project": "柴氏-凯德太阳宫", "designer": "严威", "tag": "中式", "stage": "施工图"}, {"project": "柴氏-凯德太阳宫", "designer": "严威", "tag": "中式", "stage": "后期对接"}, {"project": "柴氏-凯德太阳宫", "designer": "严威", "tag": "复制店", "stage": "方案"}, {"project": "柴氏-凯德太阳宫", "designer": "严威", "tag": "复制店", "stage": "施工图"}, {"project": "柴氏-凯德太阳宫", "designer": "严威", "tag": "复制店", "stage": "后期对接"}, {"project": "柴氏-望京店", "designer": "陈志鹏", "tag": "餐饮", "stage": "方案"}, {"project": "柴氏-望京店", "designer": "陈志鹏", "tag": "商场", "stage": "方案"}, {"project": "柴氏-望京店", "designer": "陈志鹏", "tag": "中式", "stage": "方案"}, {"project": "柴氏-望京店", "designer": "陈志鹏", "tag": "复制店", "stage": "方案"}, {"project": "柴氏-西直门凯德店", "designer": "陈志鹏", "tag": "餐饮", "stage": "方案"}, {"project": "柴氏-西直门凯德店", "designer": "陈志鹏", "tag": "商场", "stage": "方案"}, {"project": "柴氏-西直门凯德店", "designer": "陈志鹏", "tag": "中式", "stage": "方案"}, {"project": "柴氏-西直门凯德店", "designer": "陈志鹏", "tag": "复制店", "stage": "方案"}];
+
+let selectedAssignmentTags = [];
+
+function getAssignmentAllTags(){
+  return [...new Set(DESIGNER_EXPERIENCE_ROWS.map(r=>r.tag).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh'));
+}
+
+function renderAssignmentTagPool(){
+  const el = document.getElementById('assignmentTagPool');
+  if(!el) return;
+  const tags = getAssignmentAllTags();
+  el.innerHTML = tags.map(tag=>`
+    <div class="chip ${selectedAssignmentTags.includes(tag)?'active':''}" onclick="toggleAssignmentTag('${tag.replace(/'/g, "\\'")}')">${tag}</div>
+  `).join('');
+}
+
+function toggleAssignmentTag(tag){
+  if(selectedAssignmentTags.includes(tag)) selectedAssignmentTags = selectedAssignmentTags.filter(t=>t!==tag);
+  else selectedAssignmentTags.push(tag);
+  renderAssignmentTagPool();
+  renderAssignmentRecommend();
+}
+
+function suggestAssignmentTags(){
+  const name = (document.getElementById('assignProjectName')?.value || '').trim();
+  if(!name) return;
+  const tags = getAssignmentAllTags();
+  const hit = tags.filter(tag => name.includes(tag));
+  // 品牌/项目名常见词辅助
+  const extraRules = [
+    {kw:'烘焙', tag:'烘焙'}, {kw:'面包', tag:'烘焙'}, {kw:'法式', tag:'法式'},
+    {kw:'咖啡', tag:'咖啡'}, {kw:'火锅', tag:'火锅'}, {kw:'快餐', tag:'快餐'},
+    {kw:'商场', tag:'商场'}, {kw:'复制', tag:'复制店'}, {kw:'创新', tag:'创新店'},
+    {kw:'日料', tag:'日料'}, {kw:'西餐', tag:'西餐'}, {kw:'茶', tag:'茶馆'},
+    {kw:'奶茶', tag:'奶茶'}, {kw:'展', tag:'展陈'}, {kw:'文保', tag:'文保'}
+  ];
+  extraRules.forEach(r=>{ if(name.includes(r.kw) && tags.includes(r.tag) && !hit.includes(r.tag)) hit.push(r.tag); });
+  if(hit.length){
+    hit.forEach(t=>{ if(!selectedAssignmentTags.includes(t)) selectedAssignmentTags.push(t); });
+    renderAssignmentTagPool();
+    const hint = document.getElementById('assignmentAutoHint');
+    if(hint){
+      hint.style.display='block';
+      hint.innerHTML = `已根据项目名称识别候选标签：<strong>${hit.join(' / ')}</strong>。请人工确认是否准确。`;
+    }
+    renderAssignmentRecommend();
+  }
+}
+
+function getAssignmentLoadScore(designer){
+  // 负载越低分越高。优先使用项目成员/当前项目粗略估算，避免没有工时数据时无法推荐。
+  const activeProjects = allProjects.filter(p=>p.status==='active' || p.status==='risk' || p.status==='construction');
+  const emp = allEmployees.find(e=>e.name===designer);
+  if(!emp) return 70;
+  let count = 0;
+  if(typeof allMembers !== 'undefined'){
+    const pids = new Set(activeProjects.map(p=>String(p.id)));
+    count = allMembers.filter(m=>String(m.employee_id)===String(emp.id) && pids.has(String(m.project_id))).length;
+  }
+  if(count <= 0) return 90;
+  if(count === 1) return 75;
+  if(count === 2) return 60;
+  if(count === 3) return 45;
+  return 30;
+}
+
+
+function normalizeProjectBrandName(name){
+  const raw = String(name || '').trim();
+  if(!raw) return '';
+  return raw
+    .split(/[-－—_|｜·\s]/)[0]
+    .replace(/店$/,'')
+    .trim();
+}
+
+function isSameBrandOrSeries(projectName, historyProjectName){
+  const current = normalizeProjectBrandName(projectName);
+  const history = normalizeProjectBrandName(historyProjectName);
+  if(!current || !history) return false;
+  return current === history || current.includes(history) || history.includes(current);
+}
+
+function getStageLine(stage){
+  if(stage === '方案') return 'concept';
+  if(stage === '施工图') return 'technical';
+  if(stage === '后期对接') return 'docking';
+  return 'general';
+}
+
+function getStageWeight(targetStage, historyStage){
+  // 双线模型：方案推荐优先方案经验；深化推荐优先施工图/后期经验
+  if(targetStage === '方案'){
+    if(historyStage === '方案') return 1.0;
+    if(historyStage === '施工图') return 0.25;
+    if(historyStage === '后期对接') return 0.15;
+    return 0.1;
+  }
+  if(targetStage === '施工图'){
+    if(historyStage === '施工图') return 1.0;
+    if(historyStage === '后期对接') return 0.55;
+    if(historyStage === '方案') return 0.25;
+    return 0.1;
+  }
+  if(targetStage === '后期对接'){
+    if(historyStage === '后期对接') return 1.0;
+    if(historyStage === '施工图') return 0.65;
+    if(historyStage === '方案') return 0.15;
+    return 0.1;
+  }
+  return historyStage === targetStage ? 1.0 : 0.3;
+}
+
+function getRoleFitByStage(designer, targetStage){
+  // 如果员工表里有岗位/角色字段，则优先按岗位约束；没有则回退到经验阶段。
+  const emp = allEmployees.find(e=>e.name===designer);
+  const roleText = String(emp?.role || emp?.position || emp?.job_title || emp?.type || '');
+  if(!roleText) return null;
+  if(targetStage === '方案'){
+    if(roleText.includes('方案') || roleText.includes('总监')) return 100;
+    if(roleText.includes('深化') || roleText.includes('施工图')) return 35;
+  }
+  if(targetStage === '施工图'){
+    if(roleText.includes('深化') || roleText.includes('施工图')) return 100;
+    if(roleText.includes('方案')) return 45;
+  }
+  if(targetStage === '后期对接'){
+    if(roleText.includes('深化') || roleText.includes('施工图') || roleText.includes('主管')) return 90;
+    if(roleText.includes('方案')) return 45;
+  }
+  return null;
+}
+
+
+function calcAssignmentRecommend(){
+  const stage = document.getElementById('assignStage')?.value || '施工图';
+  const mode = document.getElementById('assignMode')?.value || '';
+  const projectName = document.getElementById('assignProjectName')?.value || '';
+  const tags = [...selectedAssignmentTags];
+  if(mode && !tags.includes(mode)) tags.push(mode);
+
+  const designers = [...new Set(DESIGNER_EXPERIENCE_ROWS.map(r=>r.designer).filter(Boolean))];
+  return designers.map(name=>{
+    const rows = DESIGNER_EXPERIENCE_ROWS.filter(r=>r.designer===name);
+    const matchedRows = rows.filter(r=>tags.includes(r.tag));
+    const sameBrandRows = rows.filter(r=>isSameBrandOrSeries(projectName, r.project));
+
+    const weightedStageRows = matchedRows.map(r=>({
+      ...r,
+      stageWeight: getStageWeight(stage, r.stage),
+      sameBrand: isSameBrandOrSeries(projectName, r.project)
+    }));
+
+    const exactStageRows = matchedRows.filter(r=>r.stage===stage);
+    const matchedTags = [...new Set(matchedRows.map(r=>r.tag))];
+    const matchedProjects = [...new Set(matchedRows.map(r=>r.project))];
+    const sameBrandProjects = [...new Set(sameBrandRows.map(r=>r.project))];
+
+    const tagScore = tags.length ? Math.round((matchedTags.length / tags.length) * 100) : 0;
+
+    // 阶段经验分：同阶段权重最高，跨阶段只作辅助，不允许施工图/后期经验压过方案经验。
+    const weightedStageValue = weightedStageRows.reduce((sum,r)=>sum + r.stageWeight, 0);
+    const stageScore = Math.min(100, Math.round(weightedStageValue * 28));
+
+    // 同品牌/同系列加分：例如做过 onionio-常州店，下次 onionio 新店优先。
+    const brandBonus = Math.min(25, sameBrandProjects.length * 18);
+
+    // 经验分：标签匹配 + 阶段匹配 + 同品牌加分
+    const experienceScore = Math.min(100, Math.round(tagScore * 0.45 + stageScore * 0.45 + brandBonus));
+
+    const loadScore = getAssignmentLoadScore(name);
+    const roleFitFromRole = getRoleFitByStage(name, stage);
+    const roleFitScore = roleFitFromRole !== null
+      ? roleFitFromRole
+      : (exactStageRows.length ? 95 : (weightedStageRows.length ? Math.round(45 + Math.min(40, weightedStageValue * 10)) : 25));
+
+    // 方案阶段额外保护：没有方案经验的人不能只靠施工图/后期经验冲到第一，除非无人可选或负载明显更优。
+    const conceptPenalty = stage === '方案' && exactStageRows.length === 0 ? 22 : 0;
+
+    const total = Math.max(0, Math.round(
+      experienceScore * 0.48 +
+      loadScore * 0.24 +
+      roleFitScore * 0.28 -
+      conceptPenalty
+    ));
+
+    return {
+      name,
+      total,
+      experienceScore: Math.round(experienceScore),
+      loadScore,
+      roleFitScore,
+      matchedTags,
+      matchedProjects,
+      sameBrandProjects,
+      stageMatches: exactStageRows.length,
+      matchedRows: matchedRows.length,
+      sameBrandBonus: brandBonus,
+      conceptPenalty
+    };
+  }).sort((a,b)=>b.total-a.total);
+}
+
+function renderAssignmentRecommend(){
+  renderAssignmentTagPool();
+  const resultEl = document.getElementById('assignmentResult');
+  if(!resultEl) return;
+  const tags = selectedAssignmentTags.slice();
+  const stage = document.getElementById('assignStage')?.value || '施工图';
+  const mode = document.getElementById('assignMode')?.value || '';
+  const projectName = document.getElementById('assignProjectName')?.value || '当前项目';
+
+  if(mode && !tags.includes(mode)) tags.push(mode);
+  if(!tags.length){
+    resultEl.innerHTML = '<div class="card"><div class="empty">请先选择项目标签，再生成谁来做。</div></div>';
+    renderAssignmentExperienceSummary();
+    return;
+  }
+
+  const list = calcAssignmentRecommend().slice(0, 5);
+  resultEl.innerHTML = `
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-title">推荐排序</div>
+        <div style="font-size:11px;color:var(--text-sub)">标签：${tags.join(' / ')}｜阶段：${stage}</div>
+      </div>
+      <div style="padding:4px 0">
+        ${list.map((item, idx)=>`
+          <div class="list-item">
+            <div class="li-info">
+              <div class="li-name">${idx===0?'⭐ ':''}${item.name} <span class="badge ${idx===0?'badge-active':'badge-done'}">${item.total}分</span></div>
+              <div class="li-meta">经验匹配：${item.experienceScore}｜当前负载：${item.loadScore}｜阶段适配：${item.roleFitScore}｜同阶段经验：${item.stageMatches}条</div>
+              <div class="li-meta">匹配标签：${item.matchedTags.length?item.matchedTags.join(' / '):'暂无明显匹配'}</div>
+              <div class="li-meta">类似项目：${item.matchedProjects.slice(0,3).join('、') || '暂无'}${item.matchedProjects.length>3?' 等':''}${item.sameBrandProjects?.length?`｜同品牌/系列：${item.sameBrandProjects.slice(0,2).join('、')}`:''}${item.conceptPenalty?`｜提示：缺少方案阶段经验，已降权`:''}</div>
+            </div>
+            <button class="btn-sm btn-blue" onclick="copyAssignmentReason('${item.name.replace(/'/g,"\\'")}')">复制理由</button>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div class="notice">
+      推荐解释：优先考虑相似项目经验，再结合当前负载和阶段适配。若未采用第一推荐人，建议在分配记录里注明原因，方便后续向老板解释与复盘。
+    </div>
+  `;
+  window._lastAssignmentRecommendations = list;
+  window._lastAssignmentContext = {projectName, tags, stage, mode};
+  renderAssignmentExperienceSummary();
+}
+
+function copyAssignmentReason(designer){
+  const list = window._lastAssignmentRecommendations || [];
+  const ctx = window._lastAssignmentContext || {};
+  const item = list.find(x=>x.name===designer);
+  if(!item) return;
+  const reason = `项目：${ctx.projectName || '当前项目'}\n推荐负责人：${item.name}\n推荐阶段：${ctx.stage || ''}\n项目标签：${(ctx.tags||[]).join(' / ')}\n推荐理由：${item.name} 匹配标签 ${item.matchedTags.join(' / ') || '较少'}，同阶段经验 ${item.stageMatches} 条，类似项目 ${item.matchedProjects.slice(0,3).join('、') || '暂无'}${item.sameBrandProjects?.length?`，其中同品牌/系列项目 ${item.sameBrandProjects.slice(0,2).join('、')}`:''}，综合评分 ${item.total} 分。\n风险提醒：如最终不采用第一推荐人，请记录原因；若经验匹配低，需要设置复核节点。`;
+  navigator.clipboard?.writeText(reason).then(()=>toast('✓ 分配理由已复制')).catch(()=>{
+    prompt('复制以下分配理由：', reason);
+  });
+}
+
+function renderAssignmentExperienceSummary(){
+  const el = document.getElementById('assignmentExperienceSummary');
+  if(!el) return;
+  const designers = [...new Set(DESIGNER_EXPERIENCE_ROWS.map(r=>r.designer))];
+  const tags = getAssignmentAllTags();
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+      <div><div class="s-label">经验记录</div><div class="s-val">${DESIGNER_EXPERIENCE_ROWS.length}<span class="s-unit">条</span></div></div>
+      <div><div class="s-label">设计师</div><div class="s-val">${designers.length}<span class="s-unit">人</span></div></div>
+      <div><div class="s-label">标签库</div><div class="s-val">${tags.length}<span class="s-unit">类</span></div></div>
+    </div>
+    <div style="margin-top:12px;font-size:12px;color:var(--text-sub);line-height:1.8">
+      当前标签库：${tags.join(' / ')}
+    </div>
+  `;
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  setTimeout(()=>{
+    renderAssignmentTagPool();
+    renderAssignmentExperienceSummary();
+  }, 500);
+});
+
+
+
+// ===== 今天要处理：把数据转成行动 =====
+function gotoPage(page){
+  const btn = [...document.querySelectorAll('.nav-btn,.bnav-btn')].find(b=>String(b.getAttribute('onclick')||'').includes(`'${page}'`));
+  if(btn) nav(page, btn);
+  else {
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('page-'+page)?.classList.add('active');
+  }
+}
+
+function getActiveProjectsForDecision(){
+  return allProjects.filter(p=>['active','risk','construction'].includes(p.status));
+}
+
+function calcProjectRiskScore(p){
+  let score = 0;
+  const nodes = (typeof allProjectNodes !== 'undefined' ? allProjectNodes : []).filter(n=>n.project_id===p.id);
+  const adjHours = calcAdjustedHours(p.hours_used||0);
+  const hourPct = p.hours_budget>0 ? adjHours/p.hours_budget : 0;
+  if(p.status==='risk') score += 40;
+  if(hourPct > 0.9) score += 30;
+  else if(hourPct > 0.75) score += 18;
+  if(p.deadline && compareLocalDate(p.deadline, formatLocalDate()) < 0 && p.status==='active') score += 35;
+  if(!nodes.length) score += 12;
+  const revCount = nodes.filter(n=>n.node_type==='revision_started').length;
+  if(revCount>=3) score += 25;
+  if(p.contract_amount>0 && (p.labor_cost||0)/p.contract_amount > 0.7) score += 20;
+  return score;
+}
+
+
+function renderDecisionPage(){
+  const hero = document.getElementById('decisionHero');
+  const people = document.getElementById('decisionPeople');
+  const risks = document.getElementById('decisionRisks');
+  const feed = document.getElementById('decisionMessageFeed') || document.getElementById('decisionTopThree');
+  if(!hero || !people || !risks || !feed) return;
+  if(!isAdmin){
+    hero.innerHTML = people.innerHTML = risks.innerHTML = feed.innerHTML = '';
+    return;
+  }
+
+  const activeProjects = getActiveProjectsForDecision();
+  const riskItems = activeProjects
+    .map(p=>({project:p, score:calcProjectRiskScore(p)}))
+    .filter(x=>x.score>0)
+    .sort((a,b)=>b.score-a.score);
+
+  const pendingCount = (automationState?.summary?.pendingClassifications || pendingTaskClassifications?.length || 0);
+  const urgentCount = riskItems.filter(x=>x.score>=40).length;
+  const preplanGap = automationState?.summary?.preplanGaps || 0;
+
+  const activePids = new Set(activeProjects.map(p=>String(p.id)));
+  const empLoads = (typeof allEmployees !== 'undefined' ? allEmployees : [])
+    .filter(e=>!['admin','boss','system'].includes(String(e.role||'').toLowerCase()))
+    .map(e=>{
+      const memberCount = typeof allMembers==='undefined' ? 0 : allMembers.filter(m=>String(m.employee_id)===String(e.id) && activePids.has(String(m.project_id))).length;
+      return {e, memberCount};
+    })
+    .sort((a,b)=>b.memberCount-a.memberCount);
+
+  const messages = [];
+
+  if(riskItems.length){
+    const x = riskItems[0];
+    messages.push({
+      time:'现在',
+      title:`先看 ${x.project.name}`,
+      body:'这是当前风险最高的项目。不要先翻表，先判断它到底卡在：客户反馈、总监确认、图纸推进，还是人员负载。',
+      reason:`风险分 ${x.score}。系统根据状态、节点、工时消耗、修改轮次和截止时间综合判断。`,
+      badge:x.score>=40?'必须处理':'重点关注',
+      severity:x.score>=40?'high':'medium',
+      primary:'打开项目追踪',
+      primaryAction:`openProjectTrack('${x.project.id}')`,
+      secondary:'暂不处理',
+      secondaryAction:`toast('已暂缓：${(x.project.name||'项目').replace(/'/g,'')}')`
+    });
+  }
+
+  const overloaded = empLoads.find(x=>x.memberCount>=3);
+  if(overloaded){
+    messages.push({
+      time:'今天',
+      title:`不要再给 ${overloaded.e.name} 加关键任务`,
+      body:`他当前关联进行中项目 ${overloaded.memberCount} 个。继续加任务可能不是提升效率，而是在制造后续加班和返工。`,
+      reason:'人员安排要先看负载，再看经验匹配，不要只看谁今天看起来有空。',
+      badge:'过载风险',
+      severity:'high',
+      primary:'找替代人选',
+      primaryAction:"gotoPage('assignment')",
+      secondary:'看人员安排',
+      secondaryAction:"gotoPage('preplan')"
+    });
+  }
+
+  if(pendingCount){
+    messages.push({
+      time:'今天',
+      title:`确认 ${pendingCount} 条模糊任务`,
+      body:'这些任务会影响系统判断项目阶段。如果不确认，自动节点和阶段耗时可能会偏。',
+      reason:'系统做事实判断，你做责任判断；模糊任务必须由主管确认。',
+      badge:'待我判断',
+      severity:'medium',
+      primary:'去确认',
+      primaryAction:"gotoPage('automation')",
+      secondary:'稍后提醒',
+      secondaryAction:"toast('已暂缓：请今天内确认模糊任务')"
+    });
+  }
+
+  if(preplanGap){
+    messages.push({
+      time:'本周',
+      title:`补齐 ${preplanGap} 个项目的人员安排`,
+      body:'缺少预排会导致后面出现“人有空但主线接不上”的假性空闲。',
+      reason:'人员安排不是把每天塞满，而是保证关键链不断档。',
+      badge:'预排缺口',
+      severity:'medium',
+      primary:'去排人',
+      primaryAction:"gotoPage('preplan')",
+      secondary:'看建议来源',
+      secondaryAction:"gotoPage('automation')"
+    });
+  }
+
+  if(!messages.length){
+    messages.push({
+      time:'现在',
+      title:'今天没有必须立即处理的异常',
+      body:'当前没有明显高风险项目、过载人员、待确认任务或预排缺口。不要为了管理而制造管理动作。',
+      reason:'安静也是一种好状态。系统只在真的需要你判断时打扰你。',
+      badge:'正常',
+      severity:'low',
+      primary:'查看项目状态',
+      primaryAction:"gotoPage('project')",
+      secondary:'新项目排人',
+      secondaryAction:"gotoPage('assignment')"
+    });
+  }
+
+  feed.innerHTML = messages.slice(0,3).map((item, idx)=>`
+    <div class="list-item" style="align-items:flex-start;padding:20px 22px">
+      <div style="width:42px;height:42px;border-radius:50%;background:${item.severity==='high'?'var(--accent-soft)':item.severity==='medium'?'var(--gold-soft)':'var(--green-soft)'};display:flex;align-items:center;justify-content:center;font-weight:800">${idx+1}</div>
+      <div class="li-info">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+          <span class="badge ${item.severity==='high'?'badge-risk':item.severity==='medium'?'badge-warn':'badge-active'}">${escapeHtml(item.badge)}</span>
+          <span style="font-size:11px;color:var(--text-sub)">${escapeHtml(item.time)}</span>
+        </div>
+        <div style="font-size:17px;font-weight:800;margin-bottom:5px">${escapeHtml(item.title)}</div>
+        <div style="font-size:13px;line-height:1.8;color:var(--ink)">${escapeHtml(item.body)}</div>
+        <details style="margin-top:8px">
+          <summary style="font-size:12px;color:var(--text-sub);cursor:pointer">为什么这样建议？</summary>
+          <div style="font-size:12px;color:var(--text-sub);line-height:1.7;margin-top:5px">${escapeHtml(item.reason)}</div>
+        </details>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+        <button class="btn-sm btn-blue" style="padding:8px 14px" onclick="${item.primaryAction}">${escapeHtml(item.primary)}</button>
+        <button class="btn-sm" style="background:var(--cream);color:var(--ink);padding:8px 14px" onclick="${item.secondaryAction}">${escapeHtml(item.secondary)}</button>
+      </div>
+    </div>`).join('');
+
+  hero.innerHTML = `
+    <div class="stat-card ${urgentCount?'red':'green'}">
+      <div class="s-label">高风险项目</div>
+      <div class="s-val">${urgentCount}<span class="s-unit">个</span></div>
+      <div class="s-change neutral">超过阈值才打扰你</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="s-label">待判断任务</div>
+      <div class="s-val">${pendingCount}<span class="s-unit">条</span></div>
+      <div class="s-change neutral">影响自动节点</div>
+    </div>
+    <div class="stat-card gold">
+      <div class="s-label">安排缺口</div>
+      <div class="s-val">${preplanGap}<span class="s-unit">个</span></div>
+      <div class="s-change neutral">影响后续衔接</div>
+    </div>
+    <div class="stat-card">
+      <div class="s-label">当前项目</div>
+      <div class="s-val">${activeProjects.length}<span class="s-unit">个</span></div>
+      <div class="s-change neutral">只看进行中项目</div>
+    </div>
+  `;
+
+  people.innerHTML = empLoads.slice(0,5).map(x=>{
+    const state = x.memberCount>=3 ? '过载风险' : x.memberCount===2 ? '饱和' : x.memberCount===1 ? '可控' : '可承接';
+    return `
+      <div class="list-item">
+        <div class="li-info">
+          <div class="li-name">${escapeHtml(x.e.name)}：${escapeHtml(state)}</div>
+          <div class="li-meta">当前关联进行中项目 ${x.memberCount} 个。${x.memberCount>=3?'不建议再加关键任务。':'可结合经验匹配安排。'}</div>
+        </div>
+        <span class="badge ${state==='过载风险'?'badge-risk':state==='饱和'?'badge-warn':'badge-active'}">${escapeHtml(state)}</span>
+      </div>`;
+  }).join('') || '<div class="empty">暂无人员负载数据。</div>';
+
+  risks.innerHTML = riskItems.length ? riskItems.slice(0,6).map(x=>`
+    <div class="list-item">
+      <div class="li-info">
+        <div class="li-name">${escapeHtml(x.project.name)}</div>
+        <div class="li-meta">风险分：${x.score}｜状态：${x.project.status}</div>
+      </div>
+      <button class="btn-sm btn-blue" onclick="openProjectTrack('${x.project.id}')">打开追踪</button>
+    </div>`).join('') : '<div class="empty">当前项目风险较低。</div>';
+}
+
+
+// 自动渲染今天要处理
+const __oldRenderAllForInvisibleAutomation = typeof renderAll === 'function' ? renderAll : null;
+if(__oldRenderAllForInvisibleAutomation && !window.__decisionRenderHooked){
+  window.__decisionRenderHooked = true;
+  renderAll = function(){
+    __oldRenderAllForInvisibleAutomation();
+    try{ renderDecisionPage(); }catch(e){ console.error('renderDecisionPage failed', e); }
+  }
+}
+
+
+initAccessibility();
 </script>
 </body>
 </html>
