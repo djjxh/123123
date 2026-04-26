@@ -9,6 +9,12 @@
 <link rel="icon" href="data:,">
 <!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const SUPABASE_URL = 'https://bgjvuszufqbbialkyeiq.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_2yQgdIPmNnxQRTswLSLSwQ_KFaIuUjv';
+</script>
+
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;600&display=swap');
 
@@ -5562,6 +5568,119 @@ function computeRecommendations({area,type,openDate,takeoverDate,reuse,directorI
   const recommendations = [...directorReco, ...scored].slice(0,6);
   return { weeks: totalWeeks, weekData, startDate:toISODate(start), recommendations };
 }
+function legacySelectRecommendedAssignee(id){
+  const selC = document.getElementById('ppConceptAssignee');
+  const selT = document.getElementById('ppTechnicalAssignee');
+  const outsource = document.getElementById('ppOutsource')?.checked;
+  
+  if(selC) selC.value = String(id);
+  // 如果没有勾选外包，也填入深化负责人（默认同一人）
+  if(selT && !outsource) selT.value = String(id);
+
+  const cards = document.querySelectorAll('[data-reco-card]');
+  cards.forEach(card=>card.style.borderColor = card.dataset.recoCard===String(id) ? 'var(--accent)' : 'var(--border)');
+}
+function legacyRenderPreplanFormHelpers(){
+  renderPreplanTagPool();
+  const dirSel = document.getElementById('ppDirector');
+  if(dirSel){
+    const current = dirSel.value;
+    const dirs = getDirectorPeople();
+    dirSel.innerHTML = '<option value="">未指定</option>' + dirs.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+    if (current && [...dirSel.options].some(o => o.value === current)) {
+      dirSel.value = current;
+    }
+  }
+  const area = safeNum(document.getElementById('ppArea')?.value);
+  const type = document.getElementById('ppType')?.value || 'innovation';
+  const openDate = document.getElementById('ppOpenDate')?.value;
+  const takeoverDate = document.getElementById('ppTakeoverDate')?.value;
+  const reuse = document.getElementById('ppReuse')?.value === 'true';
+  const directorId = document.getElementById('ppDirector')?.value || '';
+  const outsource = document.getElementById('ppOutsource')?.checked;
+
+  const cAssigneeSel = document.getElementById('ppConceptAssignee');
+  const tAssigneeSel = document.getElementById('ppTechnicalAssignee');
+  const cWeeksInput = document.getElementById('ppConceptWeeks');
+  const tWeeksInput = document.getElementById('ppTechnicalWeeks');
+  const totalWeeksLabel = document.getElementById('ppTotalWeeksLabel');
+  const constDurationInput = document.getElementById('ppConstDuration');
+  
+  const recoBox = document.getElementById('ppRecoBox');
+  const recoCards = document.getElementById('ppRecoCards');
+  const hint = document.getElementById('ppCreateHint');
+
+  if(!cAssigneeSel || !tAssigneeSel || !recoBox || !recoCards) return;
+
+  // 1. 更新建议施工周期显示
+  const weekData = getPreplanWeeks(area, type);
+  if(constDurationInput) constDurationInput.value = area ? `约 ${weekData.construction} 周` : '';
+
+  // 2. 自动补全日期逻辑 (如果只填了一个)
+  if(area && openDate && !takeoverDate){
+    const suggestedTakeover = addDays(new Date(openDate), -weekData.construction * 7);
+    // 仅在输入框为空时补全，避免干扰用户手动修改
+  }
+
+  // 处理深化外包逻辑
+  tAssigneeSel.disabled = outsource;
+  if(outsource) tAssigneeSel.value = '';
+
+  if(!area || (!openDate && !takeoverDate)){
+    cAssigneeSel.innerHTML = '<option value="">请先填写面积和日期</option>';
+    tAssigneeSel.innerHTML = '<option value="">请先填写面积和日期</option>';
+    recoBox.innerHTML = '填写面积与<strong>预计接铺日期</strong>后，系统会自动计算周期、倒排开始时间。';
+    recoCards.innerHTML = '';
+    if(hint){ hint.style.display='none'; hint.textContent=''; }
+    return;
+  }
+
+  const data = computeRecommendations({area,type,openDate,takeoverDate,reuse,directorId});
+  preplanRecommendations = data.recommendations;
+
+  // 自动填充周数（仅在初次或面积/类型变动时）
+  const currentTotal = safeNum(cWeeksInput.value) + safeNum(tWeeksInput.value);
+  if(currentTotal === 0 || !cWeeksInput.dataset.manual){
+     cWeeksInput.value = data.weekData.concept;
+     tWeeksInput.value = data.weekData.technical;
+  }
+  if(totalWeeksLabel) totalWeeksLabel.textContent = `总计 ${safeNum(cWeeksInput.value) + safeNum(tWeeksInput.value)} 周`;
+
+  const cCurrent = cAssigneeSel.value;
+  const tCurrent = tAssigneeSel.value;
+  
+  const optionsHtml = '<option value="">请选择负责人</option>' + data.recommendations.map((r,i)=>
+    `<option value="${r.id}">${i<3?`推荐${i+1} · `:''}${r.name} · ${r.title||''} · ${Math.round(r.score)}分</option>`
+  ).join('');
+  
+  cAssigneeSel.innerHTML = optionsHtml;
+  tAssigneeSel.innerHTML = optionsHtml;
+  
+  if(cCurrent && [...cAssigneeSel.options].some(o=>o.value===cCurrent)) cAssigneeSel.value = cCurrent;
+  if(tCurrent && [...tAssigneeSel.options].some(o=>o.value===tCurrent)) tAssigneeSel.value = tCurrent;
+
+  recoBox.innerHTML = `系统倒排开始时间：<strong>${data.startDate}</strong>；标准周期约 <strong>${data.weeks} 周</strong>（方案 ${data.weekData.concept} + 深化 ${data.weekData.technical}）。`;
+  
+  const top3 = data.recommendations.slice(0,3);
+  recoCards.innerHTML = top3.length ? top3.map((r,i)=>{
+    const detailText = [
+      `可用度 ${r.detail?.availability||0}`,
+      `类型匹配 ${r.detail?.typeFit||0}`,
+      `能力匹配 ${r.detail?.ability||0}`
+    ].join(' · ');
+    return `<div data-reco-card="${r.id}" onclick="selectRecommendedAssignee('${r.id}')" style="border:1px solid var(--border);border-radius:12px;padding:12px;cursor:pointer;background:#fff">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+        <div>
+          <div style="font-size:13px;font-weight:700">推荐 ${i+1} · ${r.name}</div>
+          <div style="font-size:11px;color:var(--text-sub);margin-top:2px">${r.title||'—'}</div>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:18px;font-weight:700;color:var(--accent)">${Math.round(r.score)}</div>
+      </div>
+      <div style="font-size:11px;color:var(--text-sub);margin:8px 0 6px">${detailText}</div>
+      <div style="font-size:12px;line-height:1.7">${r.reasons.slice(0,2).map(x=>`• ${x}`).join('<br>')}</div>
+    </div>`;
+  }).join('') : '<div class="empty">当前条件下暂无可推荐负责人</div>';
+}
 function ensurePreplanWiring(){
   ['ppArea','ppType','ppOpenDate','ppTakeoverDate','ppReuse','ppDirector','ppOutsource','ppConceptWeeks','ppTechnicalWeeks'].forEach(id=>{
     const el = document.getElementById(id);
@@ -5579,7 +5698,7 @@ function ensurePreplanWiring(){
   });
   const cAssignee = document.getElementById('ppConceptAssignee');
   if(cAssignee && !cAssignee.dataset.ppBound){
-    cAssignee.addEventListener('change', ()=>selectPreplanRecommendedAssignee(cAssignee.value, 'concept'));
+    cAssignee.addEventListener('change', ()=>selectRecommendedAssignee(cAssignee.value));
     cAssignee.dataset.ppBound='1';
   }
 }
@@ -8166,35 +8285,25 @@ function renderPreplanDecisionRecommendations(baseData){
 
 function ppCanAssignPreplanToEmployee(item, employeeId){
   if(!item) return { ok:false, message:'未找到预排任务' };
-  const targetId = String(employeeId);
-  const phase = String(item.phase || '');
-
-  // 外包只允许承接深化/外包阶段，严禁方案阶段拖到外包。
-  if(targetId === 'outsource'){
-    if(phase === 'technical' || phase === 'outsource') return { ok:true };
-    return { ok:false, message:'方案阶段不能拖给外包团队，只能拖给方案/执行/主案/总监线人员' };
+  if(String(employeeId) === 'outsource' || String(item.employee_id) === 'outsource'){
+    return { ok:true };
   }
-
-  const employee = (typeof allEmployees !== 'undefined' ? allEmployees : []).find(row=>String(row.id)===targetId);
+  const employee = (typeof allEmployees !== 'undefined' ? allEmployees : []).find(row=>String(row.id)===String(employeeId));
   if(!employee){
     return { ok:false, message:'未找到目标负责人' };
   }
-
-  if(phase === 'concept'){
+  if(item.phase === 'concept'){
     return ppIsConceptRole(employee)
       ? { ok:true }
       : { ok:false, message:'方案阶段只能拖给方案/执行/主案/总监线人员' };
   }
-
-  if(phase === 'technical' || phase === 'outsource'){
+  if(item.phase === 'technical'){
     return ppIsTechnicalRole(employee)
       ? { ok:true }
       : { ok:false, message:'深化阶段只能拖给深化/高级深化/施工图线人员' };
   }
-
   return { ok:true };
 }
-
 
 function renderPreplanFormHelpers(){
   renderPreplanTagPool();
@@ -8730,34 +8839,22 @@ async function preplanDrop(ev, employeeId){
   const previousItems = preplanItems.map(item=>({ ...item }));
   const item = preplanItems.find(x=>x.id===draggedPreplanId);
   if(!item) return;
-
   const assignmentCheck = ppCanAssignPreplanToEmployee(item, employeeId);
   if(!assignmentCheck.ok){
     draggedPreplanId = null;
     toast(assignmentCheck.message);
     return;
   }
-
   const track = ev.currentTarget.querySelector('.gantt-track');
   if(!track) return;
   const rect = track.getBoundingClientRect();
   const x = ev.clientX - rect.left;
   const week = Math.max(0, Math.min(getTimelineWeeks()-1, Math.floor(x/110)));
   const start = addDays(getTimelineStart(), week*7);
-
-  if(String(employeeId) === 'outsource'){
-    item.employee_id = 'outsource';
-    item.employee_name = '外包团队';
-    item.employee_title = '外包';
-    item.phase = 'outsource';
-  }else{
-    const emp = allEmployees.find(e=>String(e.id)===String(employeeId));
-    item.employee_id = employeeId;
-    item.employee_name = emp?.name || item.employee_name;
-    item.employee_title = emp?.job_title || item.employee_title;
-    if(item.phase === 'outsource') item.phase = 'technical';
-  }
-
+  const emp = allEmployees.find(e=>e.id===employeeId);
+  item.employee_id = employeeId;
+  item.employee_name = emp?.name || item.employee_name;
+  item.employee_title = emp?.job_title || item.employee_title;
   item.start_date = toISODate(start);
   item.updated_at = new Date().toISOString();
   const saved = await savePreplans(previousItems);
@@ -8769,7 +8866,6 @@ async function preplanDrop(ev, employeeId){
   try{ await refreshLocalAutomationState(['preplans']); }catch(_){}
   toast('✓ 已更新人员安排');
 }
-
 
 async function shiftPreplan(id, weeks){
   const previousItems = preplanItems.map(item=>({ ...item }));
