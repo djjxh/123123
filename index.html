@@ -7628,6 +7628,91 @@ function getProjectOverdueItems(project){
 }
 
 
+
+function getDefaultDecisionParticipants(project){
+  const names = new Set(['设计主管']);
+  const director = allEmployees.find(e=>String(e.id)===String(project?.director_id));
+  if(director?.name) names.add(director.name);
+  (allEmployees||[]).forEach(e=>{
+    const label = String(e.role||e.title||'');
+    if(/总监|boss|admin|管理/.test(label) && e.name) names.add(e.name);
+  });
+  const members = (allMembers||[]).filter(m=>String(m.project_id)===String(project?.id));
+  members.slice(0,3).forEach(m=>{
+    const emp = allEmployees.find(e=>String(e.id)===String(m.employee_id));
+    if(emp?.name) names.add(emp.name);
+  });
+  return Array.from(names).join('、');
+}
+
+function openDecisionRoundtable(projectId){
+  const project = (allProjects||[]).find(p=>String(p.id)===String(projectId));
+  if(!project){ toast('未找到项目'); return; }
+  document.getElementById('decisionProjectId').value = String(project.id);
+  document.getElementById('decisionProjectName').value = project.name || '未命名项目';
+  document.getElementById('decisionParticipants').value = getDefaultDecisionParticipants(project);
+  document.getElementById('decisionConclusion').value = '';
+  document.getElementById('decisionNextAction').value = '';
+  document.getElementById('decisionProjectStatus').value = project.status === 'paused' ? 'paused' : 'risk';
+  const due = new Date(Date.now() + 24*60*60*1000);
+  due.setMinutes(0,0,0);
+  const pad=n=>String(n).padStart(2,'0');
+  document.getElementById('decisionDueAt').value = `${due.getFullYear()}-${pad(due.getMonth()+1)}-${pad(due.getDate())}T${pad(due.getHours())}:${pad(due.getMinutes())}`;
+  openModal('decisionRoundtableModal');
+}
+
+async function saveDecisionRoundtable(){
+  const projectId = document.getElementById('decisionProjectId')?.value;
+  const project = (allProjects||[]).find(p=>String(p.id)===String(projectId));
+  const conclusion = (document.getElementById('decisionConclusion')?.value || '').trim();
+  if(!projectId || !project){ toast('未找到项目'); return; }
+  if(!conclusion){ toast('请填写决策结论'); return; }
+  const btn = document.getElementById('decisionSaveBtn');
+  if(btn){ btn.disabled = true; btn.textContent = '保存中…'; }
+  const decisionType = document.getElementById('decisionType')?.value || 'director_review';
+  const priority = document.getElementById('decisionPriority')?.value || 'high';
+  const participants = (document.getElementById('decisionParticipants')?.value || '').trim();
+  const nextAction = (document.getElementById('decisionNextAction')?.value || '').trim();
+  const dueAt = document.getElementById('decisionDueAt')?.value || '';
+  const targetStatus = document.getElementById('decisionProjectStatus')?.value || 'risk';
+  try{
+    const payload = {
+      event_type: 'risk_decision',
+      project_id: String(projectId),
+      source: 'manual',
+      note: conclusion,
+      metadata: {
+        project_name: project.name || '',
+        decision_type: decisionType,
+        priority,
+        participants,
+        conclusion,
+        next_action: nextAction,
+        due_at: dueAt,
+        target_status: targetStatus,
+        created_from: 'today_decision_card'
+      },
+      created_by: userProfile?.id || currentUser?.id || null
+    };
+    const { error: eventError } = await sb.from(AUTOMATION_EVENT_TABLE).insert(payload);
+    if(eventError) throw eventError;
+    const { error: projectError } = await sb.from('projects').update({ status: targetStatus }).eq('id', projectId);
+    if(projectError){
+      console.warn('项目状态更新失败，但决策记录已保存', projectError);
+      toast('决策已记录，但项目状态更新失败');
+    }else{
+      toast('✓ 决策已记录，项目状态已更新');
+    }
+    closeModal('decisionRoundtableModal');
+    await reloadAndRender(['projects']);
+  }catch(err){
+    console.error('saveDecisionRoundtable failed', err);
+    toast('保存失败：' + (err.message || '请检查 Supabase 权限/表结构'));
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = '确认决策并记录'; }
+  }
+}
+
 function renderDecisionPage(){
   const hero = document.getElementById('decisionHero');
   const people = document.getElementById('decisionPeople');
@@ -7671,10 +7756,10 @@ function renderDecisionPage(){
       reason:`风险分 ${x.score}。系统根据状态、节点、工时消耗、修改轮次和截止时间综合判断。`,
       badge:x.score>=40?'必须处理':'重点关注',
       severity:x.score>=40?'high':'medium',
-      primary:'打开项目追踪',
-      primaryAction:`openProjectTrack('${x.project.id}')`,
-      secondary:'暂不处理',
-      secondaryAction:`toast('已暂缓：${(x.project.name||'项目').replace(/'/g,'')}')`
+      primary:'发起决策会',
+      primaryAction:`openDecisionRoundtable(${JSON.stringify(String(x.project.id))})`,
+      secondary:'打开项目追踪',
+      secondaryAction:`openProjectTrack(${JSON.stringify(String(x.project.id))})`
     });
     messages[messages.length-1].body = snapshot.summary;
     messages[messages.length-1].bodyHtml = `
@@ -7819,7 +7904,7 @@ function renderDecisionPage(){
         <div class="li-name">${escapeHtml(x.project.name)}</div>
         <div class="li-meta">${escapeHtml(getDecisionRiskSnapshot(x.project).primaryIssue)}｜${escapeHtml(getDecisionRiskSnapshot(x.project).stageLabel)}｜风险分：${x.score}</div>
       </div>
-      <button class="btn-sm btn-blue" onclick="openProjectTrack('${x.project.id}')">打开追踪</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn-sm btn-blue" onclick="openDecisionRoundtable('${x.project.id}')">发起决策会</button><button class="btn-sm" style="background:var(--cream);color:var(--ink)" onclick="openProjectTrack('${x.project.id}')">打开追踪</button></div>
     </div>`).join('') : '<div class="empty">当前项目风险较低。</div>';
 }
 
@@ -9640,6 +9725,202 @@ renderProjectTrack = function(){
 
 
 initAccessibility();
+
+
+/* === 人员负载分析增强：点击人员风险查看全员负载 === */
+function escapeHtml(s){
+  return String(s ?? '').replace(/[&<>"']/g, function(m){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+  });
+}
+
+function getLoadLimitByRole(person){
+  const role = String(person?.role || person?.title || person?.position || person?.employee_title || '').toLowerCase();
+  const name = String(person?.name || person?.employee_name || '');
+  if(/总监|老板|主管|admin|manager/.test(role + name)) return 99;
+  if(/高级深化|深化|施工图|technical/.test(role)) return 4;
+  if(/方案|执行|主案|concept|designer/.test(role)) return 3;
+  return 3;
+}
+
+function getPersonDisplayName(person){
+  return person?.name || person?.employee_name || person?.full_name || person?.email || '未命名';
+}
+
+function getPersonRole(person){
+  return person?.role || person?.title || person?.position || person?.employee_title || '未设置岗位';
+}
+
+function isActiveProjectLike(item){
+  const s = String(item?.status || '').toLowerCase();
+  if(!s) return true;
+  return !/(done|completed|complete|finished|closed|cancelled|canceled|已完结|完成|取消|已取消|暂停完结)/.test(s);
+}
+
+function normalizePeopleSource(){
+  const people = [];
+  if(typeof employees !== 'undefined' && Array.isArray(employees)) people.push(...employees);
+  if(typeof users !== 'undefined' && Array.isArray(users)) people.push(...users);
+  const map = new Map();
+  people.filter(Boolean).forEach(function(p){
+    const id = String(p.id || p.user_id || p.employee_id || p.email || getPersonDisplayName(p));
+    if(!map.has(id)) map.set(id, Object.assign({}, p, {id}));
+  });
+  return Array.from(map.values());
+}
+
+function collectPersonProjects(person){
+  const pid = String(person.id || person.user_id || person.employee_id || '');
+  const pname = getPersonDisplayName(person);
+  const list = [];
+
+  function push(project, source, phase){
+    if(!project) return;
+    const name = project.name || project.project_name || project.title || '未命名项目';
+    const status = project.status || '进行中';
+    if(!isActiveProjectLike(project)) return;
+    list.push({name, status, source, phase: phase || project.phase || project.stage || ''});
+  }
+
+  if(typeof projects !== 'undefined' && Array.isArray(projects)){
+    projects.forEach(function(p){
+      const ids = [
+        p.owner_id, p.employee_id, p.assignee_id, p.designer_id, p.concept_assignee_id,
+        p.technical_assignee_id, p.manager_id, p.responsible_id
+      ].filter(function(v){ return v !== undefined && v !== null; }).map(String);
+      const names = [
+        p.owner_name, p.employee_name, p.assignee_name, p.designer_name,
+        p.concept_assignee_name, p.technical_assignee_name, p.responsible_name
+      ].filter(Boolean).map(String);
+      if(ids.includes(pid) || names.includes(pname)) push(p, '项目状态', p.stage || '');
+    });
+  }
+
+  if(typeof projectMembers !== 'undefined' && Array.isArray(projectMembers)){
+    projectMembers.forEach(function(m){
+      const mid = String(m.employee_id || m.user_id || '');
+      if(mid === pid || String(m.employee_name || '') === pname){
+        let p = null;
+        if(typeof projects !== 'undefined' && Array.isArray(projects)){
+          p = projects.find(function(x){ return String(x.id) === String(m.project_id); });
+        }
+        push(p || {name:m.project_name, status:m.status || '进行中'}, '项目成员', m.role || '');
+      }
+    });
+  }
+
+  if(typeof preplans !== 'undefined' && Array.isArray(preplans)){
+    preplans.forEach(function(p){
+      const eid = String(p.employee_id || '');
+      if(eid === pid || String(p.employee_name || '') === pname){
+        push({name:p.name, status:p.status || '预排中', phase:p.phase}, '人员安排', p.phase || '');
+      }
+    });
+  }
+
+  const seen = new Set();
+  return list.filter(function(x){
+    const k = x.name + '|' + x.source + '|' + x.phase;
+    if(seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
+
+function buildPeopleLoadRows(){
+  const people = normalizePeopleSource();
+  return people.map(function(p){
+    const projectsNow = collectPersonProjects(p);
+    const limit = getLoadLimitByRole(p);
+    const count = projectsNow.length;
+    const overload = count > limit;
+    const near = !overload && count >= Math.max(1, limit - 1) && limit < 99;
+    let suggestion = '可正常安排';
+    if(limit >= 99) suggestion = '管理岗不按项目数限制，但要关注审核/沟通占用';
+    else if(overload) suggestion = '已超载 ' + (count - limit) + ' 个：建议暂停新增任务，优先转派新项目或延后非紧急节点';
+    else if(near) suggestion = '接近上限：只安排短任务/低风险任务，避免再加完整项目';
+    return {person:p, name:getPersonDisplayName(p), role:getPersonRole(p), count, limit, overload, near, projects:projectsNow, suggestion};
+  }).sort(function(a,b){
+    return (Number(b.overload)-Number(a.overload)) || ((b.count-b.limit)-(a.count-a.limit)) || (b.count-a.count);
+  });
+}
+
+function openPeopleLoadAnalysis(){
+  renderPeopleLoadAnalysis();
+  openModal('peopleLoadModal');
+}
+
+function renderPeopleLoadAnalysis(){
+  const rows = buildPeopleLoadRows();
+  const overloaded = rows.filter(function(r){ return r.overload; }).length;
+  const near = rows.filter(function(r){ return r.near; }).length;
+  const totalActive = rows.reduce(function(s,r){ return s+r.count; },0);
+  const summary = document.getElementById('peopleLoadSummary');
+  if(summary){
+    summary.innerHTML =
+      '<div class="stat-card '+(overloaded?'red':'green')+'"><div class="s-label">超载人员</div><div class="s-val">'+overloaded+'</div><div class="s-change">'+(overloaded?'需要立即调整':'暂无明显超载')+'</div></div>' +
+      '<div class="stat-card '+(near?'gold':'green')+'"><div class="s-label">接近上限</div><div class="s-val">'+near+'</div><div class="s-change">建议谨慎加任务</div></div>' +
+      '<div class="stat-card blue"><div class="s-label">总项目占用</div><div class="s-val">'+totalActive+'</div><div class="s-change">含项目+预排</div></div>';
+  }
+  const box = document.getElementById('peopleLoadTable');
+  if(!box) return;
+  if(!rows.length){
+    box.innerHTML = '<div class="empty">暂无人员数据。请先确认 employees/users 已加载。</div>';
+    return;
+  }
+  box.innerHTML =
+    '<table class="data-table" style="display:table">' +
+    '<thead><tr><th>人员</th><th>岗位</th><th>同时项目</th><th>上限</th><th>状态</th><th>正在进行项目</th><th>建议</th></tr></thead>' +
+    '<tbody>' + rows.map(function(r){
+      const badge = r.overload ? '<span class="badge badge-risk">超载</span>' : (r.near ? '<span class="badge badge-warn">接近上限</span>' : '<span class="badge badge-active">正常</span>');
+      const ps = r.projects.length ? r.projects.map(function(p){
+        return '<div style="margin-bottom:4px">• '+escapeHtml(p.name)+' <span style="color:var(--text-sub)">('+escapeHtml(p.source)+(p.phase?' / '+escapeHtml(p.phase):'')+')</span></div>';
+      }).join('') : '<span style="color:var(--text-sub)">暂无项目占用</span>';
+      return '<tr>' +
+        '<td class="fw6">'+escapeHtml(r.name)+'</td>' +
+        '<td>'+escapeHtml(r.role)+'</td>' +
+        '<td class="mono">'+r.count+'</td>' +
+        '<td class="mono">'+(r.limit >= 99 ? '不设' : r.limit)+'</td>' +
+        '<td>'+badge+'</td>' +
+        '<td style="min-width:260px">'+ps+'</td>' +
+        '<td style="min-width:220px">'+escapeHtml(r.suggestion)+'</td>' +
+      '</tr>';
+    }).join('') + '</tbody></table>';
+}
+
+/* 将第二项“人员负载/找替代人选/看人员安排”接入全员负载分析 */
+document.addEventListener('click', function(e){
+  const t = e.target;
+  if(!t) return;
+  const txt = (t.innerText || t.textContent || '').trim();
+  if(/找替代人选|人员负载|看人员安排|不要再给|负载/.test(txt)){
+    const parentText = t.closest('.list-item,.card,.notice,div')?.innerText || '';
+    if(/不要再给|负载|替代人选|人员安排/.test(parentText)){
+      e.preventDefault();
+      e.stopPropagation();
+      openPeopleLoadAnalysis();
+    }
+  }
+}, true);
+
 </script>
+
+<!-- 人员负载分析弹窗 -->
+<div class="modal-overlay" id="peopleLoadModal">
+  <div class="modal-box" style="max-width:900px">
+    <div class="modal-title">
+      人员负载分析
+      <button class="modal-close" onclick="closeModal('peopleLoadModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="notice">
+        📌 统计“项目状态 + 项目成员 + 人员安排”中的进行中/预警/施工跟踪/预排项目。超过负载上限时，系统会给出转派、延期或冻结新增任务建议。
+      </div>
+      <div id="peopleLoadSummary" class="stat-grid" style="grid-template-columns:repeat(3,1fr)"></div>
+      <div id="peopleLoadTable"></div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
