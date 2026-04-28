@@ -1546,22 +1546,27 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
 <script>
 // 最终交付版 · 修复自动节点按首条任务日期打点
 // ══════════════════════════════════════════════════════════════
-// ⚙️  配置区域 — 部署时替换这两个值
+// 初始化 Supabase（登录修复版：全站只创建一个实例）
 // ══════════════════════════════════════════════════════════════
-const SUPABASE_URL = 'https://bgjvuszufqbbialkyeiq.supabase.co';       // 例: https://xxxxx.supabase.co
-const SUPABASE_ANON_KEY = 'sb_publishable_2yQgdIPmNnxQRTswLSLSwQ_KFaIuUjv'; // Supabase项目的anon key
-
-// ══════════════════════════════════════════════════════════════
-// 初始化 Supabase
-// ══════════════════════════════════════════════════════════════
-const { createClient } = supabase;
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    storage: window.sessionStorage,
-    persistSession: true,
-    detectSessionInUrl: false,
+function getSupabaseClient(){
+  if(!window.supabase || !window.supabase.createClient){
+    throw new Error('Supabase SDK 未加载，请检查网络或 CDN');
   }
-});
+  if(!window.__sbClient){
+    window.__sbClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
+      auth: {
+        storage: window.localStorage,
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false,
+        flowType: 'pkce',
+        storageKey: 'design-console-auth'
+      }
+    });
+  }
+  return window.__sbClient;
+}
+var sb = getSupabaseClient();
 
 // ── 全局状态 ──────────────────────────────────────────────────
 let currentUser = null;   // Supabase auth user
@@ -1787,19 +1792,45 @@ const LVL_M  = {standard:1.0,premium:1.35,luxury:1.80};
 // 认证系统
 // ══════════════════════════════════════════════════════════════
 async function loginWithPassword() {
-  const email = document.getElementById('loginEmail').value.trim();
-  const password = document.getElementById('loginPassword').value;
+  console.log('login clicked');
+  const email = (document.getElementById('loginEmail')?.value || '').trim();
+  const password = document.getElementById('loginPassword')?.value || '';
+  console.log('email:', email);
   if(!email){showLoginError('请输入邮箱');return}
   if(!password){showLoginError('请输入密码');return}
   const btn = document.getElementById('loginBtn');
-  btn.disabled = true; btn.textContent = '登录中…';
-  const {data, error} = await sb.auth.signInWithPassword({ email, password });
-  btn.disabled = false; btn.textContent = '登录';
-  if(error){showLoginError('邮箱或密码错误');return}
-  // 直接处理，不依赖onAuthStateChange
-  currentUser = data.user;
-  await loadUserProfile();
-  showApp();
+  const oldText = btn ? btn.textContent : '登录';
+  try{
+    if(btn){ btn.disabled = true; btn.textContent = '登录中…'; }
+    const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : sb;
+    const { data, error } = await client.auth.signInWithPassword({ email, password });
+    console.log('auth result:', data, error);
+    if(error){
+      showLoginError('登录失败：' + (error.message || '邮箱或密码错误'));
+      return;
+    }
+    const sessionResult = await client.auth.getSession();
+    console.log('session check:', sessionResult);
+    const session = sessionResult?.data?.session;
+    if(!session){
+      showLoginError('登录失败：Supabase 没有返回 session，请检查 Auth 配置');
+      return;
+    }
+    currentUser = session.user || data.user;
+    try{
+      await loadUserProfile();
+    }catch(profileErr){
+      console.error('loadUserProfile failed:', profileErr);
+      showLoginError('登录成功，但读取用户档案失败：' + (profileErr.message || profileErr));
+      return;
+    }
+    await Promise.resolve(showApp());
+  }catch(e){
+    console.error('login fatal:', e);
+    showLoginError('登录异常：' + (e.message || e));
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = oldText || '登录'; }
+  }
 }
 
 function showLoginError(msg){
@@ -10001,6 +10032,73 @@ document.addEventListener('click', function(e){
         window.loginWithPassword();
       };
     }
+  });
+})();
+</script>
+
+
+<script>
+// ===== 登录修复兜底脚本：事件绑定 + 单实例保护 =====
+(function(){
+  function ensureClient(){
+    if(!window.SUPABASE_URL) window.SUPABASE_URL = 'https://bgjvuszufqbbialkyeiq.supabase.co';
+    if(!window.SUPABASE_ANON_KEY) window.SUPABASE_ANON_KEY = 'sb_publishable_2yQgdIPmNnxQRTswLSLSwQ_KFaIuUjv';
+    if(!window.__sbClient && window.supabase && window.supabase.createClient){
+      window.__sbClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
+        auth:{ storage:window.localStorage, persistSession:true, autoRefreshToken:true, detectSessionInUrl:false, storageKey:'design-console-auth' }
+      });
+    }
+    window.sb = window.__sbClient || window.sb;
+    return window.sb;
+  }
+  window.getSupabaseClient = window.getSupabaseClient || ensureClient;
+  const oldLogin = window.loginWithPassword;
+  window.loginWithPassword = async function(){
+    console.log('login clicked');
+    const email = (document.getElementById('loginEmail')?.value || '').trim();
+    const password = document.getElementById('loginPassword')?.value || '';
+    console.log('email:', email);
+    if(!email){ window.showLoginError ? showLoginError('请输入邮箱') : alert('请输入邮箱'); return; }
+    if(!password){ window.showLoginError ? showLoginError('请输入密码') : alert('请输入密码'); return; }
+    const btn = document.getElementById('loginBtn');
+    const oldText = btn ? btn.textContent : '登录';
+    try{
+      if(btn){ btn.disabled=true; btn.textContent='登录中…'; }
+      const client = ensureClient();
+      if(!client) throw new Error('Supabase 客户端未初始化');
+      const {data,error} = await client.auth.signInWithPassword({email,password});
+      console.log('auth result:', data, error);
+      if(error) throw error;
+      const sessionResult = await client.auth.getSession();
+      console.log('session check:', sessionResult);
+      const session = sessionResult?.data?.session;
+      if(!session) throw new Error('未获取到登录 session');
+      window.currentUser = session.user || data.user;
+      if(typeof window.loadUserProfile === 'function') await window.loadUserProfile();
+      if(typeof window.showApp === 'function') await window.showApp();
+      else {
+        const login = document.getElementById('loginScreen');
+        const app = document.getElementById('mainApp');
+        if(login) login.style.display='none';
+        if(app) app.style.display='block';
+      }
+    }catch(e){
+      console.error('login fatal:', e);
+      if(window.showLoginError) showLoginError('登录失败：' + (e.message || e));
+      else alert('登录失败：' + (e.message || e));
+    }finally{
+      if(btn){ btn.disabled=false; btn.textContent=oldText || '登录'; }
+    }
+  };
+  document.addEventListener('DOMContentLoaded', function(){
+    ensureClient();
+    const form = document.getElementById('loginStep1');
+    const btn = document.getElementById('loginBtn');
+    const pwd = document.getElementById('loginPassword');
+    if(form){ form.onsubmit = function(e){ e.preventDefault(); window.loginWithPassword(); }; }
+    if(btn){ btn.onclick = function(e){ e.preventDefault(); window.loginWithPassword(); }; }
+    if(pwd){ pwd.onkeydown = function(e){ if(e.key === 'Enter'){ e.preventDefault(); window.loginWithPassword(); } }; }
+    console.log('login patch bound');
   });
 })();
 </script>
