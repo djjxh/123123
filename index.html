@@ -9,6 +9,13 @@
 <link rel="icon" href="data:,">
 <!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+
+// Supabase 配置：只保留这一处，避免重复声明导致登录函数不加载
+window.SUPABASE_URL = 'https://bgjvuszufqbbialkyeiq.supabase.co';
+window.SUPABASE_ANON_KEY = 'sb_publishable_2yQgdIPmNnxQRTswLSLSwQ_KFaIuUjv';
+
+</script>
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;600&display=swap');
@@ -1548,14 +1555,14 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
 // ══════════════════════════════════════════════════════════════
 // ⚙️  配置区域 — 部署时替换这两个值
 // ══════════════════════════════════════════════════════════════
-var SUPABASE_URL = 'https://bgjvuszufqbbialkyeiq.supabase.co';       // 例: https://xxxxx.supabase.co
-var SUPABASE_ANON_KEY = 'sb_publishable_2yQgdIPmNnxQRTswLSLSwQ_KFaIuUjv'; // Supabase项目的anon key
+const window.SUPABASE_URL = 'https://bgjvuszufqbbialkyeiq.supabase.co';       // 例: https://xxxxx.supabase.co
+const window.SUPABASE_ANON_KEY = 'sb_publishable_2yQgdIPmNnxQRTswLSLSwQ_KFaIuUjv'; // Supabase项目的anon key
 
 // ══════════════════════════════════════════════════════════════
 // 初始化 Supabase
 // ══════════════════════════════════════════════════════════════
 const { createClient } = supabase;
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+const sb = createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
   auth: {
     storage: window.sessionStorage,
     persistSession: true,
