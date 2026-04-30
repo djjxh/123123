@@ -9,6 +9,13 @@
 <link rel="icon" href="data:,">
 <!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- PDF.js: only extracts selectable text from PDFs -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+if(window.pdfjsLib){
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+</script>
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;600&display=swap');
@@ -239,6 +246,73 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px}
 @media(max-width:768px){.two-col{grid-template-columns:1fr}}
 
+.ai-review-page{max-width:1120px}
+.ai-review-page-title{font-family:'Noto Serif SC',serif;font-size:24px;font-weight:700;
+  letter-spacing:0.04em;margin-bottom:12px}
+.ai-review-intro{margin-bottom:18px}
+.ai-review-mode-switch{display:inline-flex;gap:4px;background:var(--cream);border:1px solid var(--border);
+  border-radius:10px;padding:4px;margin-bottom:16px}
+.ai-review-mode-btn{border:none;background:transparent;color:var(--text-sub);font-size:13px;
+  font-weight:700;border-radius:8px;padding:8px 14px;cursor:pointer;font-family:'Noto Sans SC',sans-serif}
+.ai-review-mode-btn.active{background:var(--ink);color:var(--paper)}
+.ai-review-layout{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch}
+.ai-review-textarea{min-height:240px;resize:vertical;line-height:1.7}
+.ai-review-actions{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 20px}
+.ai-review-actions .action-btn{justify-content:center;min-width:132px}
+.ai-review-message{display:none;margin-bottom:16px}
+.ai-review-message.show{display:block}
+.ai-review-report{display:grid;gap:12px}
+.ai-review-result-card{background:var(--card);border:1px solid var(--border);
+  border-left:4px solid var(--gold);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:14px 16px}
+.ai-review-result-card.fatal{border-left-color:#7a1a0a}
+.ai-review-result-card.high{border-left-color:var(--accent)}
+.ai-review-result-card.mid-high{border-left-color:#e65100}
+.ai-review-result-card.medium{border-left-color:var(--gold)}
+.ai-review-result-card.low{border-left-color:var(--green)}
+.ai-review-result-head{display:flex;justify-content:space-between;align-items:center;
+  gap:12px;margin-bottom:12px}
+.ai-review-result-title{font-size:15px;font-weight:700;color:var(--ink)}
+.ai-review-risk{display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;
+  font-size:11px;font-weight:700;background:var(--gold-soft);color:var(--gold);white-space:nowrap}
+.ai-review-result-card.fatal .ai-review-risk{background:#fde7e7;color:#7a1a0a}
+.ai-review-result-card.high .ai-review-risk{background:var(--accent-soft);color:var(--accent)}
+.ai-review-result-card.mid-high .ai-review-risk{background:#fff3e0;color:#e65100}
+.ai-review-result-card.low .ai-review-risk{background:var(--green-soft);color:var(--green)}
+.ai-review-field{border-top:1px solid var(--cream);padding-top:10px;margin-top:10px}
+.ai-review-field-label{font-size:11px;color:var(--text-sub);font-weight:700;
+  letter-spacing:0.06em;margin-bottom:5px}
+.ai-review-field-text{font-size:13px;line-height:1.8;color:var(--ink)}
+.ai-review-simple-row{font-size:14px;line-height:1.75;color:var(--ink);margin:2px 0}
+.ai-review-simple-row strong{font-weight:800}
+.ai-review-simple-row + .ai-review-simple-row{margin-top:8px}
+.ai-review-source-line{font-size:11px;color:var(--text-sub);margin-top:8px}
+.ai-review-rule-list{margin:0;padding-left:18px}
+.ai-review-rule-list li{margin:3px 0}
+.ai-review-db-panel{background:#fbfcfd;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px}
+.ai-review-db-panel-hd{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}
+.ai-review-db-title{font-size:12px;font-weight:800;color:var(--ink)}
+.ai-review-db-meta{font-size:11px;color:var(--text-sub);line-height:1.6}
+.ai-review-db-list{display:grid;gap:8px;margin-top:10px;max-height:190px;overflow:auto;padding-right:4px}
+.ai-review-db-item{border:1px solid var(--cream);background:#fff;border-radius:8px;padding:9px 10px}
+.ai-review-db-item.manual{background:#fffdf7;border-color:#ead8a8}
+.ai-review-db-item-title{font-size:12px;font-weight:700;margin-bottom:4px;color:var(--ink)}
+.ai-review-db-item-meta{font-size:11px;color:var(--text-sub);line-height:1.6;margin-bottom:4px}
+.ai-review-db-item-rule{font-size:12px;line-height:1.7;color:var(--text-sub)}
+.ai-review-source-badge{display:inline-flex;align-items:center;border-radius:999px;padding:2px 8px;
+  background:var(--blue-soft);color:var(--blue);font-size:10px;font-weight:700;margin-right:6px}
+.ai-review-source-badge.manual{background:var(--gold-soft);color:var(--gold)}
+.ai-review-mini-btn{border:none;background:var(--blue-soft);color:var(--blue);border-radius:999px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
+.ai-review-mini-btn:hover{opacity:.86}
+.ai-review-pdf-box{background:#fbfcfd;border:1px solid var(--border);border-radius:10px;
+  padding:12px;margin-bottom:12px}
+.ai-review-pdf-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.ai-review-pdf-file{display:none}
+.ai-review-pdf-status{font-size:11px;color:var(--text-sub);line-height:1.7}
+.ai-review-pdf-status.warn{color:var(--gold)}
+.ai-review-pdf-status.error{color:var(--accent)}
+@media(max-width:900px){.ai-review-layout{grid-template-columns:1fr}}
+
 .prog-wrap{margin-bottom:10px}
 .prog-hd{display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px}
 .prog-track{height:6px;background:var(--cream);border-radius:3px;overflow:hidden}
@@ -421,6 +495,8 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
     </button>
     <button data-page="project" class="nav-btn" onclick="nav('project',this)">
       <span class="icon">📁</span>项目状态</button>
+    <button data-page="ai-review" class="nav-btn" onclick="nav('ai-review',this)">
+      <span class="icon">🧪</span>AI审图测试台</button>
     <button data-page="preplan" class="nav-btn admin-nav admin-only" onclick="nav('preplan',this)">
       <span class="icon">🗓</span>人员安排</button>
     <div class="nav-group admin-nav admin-only">管理者工具</div>
@@ -596,6 +672,75 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
       <div style="font-size:12px;color:var(--text-sub)">人力成本 = 项目奖金 + 参与期间底薪摊入</div>
     </div>
     <div id="costAnalysisArea"></div>
+  </div>
+</div>
+
+
+<!-- PAGE: AI审图测试台 -->
+<div class="page" id="page-ai-review">
+  <div class="ai-review-page">
+    <div class="ai-review-page-title">AI审图测试台</div>
+    <div id="aiReviewIntro" class="notice ai-review-intro">本页用于根据审图规则和图纸描述生成审图清单。可使用本地模拟，也可调用 AI 审图。</div>
+    <div class="ai-review-mode-switch" aria-label="AI审图测试台模式">
+      <button type="button" class="ai-review-mode-btn active" id="aiReviewModeRuleBtn" onclick="setAiReviewMode('rule')">规则审图</button>
+      <button type="button" class="ai-review-mode-btn" id="aiReviewModeLessonsBtn" onclick="setAiReviewMode('lessons')">错题提取</button>
+    </div>
+    <div id="aiReviewHint" class="notice red ai-review-message"></div>
+
+    <div class="ai-review-layout">
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-title">审图规则</div>
+          <div class="card-action" onclick="refreshAiReviewRulesFromDb()">重新读取规则</div>
+        </div>
+        <div class="card-body">
+          <div id="aiReviewDbRulesBox" class="ai-review-db-panel">
+            <div class="ai-review-db-meta">正在等待进入页面后读取 Supabase 规则库…</div>
+          </div>
+          <label class="form-label">补充规则（可选）</label>
+          <textarea id="aiReviewRules" class="form-input ai-review-textarea" oninput="renderAiReviewManualRulesPreview()" placeholder="例：&#10;【检查】高温设备周边墙面是否使用耐高温材料&#10;【检查】餐饮湿区地面是否具备防滑措施&#10;【检查】疏散通道是否被家具或设备遮挡"></textarea>
+          <div id="aiReviewManualRulesBox" class="ai-review-db-panel" style="margin-top:12px">
+            <div class="ai-review-db-title">手动补充规则预览</div>
+            <div class="ai-review-db-meta">当前没有手动补充规则。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-title">图纸/问题描述</div>
+          <div class="card-action">描述材料、设备和空间</div>
+        </div>
+        <div class="card-body">
+          <div class="ai-review-pdf-box">
+            <div class="ai-review-pdf-actions">
+              <label class="action-btn secondary" id="aiReviewPdfUploadBtn" for="aiReviewPdfInput" style="margin:0">
+                上传 PDF（仅支持可复制文字的 PDF）
+              </label>
+              <input class="ai-review-pdf-file" type="file" id="aiReviewPdfInput" accept="application/pdf,.pdf" onchange="handleAiReviewPdfUpload(this)">
+            </div>
+            <div id="aiReviewPdfStatus" class="ai-review-pdf-status">可上传含可复制文字的 PDF，提取后会自动填入下方描述框。</div>
+          </div>
+          <textarea id="aiReviewDrawingDesc" class="form-input ai-review-textarea" placeholder="例：&#10;这是一个烘焙店，后厨有风炉，风炉旁边墙面使用艺术漆，地面为普通瓷砖。"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="ai-review-actions">
+      <button class="action-btn secondary" onclick="refreshAiReviewRulesFromDb()">重新读取规则</button>
+      <button class="action-btn secondary" onclick="loadAiReviewExample()">加载示例</button>
+      <button class="action-btn" id="aiReviewGenerateBtn" onclick="generateAiReviewReport()">生成本地模拟报告</button>
+      <button class="action-btn secondary" id="aiReviewBackendBtn" onclick="callAiReviewBackendTest()">AI审图</button>
+      <button class="action-btn secondary" onclick="clearAiReviewTestbench()">清空内容</button>
+    </div>
+
+    <div class="section-hd">
+      <div class="section-title" id="aiReviewReportTitle">审图报告</div>
+      <div id="aiReviewReportCount" class="section-action"></div>
+    </div>
+    <div id="aiReviewReport" class="ai-review-report">
+      <div class="empty">读取规则库或填写补充规则，并补充图纸描述后，点击生成审图报告。</div>
+    </div>
   </div>
 </div>
 
@@ -1589,6 +1734,13 @@ let allMembers = [];   // project_members
 let allScores  = [];   // project_scores
 let allProjectNodes = []; // project_nodes
 let allTaskRules = [];
+window.aiReviewDbRules = window.aiReviewDbRules || [];
+let allReviewRules = window.aiReviewDbRules; // review_rules 审图规则库
+let aiReviewRulesLoaded = false;
+let aiReviewRulesLoading = false;
+let aiReviewMode = 'rule';
+let aiReviewPdfPages = [];
+let aiReviewLessonItems = [];
 let allTaskClassifications = [];
 let pendingTaskClassifications = [];
 let activeModalId = null;
@@ -6229,6 +6381,7 @@ const pageInfo={
   decision:{title:'今天要处理',sub:'系统先给建议，你只做判断'},
   timelog:{title:'工时记录',sub:'飞书导入核对 · 执行层负荷与人效'},
   project:{title:'项目状态',sub:'项目经营数据与风险评估'},
+  'ai-review':{title:'AI审图测试台',sub:'规则库读取 · 本地模拟审图流程'},
   preplan:{title:'人员安排',sub:'倒排时间 · 人员推荐 · 可拖拽甘特图'},
   dashboard:{title:'经营数据',sub:'数据可信度 · 人效概览 · 风险待办'},
   automation:{title:'待我判断',sub:'统一处理任务识别 · 节点补齐 · 预排联动'},
@@ -6238,6 +6391,672 @@ const pageInfo={
   bonus:{title:'绩效管理',sub:'项目成员配置 · 绩效打分 · 奖金核算'},
   profile:{title:'我的档案',sub:'个人工时与效率数据'},
 };
+
+const AI_REVIEW_EXAMPLE_RULES = [
+  '【检查】高温设备周边墙面是否使用耐高温材料',
+  '【检查】餐饮湿区地面是否具备防滑措施',
+  '【检查】后厨设备周边墙面材料是否便于清洁且耐久',
+  '【检查】疏散通道是否被家具或设备遮挡',
+].join('\n');
+const AI_REVIEW_EXAMPLE_DESC = '这是一个烘焙店，后厨有风炉，风炉旁边墙面使用艺术漆，地面为普通瓷砖。';
+const AI_REVIEW_NO_RISK_TEXT = '当前描述未命中明显风险。请补充图纸信息、材料说明、设备信息或更多审图规则后再次检查。';
+
+function normalizeAiReviewDbRule(rule){
+  return {
+    id: rule?.id ?? null,
+    title: String(rule?.title || '未命名规则').trim(),
+    category: String(rule?.category || '未分类').trim(),
+    project_type: String(rule?.project_type || '').trim(),
+    stage: String(rule?.stage || '').trim(),
+    risk_level: String(rule?.risk_level || '').trim(),
+    rule_text: String(rule?.rule_text || '').trim(),
+    enabled: rule?.enabled === true,
+    source: 'database',
+  };
+}
+function normalizeAiReviewManualRules(text=''){
+  return String(text || '').split(/\r?\n/)
+    .map(line=>line.trim())
+    .filter(Boolean)
+    .map((line,index)=>({
+      id: null,
+      title: `手动补充规则 ${index + 1}`,
+      category: '手动补充',
+      project_type: '',
+      stage: '',
+      risk_level: '',
+      rule_text: line,
+      enabled: true,
+      source: 'manual',
+    }));
+}
+function getAiReviewManualRules(){
+  const rulesInput = document.getElementById('aiReviewRules');
+  return normalizeAiReviewManualRules(rulesInput?.value || '');
+}
+function getAiReviewAllRules(){
+  const dbRules = Array.isArray(window.aiReviewDbRules) ? window.aiReviewDbRules : [];
+  return [...dbRules, ...getAiReviewManualRules()];
+}
+function aiReviewRuleDisplay(rule){
+  const sourceText = rule?.source === 'database' ? '规则库' : '手动补充';
+  const title = rule?.title || (rule?.source === 'database' ? '未命名规则' : '手动补充规则');
+  const risk = rule?.risk_level || '未分级';
+  const category = rule?.category || '未分类';
+  const text = rule?.rule_text || '';
+  return `${sourceText}｜${title}｜${risk}｜${category}：${text}`;
+}
+function renderAiReviewRuleCard(rule, index){
+  const isManual = rule?.source === 'manual';
+  const sourceText = isManual ? '手动补充' : '规则库';
+  return `
+    <div class="ai-review-db-item ${isManual ? 'manual' : ''}">
+      <div class="ai-review-db-item-title">
+        <span class="ai-review-source-badge ${isManual ? 'manual' : ''}">${sourceText}</span>
+        ${aiReviewEscapeHtml(rule.title || `${sourceText}规则 ${index + 1}`)}
+      </div>
+      <div class="ai-review-db-item-meta">
+        风险等级：${aiReviewEscapeHtml(rule.risk_level || '未分级')} · 分类：${aiReviewEscapeHtml(rule.category || '未分类')}
+      </div>
+      <div class="ai-review-db-item-rule">${aiReviewEscapeHtml(rule.rule_text || '')}</div>
+    </div>`;
+}
+function renderAiReviewManualRulesPreview(){
+  const box = document.getElementById('aiReviewManualRulesBox');
+  if(!box) return;
+  const rules = getAiReviewManualRules();
+  if(!rules.length){
+    box.innerHTML = `
+      <div class="ai-review-db-title">手动补充规则预览</div>
+      <div class="ai-review-db-meta">当前没有手动补充规则。</div>`;
+    return;
+  }
+  box.innerHTML = `
+    <div class="ai-review-db-panel-hd">
+      <div>
+        <div class="ai-review-db-title">手动补充规则预览</div>
+        <div class="ai-review-db-meta">已填写 ${rules.length} 条手动补充规则，将与规则库规则一起参与模拟审图。</div>
+      </div>
+    </div>
+    <div class="ai-review-db-list">
+      ${rules.map(renderAiReviewRuleCard).join('')}
+    </div>`;
+}
+function renderAiReviewDbRulesBox(status='ready'){
+  const box = document.getElementById('aiReviewDbRulesBox');
+  if(!box) return;
+  if(status === 'loading'){
+    box.innerHTML = '<div class="ai-review-db-meta"><span class="spinner"></span>正在读取规则……</div>';
+    return;
+  }
+  if(status === 'error'){
+    box.innerHTML = `
+      <div class="ai-review-db-panel-hd">
+        <div>
+          <div class="ai-review-db-title">规则读取失败，请检查 Supabase 配置</div>
+          <div class="ai-review-db-meta">页面不会中断，可继续使用下方补充规则生成模拟报告。</div>
+        </div>
+        <button class="ai-review-mini-btn" onclick="refreshAiReviewRulesFromDb()">重新读取规则</button>
+      </div>`;
+    return;
+  }
+  const dbRules = Array.isArray(window.aiReviewDbRules) ? window.aiReviewDbRules : [];
+  if(!dbRules.length){
+    box.innerHTML = `
+      <div class="ai-review-db-panel-hd">
+        <div>
+          <div class="ai-review-db-title">当前没有启用的审图规则</div>
+          <div class="ai-review-db-meta">请在 Supabase 的 review_rules 表中添加规则并确认 enabled = true，或先使用手动补充规则测试。</div>
+        </div>
+        <button class="ai-review-mini-btn" onclick="refreshAiReviewRulesFromDb()">重新读取规则</button>
+      </div>`;
+    return;
+  }
+  box.innerHTML = `
+    <div class="ai-review-db-panel-hd">
+      <div>
+        <div class="ai-review-db-title">规则库规则预览</div>
+        <div class="ai-review-db-meta">已读取 ${dbRules.length} 条启用规则</div>
+      </div>
+      <button class="ai-review-mini-btn" onclick="refreshAiReviewRulesFromDb()">重新读取规则</button>
+    </div>
+    <div class="ai-review-db-list">
+      ${dbRules.map(renderAiReviewRuleCard).join('')}
+    </div>`;
+}
+async function loadReviewRulesForAiReview({ silent=false } = {}){
+  if(aiReviewRulesLoading) return;
+  aiReviewRulesLoading = true;
+  try{
+    renderAiReviewDbRulesBox('loading');
+    const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : sb;
+    if(!client) throw new Error('Supabase client is not available');
+    const { data, error } = await client
+      .from('review_rules')
+      .select('id,title,category,project_type,stage,risk_level,rule_text,enabled')
+      .eq('enabled', true)
+      .order('id', { ascending: true });
+    if(error) throw error;
+    window.aiReviewDbRules = (data || []).map(normalizeAiReviewDbRule);
+    allReviewRules = window.aiReviewDbRules;
+    aiReviewRulesLoaded = true;
+    console.log('审图规则库 review_rules:', allReviewRules);
+    renderAiReviewDbRulesBox('ready');
+    if(!silent) toast(allReviewRules.length ? `已读取 ${allReviewRules.length} 条启用规则` : '当前没有启用的审图规则');
+  }catch(error){
+    console.error('读取审图规则失败:', error);
+    window.aiReviewDbRules = [];
+    allReviewRules = window.aiReviewDbRules;
+    aiReviewRulesLoaded = false;
+    renderAiReviewDbRulesBox('error');
+    if(!silent) toast('规则读取失败，请检查 Supabase 配置');
+  }finally{
+    aiReviewRulesLoading = false;
+  }
+}
+function refreshAiReviewRulesFromDb(){
+  return loadReviewRulesForAiReview({ silent:false });
+}
+function initAiReviewPage(){
+  renderAiReviewManualRulesPreview();
+  renderAiReviewDbRulesBox(aiReviewRulesLoaded ? 'ready' : 'loading');
+  setAiReviewMode(aiReviewMode);
+  if(!aiReviewRulesLoaded && !aiReviewRulesLoading){
+    loadReviewRulesForAiReview({ silent:true });
+  }
+}
+
+function aiReviewEscapeHtml(value){
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  }[ch]));
+}
+function aiReviewIncludesAny(text, keywords){
+  return keywords.some(keyword=>String(text).includes(keyword));
+}
+function aiReviewMatchedRules(ruleText, keywords){
+  return String(ruleText).split(/\r?\n/)
+    .map(line=>line.trim())
+    .filter(Boolean)
+    .filter(line=>aiReviewIncludesAny(line, keywords));
+}
+function aiReviewSetMessage(message=''){
+  const hint = document.getElementById('aiReviewHint');
+  if(!hint) return;
+  hint.textContent = message;
+  hint.classList.toggle('show', Boolean(message));
+}
+function aiReviewSetReportPlaceholder(text){
+  const report = document.getElementById('aiReviewReport');
+  const count = document.getElementById('aiReviewReportCount');
+  if(report) report.innerHTML = `<div class="empty">${aiReviewEscapeHtml(text)}</div>`;
+  if(count) count.textContent = '';
+}
+function setAiReviewMode(mode='rule'){
+  aiReviewMode = mode === 'lessons' ? 'lessons' : 'rule';
+  const isLessons = aiReviewMode === 'lessons';
+  document.getElementById('aiReviewModeRuleBtn')?.classList.toggle('active', !isLessons);
+  document.getElementById('aiReviewModeLessonsBtn')?.classList.toggle('active', isLessons);
+  const intro = document.getElementById('aiReviewIntro');
+  const title = document.getElementById('aiReviewReportTitle');
+  const aiBtn = document.getElementById('aiReviewBackendBtn');
+  const localBtn = document.getElementById('aiReviewGenerateBtn');
+  if(intro){
+    intro.textContent = isLessons
+      ? '用于从项目复盘 PDF、问题整理 PDF 中提取已有问题和解决方案，生成错题库草稿。'
+      : '本页用于根据审图规则和图纸描述生成审图清单。可使用本地模拟，也可调用 AI 审图。';
+  }
+  if(title) title.textContent = isLessons ? '错题提取结果' : '审图报告';
+  if(aiBtn) aiBtn.textContent = isLessons ? '提取错题' : 'AI审图';
+  if(localBtn) localBtn.style.display = isLessons ? 'none' : '';
+  setAiReviewPdfStatus(isLessons
+    ? '上传项目复盘 PDF 或问题整理 PDF，将按页提取可复制文字并拆分错题。'
+    : '可上传含可复制文字的 PDF，提取后会自动填入下方描述框。');
+  aiReviewSetMessage('');
+  aiReviewSetReportPlaceholder(isLessons
+    ? '上传 PDF 或粘贴问题整理文字后，点击提取错题。'
+    : '读取规则库或填写补充规则，并补充图纸描述后，点击生成审图报告。');
+}
+function setAiReviewPdfStatus(message, type=''){
+  const status = document.getElementById('aiReviewPdfStatus');
+  if(!status) return;
+  status.textContent = message;
+  status.classList.toggle('warn', type === 'warn');
+  status.classList.toggle('error', type === 'error');
+}
+function setAiReviewPdfLoading(loading){
+  const input = document.getElementById('aiReviewPdfInput');
+  const btn = document.getElementById('aiReviewPdfUploadBtn');
+  if(input) input.disabled = loading;
+  if(btn){
+    btn.textContent = loading ? '正在提取 PDF…' : '上传 PDF（仅支持可复制文字的 PDF）';
+    btn.style.pointerEvents = loading ? 'none' : '';
+    btn.style.opacity = loading ? '0.65' : '';
+  }
+}
+function countAiReviewNumberedLessons(pages=[]){
+  return (pages || []).reduce((sum,page)=>{
+    const matches = String(page.text || '').match(/(?:^|\s|\n)(\d{1,2})(?:\s*[\.．、)]|\s+(?=[\u4e00-\u9fa5A-Za-z]))/g);
+    return sum + (matches ? matches.length : 0);
+  }, 0);
+}
+function cleanAiReviewLessonText(text=''){
+  return String(text || '')
+    .replace(/\s+/g, ' ')
+    .replace(/^[\s:：.．、)）-]+/, '')
+    .trim();
+}
+function splitAiReviewLessonSegment(segment=''){
+  const normalized = String(segment || '').trim();
+  const parts = normalized.split(/解决(?:方案|方法)\s*[:：]?/);
+  const problem = cleanAiReviewLessonText(parts[0] || '');
+  const suggestion = cleanAiReviewLessonText(parts.slice(1).join('解决方案：'));
+  return { problem, suggestion };
+}
+function extractLessonsFromPdfTextByPage(pages=[]){
+  const lessons = [];
+  (pages || []).forEach(page=>{
+    const text = String(page.text || '').replace(/\r/g, '\n').trim();
+    if(!text) return;
+    const pattern = /(?:^|\s|\n)(\d{1,2})(?:\s*[\.．、)]|\s+(?=[\u4e00-\u9fa5A-Za-z]))\s*/g;
+    const matches = [...text.matchAll(pattern)];
+    if(!matches.length){
+      const lesson = splitAiReviewLessonSegment(text);
+      if(lesson.problem){
+        lessons.push({
+          pageNumber: page.pageNumber || 1,
+          number: '',
+          problem: lesson.problem,
+          suggestion: lesson.suggestion,
+        });
+      }
+      return;
+    }
+    matches.forEach((match,index)=>{
+      const start = match.index + match[0].length;
+      const end = index + 1 < matches.length ? matches[index + 1].index : text.length;
+      const lesson = splitAiReviewLessonSegment(text.slice(start, end));
+      if(lesson.problem){
+        lessons.push({
+          pageNumber: page.pageNumber || 1,
+          number: match[1] || String(index + 1),
+          problem: lesson.problem,
+          suggestion: lesson.suggestion,
+        });
+      }
+    });
+  });
+  return lessons;
+}
+function renderAiReviewLessons(lessons=[]){
+  const report = document.getElementById('aiReviewReport');
+  const count = document.getElementById('aiReviewReportCount');
+  if(!report) return;
+  if(!lessons.length){
+    report.innerHTML = '<div class="empty">未提取到错题。可尝试粘贴可复制文字，扫描版 PDF 当前阶段暂不支持 OCR。</div>';
+    if(count) count.textContent = '';
+    return;
+  }
+  report.innerHTML = `
+    <div class="notice green" style="margin-bottom:0">已从 PDF 中提取 ${lessons.length} 条错题</div>
+    ${lessons.map((item,index)=>`
+      <div class="ai-review-result-card">
+        <div class="ai-review-simple-row"><strong>问题：</strong>${aiReviewEscapeHtml(item.problem || '未命名问题')}</div>
+        <div class="ai-review-simple-row"><strong>建议：</strong>${aiReviewEscapeHtml(item.suggestion || '待补充解决方案')}</div>
+        <div class="ai-review-source-line">来源：第 ${aiReviewEscapeHtml(item.pageNumber || 1)} 页 / 第 ${aiReviewEscapeHtml(item.number || index + 1)} 条</div>
+      </div>
+    `).join('')}
+  `;
+  if(count) count.textContent = '';
+}
+function extractAiReviewLessonsFromCurrentInput(){
+  const desc = document.getElementById('aiReviewDrawingDesc');
+  if(!aiReviewPdfPages.length && !(desc?.value || '').trim()){
+    const message = '请先上传 PDF 或粘贴问题整理文字。';
+    aiReviewSetMessage(message);
+    aiReviewSetReportPlaceholder('上传 PDF 或粘贴问题整理文字后，点击提取错题。');
+    desc?.focus();
+    toast(message);
+    return;
+  }
+  aiReviewSetMessage('');
+  if(aiReviewPdfPages.length){
+    aiReviewLessonItems = extractLessonsFromPdfTextByPage(aiReviewPdfPages);
+  }else{
+    const text = desc?.value.trim() || '';
+    aiReviewLessonItems = text ? extractLessonsFromPdfTextByPage([{ pageNumber: 1, text }]) : [];
+  }
+  renderAiReviewLessons(aiReviewLessonItems);
+  const numberedCount = aiReviewPdfPages.length ? countAiReviewNumberedLessons(aiReviewPdfPages) : countAiReviewNumberedLessons([{ pageNumber: 1, text: desc?.value || '' }]);
+  const ocrTip = aiReviewLessonItems.length < numberedCount ? '部分内容可能是图片文字，当前阶段暂不支持 OCR。' : '';
+  setAiReviewPdfStatus(`已从 PDF 中提取 ${aiReviewLessonItems.length} 条错题。${ocrTip}`, ocrTip ? 'warn' : '');
+  toast(`已提取 ${aiReviewLessonItems.length} 条错题`);
+}
+async function extractTextFromPdf(file){
+  if(!file) return '';
+  if(!window.pdfjsLib?.getDocument){
+    throw new Error('PDF.js 未加载，请检查网络或 CDN');
+  }
+  const buffer = await file.arrayBuffer();
+  const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
+  const maxPages = Math.min(pdf.numPages, 20);
+  const pages = [];
+  let remainingChars = 12000;
+  let truncated = false;
+  for(let pageNo = 1; pageNo <= maxPages; pageNo++){
+    const page = await pdf.getPage(pageNo);
+    const content = await page.getTextContent();
+    let text = content.items
+      .map(item=>String(item?.str || '').trim())
+      .filter(Boolean)
+      .join(' ');
+    text = text.replace(/\s+/g, ' ').trim();
+    if(!text) continue;
+    if(text.length > remainingChars){
+      text = text.slice(0, Math.max(0, remainingChars));
+      truncated = true;
+    }
+    if(text){
+      pages.push({ pageNumber: pageNo, text });
+      remainingChars -= text.length;
+    }
+    if(remainingChars <= 0) break;
+  }
+  const text = pages.map(page=>page.text).join('\n\n').replace(/\s+\n/g, '\n').trim();
+  const tips = [];
+  if(pdf.numPages > 20) tips.push('当前仅提取前 20 页文字用于测试。');
+  if(truncated) tips.push('文字较长，已截取前 12000 字用于测试。');
+  if(!text){
+    aiReviewPdfPages = [];
+    aiReviewLessonItems = [];
+    setAiReviewPdfStatus('未提取到文字。该文件可能是扫描版 PDF，当前阶段暂不支持 OCR。', 'warn');
+    return '';
+  }
+  aiReviewPdfPages = pages;
+  aiReviewLessonItems = extractLessonsFromPdfTextByPage(pages);
+  const textForInput = aiReviewMode === 'lessons'
+    ? pages.map(page=>`【第${page.pageNumber}页】\n${page.text}`).join('\n\n')
+    : text;
+  const desc = document.getElementById('aiReviewDrawingDesc');
+  if(desc) desc.value = textForInput;
+  const numberedCount = countAiReviewNumberedLessons(pages);
+  const lessonTip = aiReviewMode === 'lessons'
+    ? `已从 PDF 中提取 ${aiReviewLessonItems.length} 条错题。`
+    : `已提取 PDF 文字，共 ${text.length} 字。`;
+  const ocrTip = aiReviewMode === 'lessons' && aiReviewLessonItems.length < numberedCount
+    ? '部分内容可能是图片文字，当前阶段暂不支持 OCR。'
+    : '';
+  setAiReviewPdfStatus([lessonTip, ...tips, ocrTip].filter(Boolean).join(''), (tips.length || ocrTip) ? 'warn' : '');
+  toast('PDF文字已填入图纸描述');
+  return textForInput;
+}
+async function handleAiReviewPdfUpload(input){
+  const file = input?.files?.[0];
+  if(!file) return;
+  if(file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name || '')){
+    setAiReviewPdfStatus('请上传 PDF 文件。', 'error');
+    input.value = '';
+    return;
+  }
+  setAiReviewPdfLoading(true);
+  setAiReviewPdfStatus('正在提取 PDF 文字，请稍候……');
+  try{
+    await extractTextFromPdf(file);
+  }catch(error){
+    console.error('PDF文字提取失败:', error);
+    setAiReviewPdfStatus('PDF文字提取失败，请保留手动输入或换一个可复制文字的 PDF。', 'error');
+    toast('PDF文字提取失败');
+  }finally{
+    setAiReviewPdfLoading(false);
+    if(input) input.value = '';
+  }
+}
+function loadAiReviewExample(){
+  const rules = document.getElementById('aiReviewRules');
+  const desc = document.getElementById('aiReviewDrawingDesc');
+  if(rules) rules.value = AI_REVIEW_EXAMPLE_RULES;
+  if(desc) desc.value = AI_REVIEW_EXAMPLE_DESC;
+  aiReviewPdfPages = [];
+  aiReviewLessonItems = [];
+  renderAiReviewManualRulesPreview();
+  aiReviewSetMessage('');
+  aiReviewSetReportPlaceholder('示例已加载，规则库规则不会被覆盖，点击生成审图报告查看模拟结果。');
+  toast('已加载示例');
+}
+function clearAiReviewTestbench(){
+  const rules = document.getElementById('aiReviewRules');
+  const desc = document.getElementById('aiReviewDrawingDesc');
+  if(rules) rules.value = '';
+  if(desc) desc.value = '';
+  aiReviewPdfPages = [];
+  aiReviewLessonItems = [];
+  renderAiReviewManualRulesPreview();
+  aiReviewSetMessage('');
+  setAiReviewPdfStatus(aiReviewMode === 'lessons'
+    ? '上传项目复盘 PDF 或问题整理 PDF，将按页提取可复制文字并拆分错题。'
+    : '可上传含可复制文字的 PDF，提取后会自动填入下方描述框。');
+  aiReviewSetReportPlaceholder(aiReviewMode === 'lessons'
+    ? '上传 PDF 或粘贴问题整理文字后，点击提取错题。'
+    : '读取规则库或填写补充规则，并补充图纸描述后，点击生成审图报告。');
+  toast('已清空内容');
+}
+const AI_REVIEW_RISK_RANK = { '低':1, '中':2, '中高':3, '高':4, '致命':5 };
+function aiReviewRuleSearchText(rule){
+  return `${rule?.title || ''} ${rule?.rule_text || ''}`;
+}
+function aiReviewRuleMatches(rule, keywords){
+  return aiReviewIncludesAny(aiReviewRuleSearchText(rule), keywords);
+}
+function aiReviewHighestRisk(rules=[], fallback='中'){
+  return rules.reduce((highest, rule)=>{
+    const current = rule?.risk_level || '';
+    return (AI_REVIEW_RISK_RANK[current] || 0) > (AI_REVIEW_RISK_RANK[highest] || 0) ? current : highest;
+  }, fallback);
+}
+function buildAiReviewIssues(allRules, descText){
+  const issueDefs = [
+    {
+      key:'high-temp',
+      name:'高温设备周边材料风险',
+      fallbackRisk:'高',
+      descKeywords:['风炉','烤箱','高温','炉'],
+      ruleKeywords:['高温','耐高温','设备','材料'],
+      note:'图纸描述中出现高温设备相关信息，需核查周边墙面、雨棚、装饰材料是否具备耐高温、防火和耐久性。',
+      suggestion:'建议使用不锈钢、防火板、瓷砖、石材、A级防火材料或其他耐高温材料，避免艺术漆、普通乳胶漆、布艺软装等材料开裂、变色、脱落或产生消防风险。',
+      review:'是',
+    },
+    {
+      key:'wall-material',
+      name:'墙面材料耐久性风险',
+      fallbackRisk:'中高',
+      descKeywords:['艺术漆','乳胶漆','墙面'],
+      ruleKeywords:['材料','墙面','耐久'],
+      note:'图纸描述中出现墙面材料相关信息，需核实该区域材料是否能承受运营环境中的热量、油烟、水汽、清洁和基层变化。',
+      suggestion:'核实温度、油烟、水汽、清洁频率和基层稳定性，必要时更换为更稳定材料。',
+      review:'是',
+    },
+    {
+      key:'floor-anti-slip',
+      name:'地面防滑风险',
+      fallbackRisk:'中',
+      descKeywords:['地面','湿区','后厨','水槽','排水'],
+      ruleKeywords:['防滑','地面','湿区'],
+      note:'图纸描述中出现地面、湿区、后厨、水槽或排水点相关信息，需核查铺装材料和运营场景是否满足防滑要求。',
+      suggestion:'餐饮湿区、后厨、水槽、排水点附近应选用防滑材料或增加防滑处理。',
+      review:'是',
+    },
+    {
+      key:'evacuation',
+      name:'疏散通道遮挡风险',
+      fallbackRisk:'致命',
+      descKeywords:['疏散','通道','过道','堵','家具','设备'],
+      ruleKeywords:['疏散','通道','遮挡'],
+      note:'图纸描述中出现疏散、通道、过道、家具或设备相关信息，需核查逃生路径是否连续、清晰且不被占用。',
+      suggestion:'检查疏散通道净宽、通行连续性、家具和设备是否影响逃生路径。',
+      review:'是',
+    },
+  ];
+  return issueDefs.map(def=>{
+    if(!aiReviewIncludesAny(descText, def.descKeywords)) return null;
+    const matchedRules = allRules.filter(rule=>aiReviewRuleMatches(rule, def.ruleKeywords));
+    if(!matchedRules.length) return null;
+    return {
+      key:def.key,
+      name:def.name,
+      risk: aiReviewHighestRisk(matchedRules, def.fallbackRisk),
+      rules: matchedRules,
+      note:def.note,
+      suggestion:def.suggestion,
+      review:def.review,
+      sources:[...new Set(matchedRules.map(rule=>rule.source === 'database' ? '规则库' : '手动补充'))],
+    };
+  }).filter(Boolean);
+}
+function aiReviewRiskClass(risk){
+  if(risk === '致命') return 'fatal';
+  if(risk === '高') return 'high';
+  if(risk === '中高') return 'mid-high';
+  if(risk === '低') return 'low';
+  return 'medium';
+}
+function renderAiReviewReport(issues){
+  const report = document.getElementById('aiReviewReport');
+  const count = document.getElementById('aiReviewReportCount');
+  if(!report) return;
+  if(!issues.length){
+    report.innerHTML = '<div class="notice green" style="margin-bottom:0">AI审图完成，未发现明显问题</div>';
+    if(count) count.textContent = '';
+    return;
+  }
+  report.innerHTML = `
+    <div class="notice green" style="margin-bottom:0">AI审图完成，共发现 ${issues.length} 个问题</div>
+    ${issues.map(issue=>`
+      <div class="ai-review-result-card">
+        <div class="ai-review-simple-row"><strong>问题：</strong>${aiReviewEscapeHtml(issue.name || '未命名问题')}</div>
+        <div class="ai-review-simple-row"><strong>建议：</strong>${aiReviewEscapeHtml(issue.suggestion || '请进一步核查并调整。')}</div>
+      </div>
+    `).join('')}
+  `;
+  if(count) count.textContent = '';
+}
+function renderAiReviewBackendReport(data){
+  const report = document.getElementById('aiReviewReport');
+  const count = document.getElementById('aiReviewReportCount');
+  if(!report) return;
+  const issues = Array.isArray(data?.issues) ? data.issues : [];
+  report.innerHTML = `
+    <div class="notice green" style="margin-bottom:0">${issues.length ? `AI审图完成，共发现 ${issues.length} 个问题` : 'AI审图完成，未发现明显问题'}</div>
+    ${issues.length ? issues.map(issue=>`
+      <div class="ai-review-result-card">
+        <div class="ai-review-simple-row"><strong>问题：</strong>${aiReviewEscapeHtml(issue.title || '后端模拟问题')}</div>
+        <div class="ai-review-simple-row"><strong>建议：</strong>${aiReviewEscapeHtml(issue.suggestion || '请进一步核查并调整。')}</div>
+      </div>
+    `).join('') : ''}
+  `;
+  if(count) count.textContent = '';
+}
+async function callAiReviewBackendTest(){
+  if(aiReviewMode === 'lessons'){
+    extractAiReviewLessonsFromCurrentInput();
+    return;
+  }
+  const desc = document.getElementById('aiReviewDrawingDesc');
+  const descText = desc?.value.trim() || '';
+  if(!descText){
+    const message = '请先补充图纸/问题描述。';
+    aiReviewSetMessage(message);
+    aiReviewSetReportPlaceholder('补充图纸/问题描述后即可调用后端审图测试。');
+    desc?.focus();
+    toast(message);
+    return;
+  }
+
+  renderAiReviewManualRulesPreview();
+  aiReviewSetMessage('');
+  const btn = document.getElementById('aiReviewBackendBtn');
+  const oldText = btn?.textContent || 'AI审图';
+  if(btn){
+    btn.disabled = true;
+    btn.textContent = 'AI审图中…';
+  }
+
+  try{
+    const client = (typeof getSupabaseClient === 'function') ? getSupabaseClient() : sb;
+    if(!client?.functions?.invoke) throw new Error('Supabase Edge Function 客户端不可用');
+    const rules = getAiReviewAllRules().map(rule=>({
+      id: rule.id || null,
+      title: rule.title || '',
+      category: rule.category || '',
+      project_type: rule.project_type || '',
+      stage: rule.stage || '',
+      risk_level: rule.risk_level || '',
+      rule_text: rule.rule_text || '',
+      enabled: rule.enabled !== false,
+      source: rule.source || 'manual',
+    }));
+    const { data, error } = await client.functions.invoke('ai-review-check', {
+      body: {
+        rules,
+        drawingText: descText,
+      },
+    });
+    if(error) throw error;
+    if(!data?.ok) throw new Error('Edge Function 未返回 ok 状态');
+    renderAiReviewBackendReport(data);
+    toast('AI审图完成');
+  }catch(error){
+    console.error('后端审图通道调用失败:', error);
+    const message = 'AI审图失败，请检查配置';
+    aiReviewSetMessage(message);
+    aiReviewSetReportPlaceholder(message);
+    toast(message);
+  }finally{
+    if(btn){
+      btn.disabled = false;
+      btn.textContent = oldText;
+    }
+  }
+}
+function generateAiReviewReport(){
+  const desc = document.getElementById('aiReviewDrawingDesc');
+  const descText = desc?.value.trim() || '';
+  renderAiReviewManualRulesPreview();
+  const allRules = getAiReviewAllRules();
+  if(!allRules.length || !descText){
+    const message = !allRules.length && !descText
+      ? '请先读取规则库或输入补充规则，并补充图纸/问题描述。'
+      : !allRules.length
+        ? '当前没有可用审图规则，请重新读取规则库或输入补充规则。'
+        : '请先补充图纸/问题描述。';
+    aiReviewSetMessage(message);
+    aiReviewSetReportPlaceholder('内容补充完整后即可生成审图报告。');
+    if(descText){
+      document.getElementById('aiReviewRules')?.focus();
+    }else{
+      desc?.focus();
+    }
+    toast(message);
+    return;
+  }
+  aiReviewSetMessage('');
+  const issues = buildAiReviewIssues(allRules, descText);
+  renderAiReviewReport(issues);
+  const btn = document.getElementById('aiReviewGenerateBtn');
+  if(btn){
+    const oldText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = issues.length ? '已生成报告' : '已完成检查';
+    setTimeout(()=>{
+      btn.disabled = false;
+      btn.textContent = oldText;
+    }, 700);
+  }
+  toast(issues.length ? `已生成 ${issues.length} 条模拟问题` : '未命中明显风险');
+}
 
 function nav(page,el,type='sidebar'){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -6254,6 +7073,7 @@ function nav(page,el,type='sidebar'){
   const s=document.getElementById('pageSubtitle');
   if(t)t.textContent=info.title||'';
   if(s)s.textContent=info.sub||'';
+  if(page === 'ai-review') initAiReviewPage();
   closeSidebar();
 }
 
@@ -7842,7 +8662,7 @@ function renderDecisionPage(){
       badge:'过载风险',
       severity:'high',
       primary:'找替代人选',
-      primaryAction:"gotoPage('preplan')",
+      primaryAction:"openPeopleLoadAnalysis()",
       secondary:'看人员安排',
       secondaryAction:"gotoPage('preplan')"
     });
@@ -9939,22 +10759,84 @@ function renderPeopleLoadAnalysis(){
     }).join('') + '</tbody></table>';
 }
 
-/* 将第二项“人员负载/找替代人选/看人员安排”接入全员负载分析 */
-document.addEventListener('click', function(e){
-  const t = e.target;
-  if(!t) return;
-  const txt = (t.innerText || t.textContent || '').trim();
-  if(/找替代人选|人员负载|看人员安排|不要再给|负载/.test(txt)){
-    const parentText = t.closest('.list-item,.card,.notice,div')?.innerText || '';
-    if(/不要再给|负载|替代人选|人员安排/.test(parentText)){
-      e.preventDefault();
-      e.stopPropagation();
-      openPeopleLoadAnalysis();
-    }
-  }
-}, true);
 
+
+
+/* === 修正版：人员负载分析只由按钮触发，并读取真实 allEmployees/allProjects/allMembers/preplanItems === */
+function normalizePeopleSource(){
+  const source = (typeof allEmployees !== 'undefined' && Array.isArray(allEmployees)) ? allEmployees : [];
+  const map = new Map();
+  (source || []).filter(Boolean).forEach(function(p){
+    if(p.is_active === false) return;
+    const id = String(p.id || p.user_id || p.employee_id || p.email || getPersonDisplayName(p));
+    if(!map.has(id)) map.set(id, Object.assign({}, p, {id}));
+  });
+  return Array.from(map.values());
+}
+function getPersonRole(person){
+  return person?.job_title || person?.title || person?.position || person?.employee_title || person?.role || '未设置岗位';
+}
+function collectPersonProjects(person){
+  const pid = String(person.id || person.user_id || person.employee_id || '');
+  const pname = getPersonDisplayName(person);
+  const list = [];
+  function push(project, source, phase){
+    if(!project || !isActiveProjectLike(project)) return;
+    list.push({name: project.name || project.project_name || project.title || '未命名项目', status: project.status || '进行中', source, phase: phase || project.phase || project.stage || ''});
+  }
+  const projectSource = (typeof allProjects !== 'undefined' && Array.isArray(allProjects)) ? allProjects : [];
+  const memberSource = (typeof allMembers !== 'undefined' && Array.isArray(allMembers)) ? allMembers : [];
+  memberSource.forEach(function(m){
+    const mid = String(m.employee_id || m.user_id || '');
+    if(mid === pid || String(m.employee_name || '') === pname){
+      const p = projectSource.find(function(x){ return String(x.id) === String(m.project_id); });
+      push(p || {name:m.project_name, status:m.status || '进行中'}, '项目成员', m.job_role || m.role || '');
+    }
+  });
+  projectSource.forEach(function(p){
+    const ids = [p.owner_id, p.employee_id, p.assignee_id, p.designer_id, p.concept_assignee_id, p.technical_assignee_id, p.manager_id, p.responsible_id, p.director_id].filter(v=>v!==undefined && v!==null).map(String);
+    const names = [p.owner_name, p.employee_name, p.assignee_name, p.designer_name, p.concept_assignee_name, p.technical_assignee_name, p.responsible_name, p.director_name].filter(Boolean).map(String);
+    if(ids.includes(pid) || names.includes(pname)) push(p, '项目状态', p.stage || '');
+  });
+  const preplanSource = (typeof preplanItems !== 'undefined' && Array.isArray(preplanItems)) ? preplanItems : [];
+  preplanSource.forEach(function(p){
+    const ids = [p.employee_id, p.assignee_id, p.concept_assignee_id, p.technical_assignee_id, p.conceptAssigneeId, p.technicalAssigneeId, p.concept_assignee, p.technical_assignee].filter(v=>v!==undefined && v!==null).map(String);
+    const names = [p.employee_name, p.assignee_name, p.concept_assignee_name, p.technical_assignee_name].filter(Boolean).map(String);
+    if(ids.includes(pid) || names.includes(pname)) push({name:p.name || p.project_name, status:p.status || '预排中', phase:p.phase}, '人员安排', p.phase || p.stage || '');
+  });
+  const seen = new Set();
+  return list.filter(function(x){
+    const k = x.name + '|' + x.source + '|' + x.phase;
+    if(seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
 </script>
+
+<!-- 决策会记录弹窗 -->
+<div class="modal-overlay" id="decisionRoundtableModal" onclick="closeModalOutside(event,'decisionRoundtableModal')">
+  <div class="modal-box" style="max-width:640px">
+    <div class="modal-handle"></div>
+    <div class="modal-title"><button class="modal-close" onclick="closeModal('decisionRoundtableModal')">×</button>发起决策会</div>
+    <div class="modal-body">
+      <input type="hidden" id="decisionProjectId">
+      <div class="form-group"><label class="form-label">项目</label><input class="form-input" id="decisionProjectName" readonly></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">决策类型</label><select class="form-select" id="decisionType"><option value="director_review">总监确认</option><option value="client_response">甲方反馈</option><option value="schedule_rescue">排期抢救</option><option value="staffing">人员调整</option></select></div>
+        <div class="form-group"><label class="form-label">优先级</label><select class="form-select" id="decisionPriority"><option value="high">高</option><option value="medium">中</option><option value="low">低</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-label">参与人</label><input class="form-input" id="decisionParticipants"></div>
+      <div class="form-group"><label class="form-label">决策结论</label><textarea class="form-input" id="decisionConclusion" style="height:90px;resize:vertical"></textarea></div>
+      <div class="form-group"><label class="form-label">下一步动作</label><input class="form-input" id="decisionNextAction"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">截止时间</label><input type="datetime-local" class="form-input" id="decisionDueAt"></div>
+        <div class="form-group"><label class="form-label">同步项目状态</label><select class="form-select" id="decisionProjectStatus"><option value="risk">标记风险</option><option value="active">恢复进行中</option><option value="paused">暂停</option><option value="construction">施工跟踪</option></select></div>
+      </div>
+      <button class="btn-primary" id="decisionSaveBtn" onclick="saveDecisionRoundtable()">确认决策并记录</button>
+    </div>
+  </div>
+</div>
 
 <!-- 人员负载分析弹窗 -->
 <div class="modal-overlay" id="peopleLoadModal">
