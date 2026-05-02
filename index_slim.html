@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>工时管家轻量版</title>
+<link rel="stylesheet" href="slim.css">
+</head>
+<body>
+<div class="app">
+<header class="top"><div class="status"><span id="clock">9:41</span><div class="island"></div><span>5G</span></div><div class="brand"><h1 id="title">今日</h1><span>三厘社</span></div></header>
+<section class="page active" id="page-today"><h2 class="hero">老板现在问，<br>你能立刻答哪几个？</h2><p class="sub">手机端只做交付时间、人员负载和风险处理建议；正式绩效结算放飞书。</p><div class="kpis"><div class="kpi"><small>交付临近</small><b id="kpiDue">0</b></div><div class="kpi"><small>预排待确认</small><b id="kpiPre">0</b></div><div class="kpi"><small>人员过载</small><b id="kpiOver">0</b></div></div><div id="todayList"></div></section>
+<section class="page" id="page-delivery"><h2 class="hero">所有项目<br>什么时候结束</h2><p class="sub">合同项目与预排项目一起看。项目阶段只用于进度判断，不触发绩效计算。</p><input class="search" id="projectSearch" placeholder="搜索项目名、负责人、阶段"><div class="pill-row" id="deliveryFilters"><button class="pill active" data-filter="all">全部</button><button class="pill" data-filter="contract">合同内</button><button class="pill" data-filter="pre">预排</button><button class="pill" data-filter="risk">逾期风险</button></div><div id="deliveryList"></div></section>
+<section class="page" id="page-people"><h2 class="hero">每个人身上<br>有哪些项目</h2><p class="sub">不做黑盒 AI 推荐，只展示角色、负载、项目经验与可接程度。</p><div class="pill-row" id="peopleFilters"><button class="pill active" data-role="all">全部</button><button class="pill" data-role="方案">方案</button><button class="pill" data-role="深化">深化</button><button class="pill" data-role="over">过载</button></div><div id="peopleList"></div></section>
+<section class="page" id="page-more"><h2 class="hero">更多</h2><p class="sub">工时管家不再承接完整绩效系统，只保留事实导出、风险建议和电脑端入口。</p><div id="moreList"></div></section>
+<nav class="bottom"><button class="tab active" data-page="today"><i>●</i>今日</button><button class="tab" data-page="delivery"><i>◷</i>交付</button><button class="tab" data-page="people"><i>◇</i>人员</button><button class="tab" data-page="more"><i>☰</i>更多</button></nav>
+<div class="mask" id="mask"></div><div class="sheet" id="sheet"><div class="handle"></div><div id="sheetContent"></div></div><div class="toast" id="toast"></div>
+</div>
+<script src="slim.js"></script>
+</body>
+</html>
