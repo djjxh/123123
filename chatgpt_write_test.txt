@@ -1,1 +1,0 @@
-ChatGPT GitHub write permission test. This file can be deleted after confirming write access.
