@@ -3,6 +3,9 @@
   const 密钥='sb_publishable_2yQgdIPmNnxQRTswLSLSwQ_KFaIuUjv';
   let 客户端=null;
   function 取文本(v){return v==null?'':String(v)}
+  function 读本地阶段(){try{return JSON.parse(localStorage.getItem('project_stage_overrides')||'{}')}catch(e){return {}}}
+  function 写本地阶段(id,阶段){const m=读本地阶段();m[String(id)]=阶段;localStorage.setItem('project_stage_overrides',JSON.stringify(m))}
+  function 应用本地阶段(){const d=当前数据();const m=读本地阶段();(d.projects||[]).forEach(function(p){const v=m[String(p.id)];if(v){p.stage=v;p.isCompleted=(v==='已完工'||v==='暂停')}})}
   function 是否其他项目(p){
     const s=[p&&p.stage,p&&p.status,p&&p.project_status,p&&p.state,p&&p.raw&&p.raw.status,p&&p.raw&&p.raw.stage,p&&p.raw&&p.raw.project_status,p&&p.raw&&p.raw.state].map(取文本).join(' ');
     return /已完成|已完工|完工|完结|已完结|结束|已结束|结案|已结案|归档|已归档|暂停|已暂停|停滞|取消|已取消|作废|关闭/.test(s);
@@ -22,8 +25,31 @@
       b.onclick=function(){Array.from(box.querySelectorAll('.pill')).forEach(x=>x.classList.remove('active'));b.classList.add('active');deliveryFilter=b.dataset.filter;renderDelivery();};
     });
   }
+  async function 尝试数据库保存(p,阶段){
+    const c=获取客户端();
+    if(!c)return false;
+    const id=p&&p.id;
+    if(!id)return false;
+    const 尝试=[
+      {stage:阶段,status:阶段},
+      {current_stage:阶段,status:阶段},
+      {project_status:阶段,status:阶段},
+      {status:阶段},
+      {stage:阶段},
+      {current_stage:阶段},
+      {project_status:阶段}
+    ];
+    for(const payload of 尝试){
+      try{
+        const r=await c.from('projects').update(payload).eq('id',id).select('id').maybeSingle();
+        if(!r.error)return true;
+      }catch(e){}
+    }
+    return false;
+  }
   const 原渲染交付=window.renderDelivery||renderDelivery;
   window.renderDelivery=renderDelivery=function(){
+    应用本地阶段();
     重画交付筛选();
     const d=当前数据();
     const q=(document.getElementById('projectSearch').value||'').trim().toLowerCase();
@@ -39,6 +65,7 @@
   };
   const 原打开项目=window.openProject||openProject;
   window.openProject=openProject=function(id){
+    应用本地阶段();
     const d=当前数据();
     const p=(d.projects||[]).find(x=>String(x.id)===String(id));
     if(!p)return 原打开项目(id);
@@ -50,26 +77,23 @@
     const d=当前数据();
     const p=(d.projects||[]).find(x=>String(x.id)===String(id));
     if(!p){toast('未找到项目');return}
-    const old=p.stage;
     p.stage=阶段;
-    if(阶段==='已完工'||阶段==='暂停')p.isCompleted=true;else p.isCompleted=false;
+    p.status=阶段;
+    if(p.raw){p.raw.stage=阶段;p.raw.status=阶段;p.raw.current_stage=阶段;p.raw.project_status=阶段}
+    p.isCompleted=(阶段==='已完工'||阶段==='暂停');
+    写本地阶段(id,阶段);
     renderAll();
-    toast('正在保存阶段');
-    try{
-      const c=获取客户端();
-      if(!c)throw new Error('数据库未连接');
-      const payload={stage:阶段,status:阶段};
-      const r=await c.from('projects').update(payload).eq('id',p.id);
-      if(r.error)throw r.error;
-      toast('阶段已更新');
-      setTimeout(function(){if(typeof loadRemote==='function')loadRemote();},500);
-    }catch(e){
-      p.stage=old;
-      toast('阶段保存失败，请检查项目表权限');
-      renderAll();
-    }
+    toast('阶段已更新');
+    closeSheet();
+    const ok=await 尝试数据库保存(p,阶段);
+    if(ok){toast('阶段已保存');setTimeout(function(){if(typeof loadRemote==='function')loadRemote();},500)}
+    else{toast('已在本机更新，数据库保存失败')}
   };
   const 原渲染全部=window.renderAll||renderAll;
-  window.renderAll=renderAll=function(){原渲染全部();setTimeout(renderDelivery,0);};
-  setTimeout(function(){重画交付筛选();renderDelivery();},500);
+  window.renderAll=renderAll=function(){应用本地阶段();原渲染全部();setTimeout(renderDelivery,0);};
+  const 原加载=window.loadRemote;
+  if(typeof 原加载==='function'){
+    window.loadRemote=loadRemote=async function(){await 原加载();应用本地阶段();renderAll();};
+  }
+  setTimeout(function(){应用本地阶段();重画交付筛选();renderDelivery();},500);
 })();
