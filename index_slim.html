@@ -9,6 +9,7 @@
 </head>
 <body>
 <div class="app">
+<span id="clock" style="display:none"></span>
 <header class="top"><div class="brand"><h1 id="title">今日</h1><span>三厘社</span></div></header>
 <section class="page active" id="page-today"><h2 class="hero">项目交付<br>今日总览</h2><p class="sub">汇总临近交付、预排确认与人员负载，快速定位需要处理的项目。</p><div class="kpis"><div class="kpi"><small>交付临近</small><b id="kpiDue">0</b></div><div class="kpi"><small>预排待确认</small><b id="kpiPre">0</b></div><div class="kpi"><small>人员过载</small><b id="kpiOver">0</b></div></div><div id="todayList"></div></section>
 <section class="page" id="page-delivery"><h2 class="hero">项目交付<br>时间看板</h2><p class="sub">合同项目与预排项目统一展示，按交付节点、负责人和阶段筛选。</p><input class="search" id="projectSearch" placeholder="搜索项目名、负责人、阶段"><div class="pill-row" id="deliveryFilters"><button class="pill active" data-filter="all">全部</button><button class="pill" data-filter="contract">合同内</button><button class="pill" data-filter="pre">预排</button><button class="pill" data-filter="risk">逾期风险</button></div><div id="deliveryList"></div></section>
