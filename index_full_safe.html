@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>设计项目控制台</title>
 <style>
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#1f2329}#appFrame{width:100%;height:100%;border:0;display:block}.fallback{position:fixed;left:16px;bottom:16px;z-index:10;background:rgba(255,255,255,.92);border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;font:13px -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;color:#1f2329;box-shadow:0 8px 24px rgba(0,0,0,.12);display:none}.fallback a{color:#3370ff;text-decoration:none;font-weight:600}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#1f2329}#appFrame{width:100%;height:100%;border:0;display:block}.fallback{position:fixed;left:16px;bottom:16px;z-index:10;background:rgba(255,255,255,.94);border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;font:13px -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;color:#1f2329;box-shadow:0 8px 24px rgba(0,0,0,.12);display:none}.fallback a{color:#3370ff;text-decoration:none;font-weight:600}
 </style>
 </head>
 <body>
-<iframe id="appFrame" src="index_full.html?v=20260507-login-safe" title="设计项目控制台"></iframe>
+<iframe id="appFrame" src="index_full.html?v=20260507-login-safe2" title="设计项目控制台"></iframe>
 <div class="fallback" id="fallback">登录补丁已启用。若页面仍无响应，<a href="index_reworked.html?v=login-fallback">打开旧完整版</a></div>
 <script>
 (function(){
@@ -17,6 +17,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#1f2329}#ap
   const SUPABASE_ANON_KEY='sb_publishable_2yQgdIPmNnxQRTswLSLSwQ_KFaIuUjv';
   const frame=document.getElementById('appFrame');
   const fallback=document.getElementById('fallback');
+  let lastEmail='';
   function ensureSupabase(win,doc){
     return new Promise((resolve,reject)=>{
       if(win.supabase && win.supabase.createClient) return resolve();
@@ -31,6 +32,10 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#1f2329}#ap
     const el=doc.getElementById('loginError');
     if(el){el.textContent=msg;el.style.display='block';}
     else alert(msg);
+  }
+  function bindOpenFallback(){
+    fallback.style.display='block';
+    setTimeout(()=>fallback.style.display='none',6000);
   }
   async function patchLogin(){
     const win=frame.contentWindow;
@@ -51,6 +56,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#1f2329}#ap
       const password=doc.getElementById('loginPassword')?.value||'';
       if(!email){showError(doc,'请输入邮箱');return;}
       if(!password){showError(doc,'请输入密码');return;}
+      lastEmail=email;
       const btn=doc.getElementById('loginBtn');
       const old=btn?btn.textContent:'登录';
       try{
@@ -58,27 +64,26 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#1f2329}#ap
         const client=win.getSupabaseClient();
         const {data,error}=await client.auth.signInWithPassword({email,password});
         if(error){showError(doc,'登录失败：'+(error.message||'邮箱或密码错误'));return;}
-        win.currentUser=data&&data.user;
-        if(typeof win.loadUserProfile==='function' && typeof win.showApp==='function'){
-          await win.loadUserProfile();
-          await win.showApp();
-        }else{
-          showError(doc,'登录成功，但完整管理脚本未加载完。正在切换备用入口…');
-          setTimeout(()=>{frame.src='index_reworked.html?v=login-fallback-'+Date.now()},800);
-        }
-      }catch(e){console.error(e);showError(doc,'登录异常：'+(e.message||e));}
-      finally{if(btn){btn.disabled=false;btn.textContent=old||'登录';}}
+        showError(doc,'登录成功，正在进入系统…');
+        setTimeout(()=>{ frame.src='index_full.html?v=auth-reload-'+Date.now(); },500);
+      }catch(e){
+        console.error(e);
+        showError(doc,'登录异常：'+(e.message||e));
+      }finally{
+        if(btn){btn.disabled=false;btn.textContent=old||'登录';}
+      }
     };
     const form=doc.getElementById('loginStep1');
     const btn=doc.getElementById('loginBtn');
     const pwd=doc.getElementById('loginPassword');
+    const emailInput=doc.getElementById('loginEmail');
+    if(emailInput && lastEmail && !emailInput.value) emailInput.value=lastEmail;
     if(form) form.onsubmit=function(e){e.preventDefault();win.loginWithPassword();};
     if(btn) btn.onclick=function(e){e.preventDefault();win.loginWithPassword();};
     if(pwd) pwd.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();win.loginWithPassword();}};
-    fallback.style.display='block';
-    setTimeout(()=>fallback.style.display='none',5000);
+    bindOpenFallback();
   }
-  frame.addEventListener('load',()=>{setTimeout(patchLogin,200);setTimeout(patchLogin,1200);});
+  frame.addEventListener('load',()=>{setTimeout(patchLogin,200);setTimeout(patchLogin,1200);setTimeout(patchLogin,2500);});
 })();
 </script>
 </body>
