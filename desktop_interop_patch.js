@@ -33,6 +33,16 @@
     return STATUS_LABEL[s] || v || '进行中';
   }
   function rawProject(p){ return p && (p.raw || p.project || p); }
+  window.isActiveProject = window.isActiveProject || function(p){
+    if(!p) return false;
+    const r = rawProject(p) || {};
+    const s = [p.status,p.stage,p.phase,p.current_stage,p.project_status,p.state,p.close_status,r.status,r.stage,r.phase,r.current_stage,r.project_status,r.state,r.close_status].map(v => v == null ? '' : String(v)).join(' ').toLowerCase();
+    if(/未完成|未完工|未完结|未结束/.test(s)) return true;
+    if(/已完成|完成|已完工|完工|完结|已完结|结束|已结束|结案|已结案|归档|已归档|取消|已取消|作废|关闭|closed|done|completed|cancel/.test(s)) return false;
+    if(/暂停|paused|pause|stopped|stop|halt/.test(s)) return false;
+    if(/进行中|方案阶段|施工图阶段|施工阶段|方案|施工图|施工|深化|active|ongoing|construction|design/.test(s)) return true;
+    return true;
+  };
   function getProjectStatus(p){
     const r = rawProject(p) || {};
     return normText(
@@ -42,12 +52,13 @@
     );
   }
   window.isTerminalProjectStatus = function(projectOrStatus){
-    const s = typeof projectOrStatus === 'string' ? projectOrStatus : getProjectStatus(projectOrStatus);
+    if(typeof projectOrStatus !== 'string') return !window.isActiveProject(projectOrStatus);
+    const s = projectOrStatus;
     if(ACTIVE_STATUS_RE.test(s)) return false;
     return TERMINAL_STATUS_RE.test(s);
   };
   window.isActiveForWorkload = function(project){
-    return !window.isTerminalProjectStatus(project);
+    return window.isActiveProject(project);
   };
   function applyStageOverridesToProjects(){
     A('allProjects').forEach(function(p){
