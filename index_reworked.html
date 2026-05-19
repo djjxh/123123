@@ -1325,12 +1325,56 @@ async function loadEmployees(){
   populateEmpSelects();
 }
 
+// ── 统一口径函数 ──────────────────────────────────────────────
+// 判断是否为管理人员（不参与普通设计师统计）
+function isManageUser(u){
+  if(!u) return false;
+  const manageRoles = ['admin','管理','最高权限','老板','总监','设计主管','行政'];
+  const manageNames = ['李茜','郭良霄','钱钧','最高权限'];
+  if(u.role && manageRoles.includes(u.role)) return true;
+  // 字段不完整时用姓名兜底
+  return manageNames.includes(u.name);
+}
+// 判断是否为离职/停用人员
+function isInactiveUser(u){
+  if(!u) return false;
+  if(u.is_active === false) return true;
+  const inactiveNames = ['金元宝','李来喜'];
+  return inactiveNames.includes(u.name);
+}
+// 判断是否为普通设计工作人员（参与工时统计）
+function isWorkDesigner(u){
+  if(!u) return false;
+  if(isManageUser(u)) return false;
+  if(isInactiveUser(u)) return false;
+  return true;
+}
+// 获取所有在职设计工作人员
+function getActiveWorkUsers(users){
+  return (users||[]).filter(u=>isWorkDesigner(u));
+}
+// 判断项目是否为进行中状态（计入统计）
+function isActiveProject(p){
+  if(!p) return false;
+  const activeStatuses = ['进行中','方案阶段','施工图阶段','施工中','深化中','active','construction','未完成','未完工'];
+  const inactiveStatuses = ['已完工','已完成','暂停','已暂停','归档','取消','作废','关闭','结案','done','paused'];
+  // 优先判断 status 字段
+  if(p.status){
+    const s = String(p.status).trim();
+    if(activeStatuses.includes(s)) return true;
+    if(inactiveStatuses.includes(s)) return false;
+    // 不在两个列表中的未知状态，默认不算进行中
+    return false;
+  }
+  return false;
+}
+
 async function loadLogs(){
   let q = sb.from('time_logs').select(`
     *,
     employee:users!time_logs_employee_id_fkey(name,avatar_color,job_title),
     project:projects!time_logs_project_id_fkey(name)
-  `).order('log_date',{ascending:false}).limit(200);
+  `).order('log_date',{ascending:false}); // 不分页，保证首页统计完整
   if(!isAdmin) q = q.eq('employee_id',userProfile?.id);
   const {data,error} = await q;
   allLogs = data||[];
@@ -2794,23 +2838,26 @@ function renderEmpTime(){
 function renderAdminTime(){
   // 统计卡
   const todayStr=new Date().toISOString().split('T')[0];
-  const todayLogs=allLogs.filter(l=>l.log_date===todayStr);
-  const weekH=allLogs.filter(l=>isThisWeek(l.log_date)).reduce((s,l)=>s+parseFloat(l.hours||0),0);
+  const workUsers = getActiveWorkUsers(allEmployees);
+  const workUserIds = new Set(workUsers.map(u=>u.id));
+  const workLogs = allLogs.filter(l=>workUserIds.has(l.employee_id));
+  const todayLogs=workLogs.filter(l=>l.log_date===todayStr);
+  const weekH=workLogs.filter(l=>isThisWeek(l.log_date)).reduce((s,l)=>s+parseFloat(l.hours||0),0);
   const el=document.getElementById('adminTimeStats');
   if(el) el.innerHTML=`
     <div class="stat-card"><div class="s-label">今日分派条数</div><div class="s-val">${todayLogs.length}</div></div>
     <div class="stat-card blue"><div class="s-label">本周总工时</div><div class="s-val">${weekH.toFixed(1)}<span class="s-unit">h</span></div></div>
-    <div class="stat-card gold"><div class="s-label">员工人数</div><div class="s-val">${allEmployees.length}<span class="s-unit">人</span></div></div>
-    <div class="stat-card green"><div class="s-label">进行中项目</div><div class="s-val">${allProjects.filter(p=>p.status==='active').length}<span class="s-unit">个</span></div></div>`;
+    <div class="stat-card gold"><div class="s-label">员工人数</div><div class="s-val">${workUsers.length}<span class="s-unit">人</span></div></div>
+    <div class="stat-card green"><div class="s-label">进行中项目</div><div class="s-val">${allProjects.filter(p=>isActiveProject(p)).length}<span class="s-unit">个</span></div></div>`;
   // 负荷条
   renderEmpLoadBars();
-  // 分派记录表
+  // 分派记录表（只显示设计工作人员的工时）
   const tbl=document.getElementById('assignTable');
   if(!tbl)return;
-  if(!allLogs.length){tbl.innerHTML='<div class="empty">暂无记录，点击「分派工时」开始录入</div>';return}
+  if(!workLogs.length){tbl.innerHTML='<div class="empty">暂无记录，点击「分派工时」开始录入</div>';return}
   tbl.innerHTML=`<table class="data-table"><thead><tr>
     <th>员工</th><th>项目</th><th>阶段</th><th>工时</th><th>日期</th><th>操作</th>
-  </tr></thead><tbody>${allLogs.slice(0,50).map(l=>`<tr>
+  </tr></thead><tbody>${workLogs.slice(0,50).map(l=>`<tr>
     <td><div style="display:flex;align-items:center;gap:8px">
       <div class="emp-av" style="background:${l.employee?.avatar_color||'#888'};width:26px;height:26px;font-size:11px">${(l.employee?.name||'?')[0]}</div>
       ${l.employee?.name||'—'}</div></td>
@@ -2828,8 +2875,9 @@ function renderAdminTime(){
 function renderEmpLoadBars(){
   const el=document.getElementById('empLoadBars');
   if(!el)return;
+  const workUsers = getActiveWorkUsers(allEmployees);
   const monthStr=new Date().toISOString().slice(0,7);
-  el.innerHTML=allEmployees.map(e=>{
+  el.innerHTML=workUsers.map(e=>{
     const h=allLogs.filter(l=>l.employee_id===e.id&&l.log_date?.startsWith(monthStr))
       .reduce((s,l)=>s+parseFloat(l.hours||0),0);
     const pct=Math.round(h/MONTHLY_CAP*100);
@@ -3002,10 +3050,12 @@ function renderDashboard(){
   if(!isAdmin)return;
   initDashMonthPicker();
   const monthStr = getDashMonth();
-  const monthLogs = allLogs.filter(l=>l.log_date?.startsWith(monthStr));
+  const workUsers = getActiveWorkUsers(allEmployees);
+  const workUserIds = new Set(workUsers.map(u=>u.id));
+  const monthLogs = allLogs.filter(l=>l.log_date?.startsWith(monthStr) && workUserIds.has(l.employee_id));
   const rawMonthH = monthLogs.reduce((s,l)=>s+parseFloat(l.hours||0),0);
   const adjMonthH = calcAdjustedHours(rawMonthH);
-  const monthCost = allEmployees.reduce((s,e)=>{
+  const monthCost = workUsers.reduce((s,e)=>{
     const h = monthLogs.filter(l=>l.employee_id===e.id).reduce((a,l)=>a+parseFloat(l.hours||0),0);
     return s + calcAdjustedHours(h) * getEmpHourlyRate(e) / 10000;
   },0);
@@ -3097,8 +3147,7 @@ function renderTodayTodoList(monthStr){
     const paidPct=Math.round(((p.paid_amount||0) / p.contract_amount) * 100);
     items.push({name:`${p.name} 回款偏低`,meta:`当前回款 ${paidPct}% · 建议今天催款`,badge:'催回款',cls:'badge-warn'});
   });
-  const noLogEmployees = allEmployees.filter(e=>{
-    if(e.is_active===false) return false;
+  const noLogEmployees = getActiveWorkUsers(allEmployees).filter(e=>{
     const h = allLogs.filter(l=>l.employee_id===e.id && l.log_date===todayStr).reduce((s,l)=>s+parseFloat(l.hours||0),0);
     return h===0;
   });
@@ -3124,7 +3173,8 @@ function renderTeamAlerts(monthStr){
   const el=document.getElementById('teamAlertsList');
   if(!el)return;
   const cap = getMonthlyCapForMonth(monthStr);
-  const rows = allEmployees.filter(e=>e.is_active!==false).map(e=>{
+  const workUsers = getActiveWorkUsers(allEmployees);
+  const rows = workUsers.map(e=>{
     const rawH = allLogs.filter(l=>l.employee_id===e.id && l.log_date?.startsWith(monthStr)).reduce((s,l)=>s+parseFloat(l.hours||0),0);
     const pct = rawH / cap;
     return { ...e, rawH, pct };
@@ -3187,9 +3237,10 @@ function renderActionAdvice(){
 function renderEmpRank(){
   const el=document.getElementById('empRankBody');
   if(!el)return;
+  const workUsers = getActiveWorkUsers(allEmployees);
   const monthStr=getDashMonth();
   const cap = getMonthlyCapForMonth(monthStr);
-  const ranked=allEmployees.map(e=>{
+  const ranked=workUsers.map(e=>{
     const rawH=allLogs.filter(l=>l.employee_id===e.id&&l.log_date?.startsWith(monthStr))
       .reduce((s,l)=>s+parseFloat(l.hours||0),0);
     const output=calcAdjustedHours(rawH)*getEmpHourlyRate(e)/10000;
@@ -3601,7 +3652,8 @@ function isThisWeek(dateStr){
   const d=new Date(dateStr);
   const now=new Date();
   const startOfWeek=new Date(now);
-  startOfWeek.setDate(now.getDate()-now.getDay());
+  const dayOfWeek=now.getDay();
+  startOfWeek.setDate(now.getDate()-(dayOfWeek===0?6:dayOfWeek-1)); // 周一为一周起始
   startOfWeek.setHours(0,0,0,0);
   return d>=startOfWeek;
 }
