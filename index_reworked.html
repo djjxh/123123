@@ -772,7 +772,7 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
 </div>
 
 <!-- MODAL: 飞书导入 -->
-<div class="modal-overlay" id="importModal">
+<div class="modal-overlay" id="importModal" onwheel="event.stopPropagation();">
   <div class="modal-box" style="max-width:660px">
     <div class="modal-handle"></div>
     <div class="modal-title"><button class="modal-close" onclick="closeModal('importModal')">×</button>📥 从飞书导入工时数据</div>
@@ -1531,6 +1531,20 @@ async function saveEditProject(){
   toast('✓ 项目信息已更新');
   await loadProjects();
   renderAll();
+}
+
+// ── Modal 基本操作 ───
+function closeModal(id){
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow='';
+}
+function closeModalOutside(e,id){if(e.target===document.getElementById(id))closeModal(id);}
+function openModal(id){
+  if(id==='importModal'){
+    resetImportState();
+  }
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow='hidden';
 }
 
 // 关闭弹窗时重置状态
@@ -2848,11 +2862,23 @@ function renderAdminTime(){
   const todayLogs=workLogs.filter(l=>l.log_date===todayStr);
   const weekH=workLogs.filter(l=>isThisWeek(l.log_date)).reduce((s,l)=>s+parseFloat(l.hours||0),0);
   const el=document.getElementById('adminTimeStats');
-  if(el) el.innerHTML=`
+  if(el){
+    // 查找最近一条记录日期
+    let lastDate = '';
+    const sortedLogs = [...workLogs].sort((a,b)=>(a.log_date||'') < (b.log_date||'') ? 1 : -1);
+    for(const l of sortedLogs){
+      if(l.log_date && /^\d{4}-\d{2}-\d{2}$/.test(l.log_date)){ lastDate = l.log_date; break; }
+    }
+    const weekHint = (weekH === 0 && workLogs.length > 0)
+      ? `<div style="font-size:11px;color:var(--text-sub);margin-top:6px">本周暂无工时记录，最近记录日期：${lastDate || '—'}</div>`
+      : '';
+    el.innerHTML=`
     <div class="stat-card"><div class="s-label">今日分派条数</div><div class="s-val">${todayLogs.length}</div></div>
     <div class="stat-card blue"><div class="s-label">本周总工时</div><div class="s-val">${weekH.toFixed(1)}<span class="s-unit">h</span></div></div>
     <div class="stat-card gold"><div class="s-label">员工人数</div><div class="s-val">${workUsers.length}<span class="s-unit">人</span></div></div>
-    <div class="stat-card green"><div class="s-label">进行中项目</div><div class="s-val">${allProjects.filter(p=>isActiveProject(p)).length}<span class="s-unit">个</span></div></div>`;
+    <div class="stat-card green"><div class="s-label">进行中项目</div><div class="s-val">${allProjects.filter(p=>isActiveProject(p)).length}<span class="s-unit">个</span></div></div>
+    ${weekHint}`;
+  }
   // 负荷条
   renderEmpLoadBars();
   // 分派记录表（只显示设计工作人员的工时）
@@ -3634,21 +3660,7 @@ function closeSidebar(){
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('sidebarOverlay').classList.remove('open');
 }
-function openModal(id){
-  if(id==='importModal'){
-    resetImportState();
-  }
-  document.getElementById(id).classList.add('open');
-  document.body.style.overflow='hidden';
-}
-function closeModal(id){
-  if(id==='importModal'){
-    resetImportState();
-  }
-  document.getElementById(id).classList.remove('open');
-  document.body.style.overflow='';
-}
-function closeModalOutside(e,id){if(e.target===document.getElementById(id))closeModal(id);}
+let modalsReady = true;
 function changeH(d){
   currentH=Math.max(0.5,Math.min(14,currentH+d));
   document.getElementById('hVal').textContent=currentH.toFixed(1);
@@ -3676,8 +3688,12 @@ function showDiagnostics(){
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - (dayOfWeek===0?6:dayOfWeek-1));
   startOfWeek.setHours(0,0,0,0);
-  const weekStartStr = startOfWeek.toISOString().split('T')[0];
-  const todayStr = now.toISOString().split('T')[0];
+  const weekStartStr = startOfWeek.getFullYear() + '-' +
+    String(startOfWeek.getMonth()+1).padStart(2,'0') + '-' +
+    String(startOfWeek.getDate()).padStart(2,'0');
+  const todayStr = now.getFullYear() + '-' +
+    String(now.getMonth()+1).padStart(2,'0') + '-' +
+    String(now.getDate()).padStart(2,'0');
 
   // 检测字段名
   const hoursFields = [], dateFields = [];
@@ -3793,7 +3809,7 @@ function showDiagnostics(){
   let reasons = [];
   if(logs.length === 0) reasons.push('● allLogs 为空，需检查 Supabase 查询是否成功');
   if(parseFail > parseOk) reasons.push('● 日期字段 '+dField+' 解析失败率高，部分日期格式不兼容');
-  if(rawWeekCount === 0 && logs.length > 0) reasons.push('● 本周确实没有记录，或日期字段不是日期值');
+  if(rawWeekCount === 0 && logs.length > 0) reasons.push('✅ 数据读取正常，本周无记录。最近记录：' + sample10[0]?.[dField] || '—');
   if(workWeekCount === 0 && rawWeekCount > 0) reasons.push('● employee_id 过滤导致本周记录全被排除（可能是管理人员/离职人员比例高）');
   if(matchFail > matchOk) reasons.push('● employee_id 匹配率偏低，导入的数据可能对应不存在的员工');
   if(workWeekCount > 0 && workWeekHours === 0) reasons.push('● 工时字段 '+hField+' 解析值全为 0，字段名可能不对');
@@ -3814,7 +3830,7 @@ function showDiagnostics(){
     html += '<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:var(--cream)">';
     html += '<th style="padding:4px 6px;text-align:left">人员</th><th style="padding:4px 6px;text-align:center">参与项目</th><th style="padding:4px 6px;text-align:center">进行中</th><th style="padding:4px 6px;text-align:center">已完结</th><th style="padding:4px 6px;text-align:left">项目状态</th></tr></thead><tbody>';
     teamDiag.forEach(d=>{
-      const flag = d.activeProjects >= 3 ? '🔴' : d.activeProjects >= 2 ? '🟡' : '🟢';
+      const flag = d.activeProjects >= 4 ? '🔴' : d.activeProjects === 3 ? '🟡' : '🟢';
       html += '<tr><td style="padding:3px 6px;font-weight:600">'+flag+' '+d.name+'</td>';
       html += '<td style="padding:3px 6px;text-align:center">'+d.allProjects+'</td>';
       html += '<td style="padding:3px 6px;text-align:center">'+d.activeProjects+'</td>';
@@ -3825,7 +3841,7 @@ function showDiagnostics(){
   }
 
   html += '<div style="margin-top:8px;padding:6px 8px;background:#f0f4ff;border-radius:4px;font-size:11px;color:var(--text-sub)">';
-  html += '阈值说明：🟢 1个进行中项目正常 · 🟡 2个项目关注交期 · 🔴 3个及以上提示超负荷/需协调';
+  html += '阈值说明：🟢 0-2个进行中项目正常 · 🟡 3个项目关注排期 · 🔴 4个及以上超负荷/需协调';
   html += '<br>判断规则：只按当前进行中项目数（已完工/暂停/归档不计入），同一项目不重复计数';
   html += '<br>📌 本诊断面板只读，关闭后刷新页面不会残留</div>';
 
@@ -3838,12 +3854,15 @@ function showDiagnostics(){
 function isThisWeek(dateStr){
   if(!dateStr)return false;
   const d=new Date(dateStr);
+  if(isNaN(d.getTime()))return false;
   const now=new Date();
   const startOfWeek=new Date(now);
   const dayOfWeek=now.getDay();
-  startOfWeek.setDate(now.getDate()-(dayOfWeek===0?6:dayOfWeek-1)); // 周一为一周起始
+  startOfWeek.setDate(now.getDate()-(dayOfWeek===0?6:dayOfWeek-1));
   startOfWeek.setHours(0,0,0,0);
-  return d>=startOfWeek;
+  const endOfWeek=new Date(startOfWeek);
+  endOfWeek.setDate(endOfWeek.getDate()+7);
+  return d>=startOfWeek && d<endOfWeek;
 }
 
 // admin-only 由 CSS .admin-mode 控制，不用 inline style 覆盖
