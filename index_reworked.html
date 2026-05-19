@@ -768,7 +768,7 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
 </div>
 
 <!-- MODAL: 飞书导入 -->
-<div class="modal-overlay" id="importModal" onclick="closeModalOutside(event,'importModal')">
+<div class="modal-overlay" id="importModal">
   <div class="modal-box" style="max-width:660px">
     <div class="modal-handle"></div>
     <div class="modal-title"><button class="modal-close" onclick="closeModal('importModal')">×</button>📥 从飞书导入工时数据</div>
@@ -1177,18 +1177,6 @@ let allPayments = [];
 let allMembers = [];   // project_members
 let allScores  = [];   // project_scores
 
-function isActiveProject(p) {
-  if (!p) return false;
-  const s = [p.status, p.stage, p.phase, p.current_stage, p.project_status, p.state, p.close_status]
-    .map(v => v == null ? '' : String(v)).join(' ').toLowerCase();
-  if (/未完成|未完工|未完结|未结束/.test(s)) return true;
-  if (/已完成|完成|已完工|完工|完结|已完结|结束|已结束|结案|已结案|归档|已归档|取消|已取消|作废|关闭|closed|done|completed|cancel/.test(s)) return false;
-  if (/暂停|paused|pause|stopped|stop|halt/.test(s)) return false;
-  if (/进行中|方案阶段|施工图阶段|施工阶段|方案|施工图|施工|深化|active|ongoing|construction|design/.test(s)) return true;
-  return true;
-}
-function isCompletedProject(p){ return !isActiveProject(p); }
-
 // ── 算法常量 ──────────────────────────────────────────────────
 // 动态计算当月工作日（排除周六日）× 6.5小时
 function getMonthlyWorkdays(yearMonth){
@@ -1362,7 +1350,7 @@ function populateProjSelects(){
   ids.forEach(id=>{
     const el=document.getElementById(id);
     if(!el)return;
-    el.innerHTML=allProjects.filter(isActiveProject)
+    el.innerHTML=allProjects.filter(p=>p.status!=='done')
       .map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
   });
 }
@@ -1500,6 +1488,9 @@ async function saveEditProject(){
 // 关闭弹窗时重置状态
 const _origCloseModal = closeModal;
 function closeModal(id){
+  if(id==='importModal'){
+    resetImportState();
+  }
   if(id==='newProjModal'){
     document.getElementById('npEditId').value='';
     document.getElementById('npModalTitle').textContent='新建项目';
@@ -1773,6 +1764,32 @@ async function parseImportFile(file){
 
   document.getElementById('importPreviewWrap').style.display = importRows.length ? 'block' : 'none';
   if(!importRows.length) toast('没有找到可导入的记录，请检查列名和任务进度字段');
+}
+
+// 完整重置导入状态
+function resetImportState(){
+  importRows = [];
+  resetImportPreviewWrap();
+  const fileInput = document.getElementById('importFileInput');
+  if(fileInput) fileInput.value = '';
+  const btn = document.getElementById('doImportBtn');
+  if(btn){ btn.disabled = false; btn.textContent = '✅ 确认导入'; }
+  const warnBox = document.getElementById('importWarnBox');
+  if(warnBox) warnBox.innerHTML = '';
+  const unmatchedWrap = document.getElementById('unmatchedWrap');
+  if(unmatchedWrap) unmatchedWrap.style.display = 'none';
+  const unmatchedList = document.getElementById('unmatchedList');
+  if(unmatchedList) unmatchedList.innerHTML = '';
+  const dz = document.getElementById('importDropZone');
+  if(dz){ dz.style.borderColor = ''; dz.style.background = ''; }
+}
+function resetImportPreviewWrap(){
+  const wrap = document.getElementById('importPreviewWrap');
+  if(wrap) wrap.style.display = 'none';
+  const summary = document.getElementById('importSummary');
+  if(summary) summary.textContent = '';
+  const tbody = document.getElementById('importPreviewBody');
+  if(tbody) tbody.innerHTML = '';
 }
 
 async function doImport(){
@@ -2784,7 +2801,7 @@ function renderAdminTime(){
     <div class="stat-card"><div class="s-label">今日分派条数</div><div class="s-val">${todayLogs.length}</div></div>
     <div class="stat-card blue"><div class="s-label">本周总工时</div><div class="s-val">${weekH.toFixed(1)}<span class="s-unit">h</span></div></div>
     <div class="stat-card gold"><div class="s-label">员工人数</div><div class="s-val">${allEmployees.length}<span class="s-unit">人</span></div></div>
-    <div class="stat-card green"><div class="s-label">进行中项目</div><div class="s-val">${allProjects.filter(isActiveProject).length}<span class="s-unit">个</span></div></div>`;
+    <div class="stat-card green"><div class="s-label">进行中项目</div><div class="s-val">${allProjects.filter(p=>p.status==='active').length}<span class="s-unit">个</span></div></div>`;
   // 负荷条
   renderEmpLoadBars();
   // 分派记录表
@@ -2839,12 +2856,12 @@ function filterProj(s,el){
 
 function renderProjectPage(){
   if(!isAdmin){renderEmpProjTable();return}
-  const list=projFilter==='all'?allProjects:projFilter==='active'?allProjects.filter(isActiveProject):allProjects.filter(p=>p.status===projFilter);
+  const list=projFilter==='all'?allProjects:allProjects.filter(p=>p.status===projFilter);
   // 风险预警
   const ra=document.getElementById('riskAlerts');
   if(ra){
     const risky=allProjects.filter(p=>{
-      if(!isActiveProject(p)) return false;
+      if(p.status==='done' || p.status==='paused') return false;
       const hb = parseFloat(p.hours_budget)||0;
       const hu = parseFloat(p.hours_used)||0;
       const ca = parseFloat(p.contract_amount)||0;
@@ -2886,7 +2903,7 @@ function renderProjectPage(){
         </div></td>
         <td>
           <span class="badge badge-${p.status}">${p.status==='active'?'进行中':p.status==='construction'?'🏗施工跟踪':p.status==='paused'?'⏸暂停':p.status==='risk'?'⚠预警':'已完结'}</span>
-          ${p.deadline&&isActiveProject(p)&&new Date(p.deadline)<new Date()?'<div style="font-size:10px;color:var(--accent);margin-top:2px">⚠施工图已超期</div>':''}
+          ${p.deadline&&p.status==='active'&&new Date(p.deadline)<new Date()?'<div style="font-size:10px;color:var(--accent);margin-top:2px">⚠施工图已超期</div>':''}
           ${p.status==='construction'&&p.completion_date?`<div style="font-size:10px;color:var(--text-sub);margin-top:2px">预计竣工：${p.completion_date}</div>`:''}
         </td>
         <td style="display:flex;gap:4px">
@@ -2997,7 +3014,7 @@ function renderDashboard(){
   const totalCost=allProjects.reduce((s,p)=>s+(p.labor_cost||0),0);
   const avgMargin=totalContract>0?Math.round((totalContract-totalCost)/totalContract*100):0;
   const riskyProjects = allProjects.filter(p=>{
-    if(!isActiveProject(p)) return false;
+    if(p.status==='done' || p.status==='paused') return false;
     const hb = parseFloat(p.hours_budget)||0;
     const hu = parseFloat(p.hours_used)||0;
     const ca = parseFloat(p.contract_amount)||0;
@@ -3023,8 +3040,8 @@ function renderBusinessSummary(monthStr, metrics){
   const el=document.getElementById('dashSummary');
   if(!el)return;
   const today=new Date();
-  const overdue = allProjects.filter(p=>isActiveProject(p) && p.deadline && new Date(p.deadline) < today);
-  const lowPaid = allProjects.filter(p=>isActiveProject(p) && p.contract_amount>0 && ((p.paid_amount||0) / p.contract_amount) < 0.4);
+  const overdue = allProjects.filter(p=>p.status==='active' && p.deadline && new Date(p.deadline) < today);
+  const lowPaid = allProjects.filter(p=>p.status!=='done' && p.contract_amount>0 && ((p.paid_amount||0) / p.contract_amount) < 0.4);
   const cap = getMonthlyCapForMonth(monthStr);
   const overloaded = allEmployees.filter(e=>{
     const h = allLogs.filter(l=>l.employee_id===e.id && l.log_date?.startsWith(monthStr)).reduce((s,l)=>s+parseFloat(l.hours||0),0);
@@ -3069,14 +3086,14 @@ function renderTodayTodoList(monthStr){
   in7Days.setDate(in7Days.getDate()+7);
 
   const items=[];
-  allProjects.filter(p=>isActiveProject(p) && p.deadline && new Date(p.deadline) < today).forEach(p=>{
+  allProjects.filter(p=>p.status==='active' && p.deadline && new Date(p.deadline) < today).forEach(p=>{
     items.push({name:`${p.name} 已超施工图交付日`,meta:`截止 ${p.deadline} · 建议今天确认实际交付时间`,badge:'立即处理',cls:'badge-risk'});
   });
-  allProjects.filter(p=>isActiveProject(p) && p.deadline && new Date(p.deadline) >= today && new Date(p.deadline) <= in7Days).forEach(p=>{
+  allProjects.filter(p=>p.status==='active' && p.deadline && new Date(p.deadline) >= today && new Date(p.deadline) <= in7Days).forEach(p=>{
     const diff=Math.ceil((new Date(p.deadline)-today)/86400000);
     items.push({name:`${p.name} 即将到期`,meta:`剩余 ${diff} 天 · 建议今天确认图纸完成度`,badge:'本周跟进',cls:'badge-warn'});
   });
-  allProjects.filter(p=>isActiveProject(p) && p.contract_amount>0 && ((p.paid_amount||0) / p.contract_amount) < 0.4).forEach(p=>{
+  allProjects.filter(p=>p.status!=='done' && p.contract_amount>0 && ((p.paid_amount||0) / p.contract_amount) < 0.4).forEach(p=>{
     const paidPct=Math.round(((p.paid_amount||0) / p.contract_amount) * 100);
     items.push({name:`${p.name} 回款偏低`,meta:`当前回款 ${paidPct}% · 建议今天催款`,badge:'催回款',cls:'badge-warn'});
   });
@@ -3159,9 +3176,9 @@ function renderActionAdvice(){
   const el=document.getElementById('actionAdvice');
   if(!el)return;
   const advices=[];
-  const overHours=allProjects.filter(p=>isActiveProject(p)&&p.hours_budget>0&&p.hours_used/p.hours_budget>0.85);
+  const overHours=allProjects.filter(p=>p.status!=='done'&&p.hours_budget>0&&p.hours_used/p.hours_budget>0.85);
   if(overHours.length) advices.push({type:'red',text:`⚠ ${overHours.map(p=>p.name?.slice(0,10)).join('、')} 工时消耗超 85%，评估是否追加费用。`});
-  const unpaid=allProjects.filter(p=>isActiveProject(p)&&p.contract_amount>0&&(p.paid_amount||0)/p.contract_amount<0.4);
+  const unpaid=allProjects.filter(p=>p.status!=='done'&&p.contract_amount>0&&(p.paid_amount||0)/p.contract_amount<0.4);
   if(unpaid.length) advices.push({type:'gold',text:`💰 ${unpaid.map(p=>p.name?.slice(0,10)).join('、')} 回款率不足 40%，建议跟进付款。`});
   if(!advices.length) advices.push({type:'green',text:`✅ 当前无紧急预警事项，保持现有运营节奏。`});
   el.innerHTML=advices.map(a=>`<div class="notice ${a.type==='red'?'red':a.type==='green'?'green':''}" style="margin-bottom:10px">${a.text}</div>`).join('');
@@ -3223,7 +3240,7 @@ function renderQuote(){
   calcQuote();
   const el=document.getElementById('historyBody');
   if(!el)return;
-  const done=allProjects.filter(isCompletedProject);
+  const done=allProjects.filter(p=>p.status==='done');
   if(!done.length){el.innerHTML='<tr><td colspan="6" class="empty">暂无完结项目数据</td></tr>';return}
   el.innerHTML=done.map(p=>{
     const margin=p.contract_amount>0?Math.round((p.contract_amount-p.labor_cost)/p.contract_amount*100):0;
@@ -3392,7 +3409,7 @@ function renderAnomalyDetection(){
 function renderEVM(){
   const el=document.getElementById('evmTable');
   if(!el)return;
-  const active=allProjects.filter(isActiveProject);
+  const active=allProjects.filter(p=>p.status!=='done');
   if(!active.length){el.innerHTML='<div class="empty">暂无进行中项目</div>';return}
   el.innerHTML=`<table class="data-table" style="font-size:12px">
     <thead><tr>
@@ -3469,9 +3486,9 @@ function renderGantt(){
   const el=document.getElementById('ganttView');
   if(!el)return;
   // 进行中项目按施工图截止日排序；施工跟踪按竣工日；排除已暂停/已完结
-  const designProjs = allProjects.filter(p=>isActiveProject(p)&&p.status==='active'&&p.deadline)
+  const designProjs = allProjects.filter(p=>p.status==='active'&&p.deadline)
     .sort((a,b)=>new Date(a.deadline)-new Date(b.deadline));
-  const constructionProjs = allProjects.filter(p=>isActiveProject(p)&&p.status==='construction');
+  const constructionProjs = allProjects.filter(p=>p.status==='construction');
   const active = [...designProjs, ...constructionProjs];
   if(!active.length){el.innerHTML='<div style="color:var(--text-sub);font-size:12px">请在项目中设置截止日期以启用甘特排期</div>';return}
   const today=new Date();
@@ -3556,10 +3573,16 @@ function closeSidebar(){
   document.getElementById('sidebarOverlay').classList.remove('open');
 }
 function openModal(id){
+  if(id==='importModal'){
+    resetImportState();
+  }
   document.getElementById(id).classList.add('open');
   document.body.style.overflow='hidden';
 }
 function closeModal(id){
+  if(id==='importModal'){
+    resetImportState();
+  }
   document.getElementById(id).classList.remove('open');
   document.body.style.overflow='';
 }
