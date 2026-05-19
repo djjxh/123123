@@ -383,6 +383,10 @@ body{font-family:'Noto Sans SC',sans-serif;background:#f5f6f7;color:#1f2329;min-
   <!-- 管理者视图 -->
   <div class="admin-only">
     <div id="adminTimeStats" class="stat-grid"></div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;justify-content:flex-end">
+      <button class="action-btn" onclick="showDiagnostics()" style="padding:6px 12px;font-size:11px;background:var(--cream);color:var(--ink);border:1px solid var(--border)">🔍 临时统计诊断</button>
+      <div id="diagnosticPanel" style="display:none"></div>
+    </div>
     <div class="section-hd">
       <div class="section-title">员工负荷总览</div>
     </div>
@@ -3172,36 +3176,43 @@ function renderTodayTodoList(monthStr){
 function renderTeamAlerts(monthStr){
   const el=document.getElementById('teamAlertsList');
   if(!el)return;
-  const cap = getMonthlyCapForMonth(monthStr);
   const workUsers = getActiveWorkUsers(allEmployees);
-  const rows = workUsers.map(e=>{
-    const rawH = allLogs.filter(l=>l.employee_id===e.id && l.log_date?.startsWith(monthStr)).reduce((s,l)=>s+parseFloat(l.hours||0),0);
-    const pct = rawH / cap;
-    return { ...e, rawH, pct };
-  });
-
   const items = [];
-  rows.filter(r=>r.pct>1).forEach(r=>{
-    items.push({name:`${r.name} 已超负荷`,meta:`本月 ${r.rawH.toFixed(0)}h / ${cap.toFixed(0)}h · 建议立即拆分任务`,badge:'超载',cls:'badge-risk'});
-  });
-  rows.filter(r=>r.pct<0.35).forEach(r=>{
-    items.push({name:`${r.name} 当前负荷偏低`,meta:`本月 ${r.rawH.toFixed(0)}h · 可承接新任务或返工任务`,badge:'可补位',cls:'badge-warn'});
-  });
 
-  const multiProj = rows.map(r=>{
-    const projCount = new Set(allLogs.filter(l=>l.employee_id===r.id && l.log_date?.startsWith(monthStr)).map(l=>l.project_id)).size;
-    return { ...r, projCount };
-  }).filter(r=>r.projCount>=4 && r.pct>0.8);
-  multiProj.forEach(r=>{
-    items.push({name:`${r.name} 同时跟进项目过多`,meta:`本月参与 ${r.projCount} 个项目 · 建议减少切换成本`,badge:'需协调',cls:'badge-active'});
+  workUsers.forEach(e=>{
+    // 获取该员工参与的项目（去重），只保留进行中状态
+    const projMap = {};
+    allLogs.filter(l=>l.employee_id===e.id).forEach(l=>{
+      if(projMap[l.project_id]) return;
+      const p = allProjects.find(x=>x.id===l.project_id);
+      if(p && isActiveProject(p)){
+        projMap[l.project_id] = { name: p.name, status: p.status };
+      }
+    });
+    const activeProjCount = Object.keys(projMap).length;
+    const activeProjNames = Object.values(projMap).map(p=>p.name).join('、');
+
+    if(activeProjCount >= 4){
+      items.push({name:`${e.name} 超负荷`,meta:`并行进行中项目 ${activeProjCount} 个（${activeProjNames}）· 建议拆分任务或暂停新增`,badge:'超负荷',cls:'badge-risk'});
+    } else if(activeProjCount === 3){
+      items.push({name:`${e.name} 当前并行项目较多`,meta:`并行进行中项目 ${activeProjCount} 个（${activeProjNames}）· 请关注排期`,badge:'关注',cls:'badge-warn'});
+    }
+
+    if(activeProjCount === 0){
+      const monthH = allLogs.filter(l=>l.employee_id===e.id && l.log_date?.startsWith(monthStr))
+        .reduce((s,l)=>s+parseFloat(l.hours||0),0);
+      if(monthH < 40){
+        items.push({name:`${e.name} 当前无进行中项目`,meta:`本月工时仅 ${monthH.toFixed(0)}h · 可承接新任务`,badge:'可补位',cls:'badge-warn'});
+      }
+    }
   });
 
   if(!items.length){
-    el.innerHTML='<div class="list-item"><div style="font-size:20px">🌿</div><div class="li-info"><div class="li-name">当前团队状态正常</div><div class="li-meta">没有明显超载或空转人员</div></div></div>';
+    el.innerHTML='<div class="list-item"><div style="font-size:20px">🍀</div><div class="li-info"><div class="li-name">当前团队状态正常</div><div class="li-meta">没有明显超载或空转人员</div></div></div>';
     return;
   }
 
-  el.innerHTML = items.slice(0,6).map(item=>`<div class="list-item">
+  el.innerHTML = items.slice(0,8).map(item=>`<div class="list-item">
     <div class="li-info">
       <div class="li-name">${item.name}</div>
       <div class="li-meta">${item.meta}</div>
@@ -3647,6 +3658,183 @@ function toast(msg){
   t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2400);
 }
+
+// ── 统计诊断面板（只读，不修改任何数据） ──────────────────────
+function showDiagnostics(){
+  const panel = document.getElementById('diagnosticPanel');
+  if(!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  if(isOpen){ panel.style.display = 'none'; return; }
+
+  const logs = allLogs || [];
+  const emp = allEmployees || [];
+  const proj = allProjects || [];
+  const workUsers = getActiveWorkUsers(emp);
+  const workUserIds = new Set(workUsers.map(u=>u.id));
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - (dayOfWeek===0?6:dayOfWeek-1));
+  startOfWeek.setHours(0,0,0,0);
+  const weekStartStr = startOfWeek.toISOString().split('T')[0];
+  const todayStr = now.toISOString().split('T')[0];
+
+  // 检测字段名
+  const hoursFields = [], dateFields = [];
+  if(logs.length > 0){
+    for(const k in logs[0]){
+      if(/hours?|duration|work_hours?|value|total_hours|spent_hours|actual_hours/i.test(k)) hoursFields.push(k);
+      if(/log_date|date|work_date|created_at|task_date|record_date|submit_date/i.test(k)) dateFields.push(k);
+    }
+  }
+  const hField = hoursFields[0] || 'hours';
+  const dField = dateFields[0] || 'log_date';
+
+  // 本周原始记录和日期可解析率
+  let rawWeekCount = 0, parseOk = 0, parseFail = 0;
+  logs.forEach(l=>{
+    try {
+      const d = new Date(l[dField]);
+      if(!isNaN(d.getTime())){
+        parseOk++;
+        if(d >= startOfWeek) rawWeekCount++;
+      } else parseFail++;
+    } catch(e) { parseFail++; }
+  });
+
+  // 过滤后本周记录
+  let workWeekCount = 0, workWeekHours = 0;
+  logs.forEach(l=>{
+    try {
+      const d = new Date(l[dField]);
+      if(!isNaN(d.getTime()) && d >= startOfWeek && workUserIds.has(l.employee_id)){
+        workWeekCount++;
+        workWeekHours += parseFloat(l[hField]) || 0;
+      }
+    } catch(e) {}
+  });
+
+  // employee_id 匹配
+  let matchOk = 0, matchFail = 0;
+  logs.forEach(l=>{
+    if(emp.some(e=>e.id===l.employee_id)) matchOk++;
+    else matchFail++;
+  });
+
+  // 最近10条样本
+  const sample10 = logs.slice(0,10).map(l=>{
+    const e = emp.find(x=>x.id===l.employee_id);
+    return {
+      employee_id: l.employee_id,
+      empName: e?.name || '?',
+      [dField]: l[dField],
+      [hField]: l[hField],
+      project_id: l.project_id ? l.project_id.slice(0,8)+'...' : '',
+      stage: l.stage
+    };
+  });
+
+  // 团队异常诊断
+  const teamDiag = [];
+  workUsers.forEach(e=>{
+    const projMap = {};
+    logs.filter(l=>l.employee_id===e.id).forEach(l=>{
+      if(projMap[l.project_id]) return;
+      const p = proj.find(x=>x.id===l.project_id);
+      if(p) projMap[l.project_id] = { name: p.name, status: p.status };
+    });
+    const allProjCount = Object.keys(projMap).length;
+    const activeProj = {};
+    Object.entries(projMap).forEach(([id,p])=>{
+      if(isActiveProject({status:p.status})) activeProj[id] = p;
+    });
+    const activeCount = Object.keys(activeProj).length;
+    const doneCount = allProjCount - activeCount;
+    if(allProjCount > 0){
+      teamDiag.push({
+        name: e.name,
+        allProjects: allProjCount,
+        activeProjects: activeCount,
+        doneProjects: doneCount,
+        projectList: Object.values(projMap).map(p=>p.name+'('+p.status+')')
+      });
+    }
+  });
+
+  // 构建诊断 HTML
+  let html = '<div class="card" style="margin-bottom:12px;font-size:12px;line-height:1.7;max-height:80vh;overflow-y:auto">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+  html += '<strong style="font-size:14px">&#128269; 临时统计诊断报告</strong>';
+  html += '<button class="action-btn" onclick="document.getElementById(\'diagnosticPanel\').style.display=\'none\'" style="padding:3px 8px;font-size:11px">✕ 关闭</button></div>';
+
+  // 一、首页本周工时诊断
+  html += '<div style="background:var(--cream);padding:8px 10px;border-radius:6px;margin-bottom:8px"><strong>一、首页本周工时诊断</strong></div>';
+  html += '<table style="width:100%;border-collapse:collapse;font-size:11px">';
+  const rows = [
+    ['allLogs 总条数', logs.length],
+    ['allEmployees 总人数', emp.length],
+    ['allProjects 总项目数', proj.length],
+    ['识别到的工时段', hoursFields.join(', ') || '未找到'],
+    ['识别到的日期段', dateFields.join(', ') || '未找到'],
+    ['当前使用的日期字段', dField],
+    ['当前使用的工时字段', hField],
+    ['本周起止日期', weekStartStr + ' ~ ' + todayStr],
+    ['日期可解析数', parseOk + ' / ' + (parseOk+parseFail)],
+    ['本周原始记录数', rawWeekCount],
+    ['本周过滤后记录数', workWeekCount],
+    ['本周工时合计', workWeekHours.toFixed(2) + 'h'],
+    ['employee_id 匹配成功', matchOk],
+    ['employee_id 匹配失败', matchFail],
+  ];
+  rows.forEach(([k,v])=>{
+    html += '<tr><td style="padding:2px 6px;color:var(--text-sub);white-space:nowrap">'+k+'</td><td style="padding:2px 6px;font-weight:600">'+v+'</td></tr>';
+  });
+  // 根因判断
+  let reasons = [];
+  if(logs.length === 0) reasons.push('● allLogs 为空，需检查 Supabase 查询是否成功');
+  if(parseFail > parseOk) reasons.push('● 日期字段 '+dField+' 解析失败率高，部分日期格式不兼容');
+  if(rawWeekCount === 0 && logs.length > 0) reasons.push('● 本周确实没有记录，或日期字段不是日期值');
+  if(workWeekCount === 0 && rawWeekCount > 0) reasons.push('● employee_id 过滤导致本周记录全被排除（可能是管理人员/离职人员比例高）');
+  if(matchFail > matchOk) reasons.push('● employee_id 匹配率偏低，导入的数据可能对应不存在的员工');
+  if(workWeekCount > 0 && workWeekHours === 0) reasons.push('● 工时字段 '+hField+' 解析值全为 0，字段名可能不对');
+  if(!reasons.length && workWeekHours === 0) reasons.push('● 未发现明显异常，需进一步检查日志');
+  if(workWeekHours > 0) reasons = ['✅ 本周工时计算正常，数值为 '+workWeekHours.toFixed(2)+'h'];
+  html += '<tr><td colspan="2" style="padding:6px;background:#fff8e1;border-radius:4px">'+reasons.join('<br>')+'</td></tr>';
+
+  // 最近10条样本
+  html += '<tr><td colspan="2" style="padding:6px 0"><strong>最近 10 条记录样本：</strong></td></tr>';
+  html += '<tr><td colspan="2" style="padding:0"><pre style="font-size:10px;max-height:200px;overflow:auto;background:#f5f5f5;padding:6px;border-radius:4px;margin:0">'+JSON.stringify(sample10,null,2).slice(0,2000)+'</pre></td></tr>';
+  html += '</table>';
+
+  // 二、团队异常诊断
+  html += '<div style="background:var(--cream);padding:8px 10px;border-radius:6px;margin:8px 0"><strong>二、团队异常诊断</strong></div>';
+  if(teamDiag.length === 0){
+    html += '<div style="color:var(--text-sub);padding:4px 0">暂无数据</div>';
+  } else {
+    html += '<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:var(--cream)">';
+    html += '<th style="padding:4px 6px;text-align:left">人员</th><th style="padding:4px 6px;text-align:center">参与项目</th><th style="padding:4px 6px;text-align:center">进行中</th><th style="padding:4px 6px;text-align:center">已完结</th><th style="padding:4px 6px;text-align:left">项目状态</th></tr></thead><tbody>';
+    teamDiag.forEach(d=>{
+      const flag = d.activeProjects >= 3 ? '🔴' : d.activeProjects >= 2 ? '🟡' : '🟢';
+      html += '<tr><td style="padding:3px 6px;font-weight:600">'+flag+' '+d.name+'</td>';
+      html += '<td style="padding:3px 6px;text-align:center">'+d.allProjects+'</td>';
+      html += '<td style="padding:3px 6px;text-align:center">'+d.activeProjects+'</td>';
+      html += '<td style="padding:3px 6px;text-align:center">'+d.doneProjects+'</td>';
+      html += '<td style="padding:3px 6px;font-size:10px;max-width:200px;overflow:hidden">'+d.projectList.slice(0,5).join('; ')+(d.projectList.length>5?'…':'')+'</td></tr>';
+    });
+    html += '</tbody></table>';
+  }
+
+  html += '<div style="margin-top:8px;padding:6px 8px;background:#f0f4ff;border-radius:4px;font-size:11px;color:var(--text-sub)">';
+  html += '阈值说明：🟢 1个进行中项目正常 · 🟡 2个项目关注交期 · 🔴 3个及以上提示超负荷/需协调';
+  html += '<br>判断规则：只按当前进行中项目数（已完工/暂停/归档不计入），同一项目不重复计数';
+  html += '<br>📌 本诊断面板只读，关闭后刷新页面不会残留</div>';
+
+  html += '</div>';
+  panel.innerHTML = html;
+  panel.style.display = 'block';
+  panel.parentElement.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
 function isThisWeek(dateStr){
   if(!dateStr)return false;
   const d=new Date(dateStr);
